@@ -1,0 +1,535 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/**
+ * Design tokens. Every color/radius/spacing value consumed by a component
+ * must come from one of these variables -- no arbitrary hex/px scattered in
+ * component files.
+ */
+@theme {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-pixel: var(--font-geist-pixel);
+  --font-heading: var(--font-sans);
+
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  /* Item type badge (Figma "Meta"): one hue per item type, theme-aware so
+     the 13px pixel label keeps AA on both surfaces. */
+  --color-type-link: var(--type-link);
+  --color-type-prompt: var(--type-prompt);
+  --color-type-code: var(--type-code);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-focus: var(--focus);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-brand-accent: var(--brand-accent);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+
+  /* Tags -- curated palette, one swatch each. */
+  --color-tag-lime: var(--tag-lime);
+  --color-tag-chartreuse: var(--tag-chartreuse);
+  --color-tag-yellow: var(--tag-yellow);
+  --color-tag-amber: var(--tag-amber);
+  --color-tag-orange: var(--tag-orange);
+  --color-tag-peach: var(--tag-peach);
+  --color-tag-terracotta: var(--tag-terracotta);
+  --color-tag-brown: var(--tag-brown);
+  --color-tag-red: var(--tag-red);
+  --color-tag-rose: var(--tag-rose);
+  --color-tag-coral: var(--tag-coral);
+  --color-tag-pink: var(--tag-pink);
+  --color-tag-fuchsia: var(--tag-fuchsia);
+  --color-tag-purple: var(--tag-purple);
+  --color-tag-lavender: var(--tag-lavender);
+  --color-tag-violet: var(--tag-violet);
+  --color-tag-indigo: var(--tag-indigo);
+  --color-tag-periwinkle: var(--tag-periwinkle);
+  --color-tag-blue: var(--tag-blue);
+  --color-tag-sky: var(--tag-sky);
+  --color-tag-cyan: var(--tag-cyan);
+  --color-tag-aqua: var(--tag-aqua);
+  --color-tag-teal: var(--tag-teal);
+  --color-tag-emerald: var(--tag-emerald);
+  --color-tag-mint: var(--tag-mint);
+  --color-tag-green: var(--tag-green);
+  --color-tag-slate: var(--tag-slate);
+  --color-tag-zinc: var(--tag-zinc);
+  --color-tag-stone: var(--tag-stone);
+
+  /* Radius: fixed px scale, not a proportional calc. */
+  --radius: 12px;
+  --radius-none: 0px;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Elevation: overlays only, soft/short. */
+  --shadow-overlay:
+    0 8px 24px -4px rgb(0 0 0 / 0.14), 0 2px 8px -2px rgb(0 0 0 / 0.08);
+
+  /**
+   * Motion is short and functional: duration expresses distance and
+   * consequence, not taste. Feedback is
+   * near-instant, state changes are short, overlays get room to travel, and
+   * only the one authored moment (`morph`) is allowed to be slow.
+   * Consumed as `duration-(--motion-base)` / `ease-out-muvuca`.
+   */
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 280ms;
+  --motion-morph: 420ms;
+  --ease-out-muvuca: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Search feedback: subtle, never a large spinner. */
+  --animate-search-sweep: muvuca-search-sweep 900ms
+    cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes muvuca-search-sweep {
+  0% {
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  50% {
+    transform: scaleX(1);
+    transform-origin: left;
+  }
+  50.01% {
+    transform: scaleX(1);
+    transform-origin: right;
+  }
+  100% {
+    transform: scaleX(0);
+    transform-origin: right;
+  }
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+:root {
+  color-scheme: light;
+
+  /* Light theme colors. */
+  --primary: #a3e635;
+  --primary-strong: #84cc16;
+  /* Lime legível como *texto pequeno*: em surface clara o lime da marca
+     reprova o contraste mínimo AA para texto pequeno, então o tema claro
+     usa lime-700. */
+  --brand-accent: #4d7c0f;
+  --ink: #100f11;
+  --ink-muted: #64616a;
+  --canvas: #f4f3f7;
+  --surface: #ffffff;
+  --surface-subtle: #edebf1;
+  --border: #dbd8e1;
+  --focus: #65a30d;
+  --success: #15803d;
+  --warning: #b45309;
+  --error: #b91c1c;
+
+  /* Type badges -- darker shades on the light surface (emerald/orange at
+     their 400/500 shade reprove AA on white at 13px). */
+  --type-link: #b91c1c;
+  --type-prompt: #047857;
+  --type-code: #c2410c;
+
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary-foreground: #100f11;
+  --secondary: var(--surface-subtle);
+  --secondary-foreground: var(--ink);
+  --muted: var(--surface-subtle);
+  --muted-foreground: var(--ink-muted);
+  --accent: var(--surface-subtle);
+  --accent-foreground: var(--ink);
+  --destructive: var(--error);
+  --input: var(--border);
+  --ring: var(--focus);
+
+  /* Tag palette swatches -- a curated palette, hexes drawn from Tailwind's
+     color scales at varying shades (not uniformly 500; some are 400 or 700,
+     and a few names, like `peach` or `terracotta`, aren't Tailwind names at
+     all); `lime` reuses the brand primary so there is one source of truth
+     for that hue. */
+  --tag-lime: #a3e635;
+  --tag-chartreuse: #84cc16;
+  --tag-yellow: #eab308;
+  --tag-amber: #f59e0b;
+  --tag-orange: #f97316;
+  --tag-peach: #fb923c;
+  --tag-terracotta: #c2410c;
+  --tag-brown: #92400e;
+  --tag-red: #ef4444;
+  --tag-rose: #f43f5e;
+  --tag-coral: #fb7185;
+  --tag-pink: #ec4899;
+  --tag-fuchsia: #d946ef;
+  --tag-purple: #a855f7;
+  --tag-lavender: #c084fc;
+  --tag-violet: #8b5cf6;
+  --tag-indigo: #6366f1;
+  --tag-periwinkle: #818cf8;
+  --tag-blue: #3b82f6;
+  --tag-sky: #0ea5e9;
+  --tag-cyan: #06b6d4;
+  --tag-aqua: #22d3ee;
+  --tag-teal: #14b8a6;
+  --tag-emerald: #10b981;
+  --tag-mint: #34d399;
+  --tag-green: #22c55e;
+  --tag-slate: #64748b;
+  --tag-zinc: #71717a;
+  --tag-stone: #78716c;
+
+  /* Layout. */
+  --layout-sidebar-width: 272px;
+  --layout-content-max: 1600px;
+  --layout-topbar-min-height: 64px;
+}
+
+@media (prefers-color-scheme: dark) {
+  /* System theme with no explicit choice: follow the OS. `:not(.light)`
+     lets an explicit light pick win even when the OS prefers dark. */
+  :root:not(.light) {
+    color-scheme: dark;
+
+    --canvas: #070708;
+    --surface: #111013;
+    --surface-subtle: #161519;
+    --border: #28252c;
+    --ink: #f1eff5;
+    --ink-muted: #a19caa;
+    --error: #f87171;
+    --type-link: #f87171;
+    --type-prompt: #10b981;
+    --type-code: #f97316;
+    --brand-accent: var(--primary);
+  }
+}
+
+:root.dark,
+.dark {
+  /* Explicit dark pick: same values as the media-query branch, so a
+     user's choice always wins over (or matches) the OS preference.
+     `.dark` (not just `:root.dark`) also lets a subtree -- e.g. the
+     landing page, which is dark-only and ignores theme preference --
+     force these tokens without touching the rest of the app. */
+  color-scheme: dark;
+
+  --canvas: #070708;
+  --surface: #111013;
+  --surface-subtle: #161519;
+  --border: #28252c;
+  --ink: #f1eff5;
+  --ink-muted: #a19caa;
+  --error: #f87171;
+  --type-link: #f87171;
+  --type-prompt: #10b981;
+  --type-code: #f97316;
+  --brand-accent: var(--primary);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    /* Tailwind's ring-offset default is opaque white, which paints a white
+       halo around every `ring-offset-*` focus ring in dark mode. Binding it
+       to the canvas here fixes every call site at once instead of asking
+       each one to remember `ring-offset-background`. */
+    --tw-ring-offset-color: var(--background);
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+
+  /**
+   * Browser-owned surfaces. These ship with UA defaults that belong to no
+   * design system, so they are themed from the same tokens as everything
+   * else -- otherwise dark mode leaks a blue selection and a light
+   * scrollbar into an otherwise olive-black app.
+   */
+  ::selection {
+    background-color: color-mix(in oklch, var(--primary) 30%, transparent);
+    color: var(--foreground);
+  }
+  :root {
+    accent-color: var(--primary);
+    caret-color: var(--foreground);
+    scrollbar-color: var(--border) transparent;
+  }
+  /* The UA search clear button is a fixed dark glyph; recolor it from the
+     foreground so it stays visible on the dark canvas. */
+  input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+    block-size: 0.875rem;
+    inline-size: 0.875rem;
+    cursor: pointer;
+    background-color: var(--muted-foreground);
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M18 6 6 18M6 6l12 12'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+  }
+  input[type="search"]::-webkit-search-cancel-button:hover {
+    background-color: var(--foreground);
+  }
+}
+
+/**
+ * Focal moment: opening a prompt does not spawn an unrelated overlay --
+ * the card itself travels to the dialog and grows into it.
+ * `lib/motion/view-transition.ts` tags the pair
+ * with `muvuca-item` and only starts a transition when the API exists and
+ * the user has not asked for reduced motion, so everywhere else this block
+ * is simply never instantiated.
+ */
+::view-transition-group(*) {
+  animation-duration: var(--motion-slow);
+  animation-timing-function: var(--ease-out-muvuca);
+}
+/* The rest of the page is context, not the subject: it settles first. */
+::view-transition-group(root) {
+  animation-duration: var(--motion-base);
+}
+::view-transition-group(muvuca-item),
+::view-transition-group(muvuca-item-title) {
+  animation-duration: var(--motion-morph);
+}
+::view-transition-old(muvuca-item),
+::view-transition-new(muvuca-item),
+::view-transition-old(muvuca-item-title),
+::view-transition-new(muvuca-item-title) {
+  /* Card and dialog have different aspect ratios. Without this the two
+     snapshots letterbox and the title visibly squashes mid-flight. */
+  height: 100%;
+  width: 100%;
+  object-fit: none;
+  object-position: top left;
+  overflow: clip;
+}
+/* The outgoing card leaves early so the arriving content, not a ghost of
+   the preview text, is what the eye follows across the distance. */
+::view-transition-old(muvuca-item),
+::view-transition-old(muvuca-item-title) {
+  animation: muvuca-vt-out var(--motion-fast) var(--ease-out-muvuca) both;
+}
+::view-transition-new(muvuca-item),
+::view-transition-new(muvuca-item-title) {
+  animation: muvuca-vt-in var(--motion-morph) var(--ease-out-muvuca) both;
+}
+@keyframes muvuca-vt-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes muvuca-vt-in {
+  from {
+    opacity: 0;
+  }
+}
+/* While the transition owns the movement, the popup's own entrance would
+   play a second, competing animation on top of it. */
+:root[data-view-transition] [data-slot="dialog-content"],
+:root[data-view-transition] [data-slot="dialog-overlay"] {
+  animation: none;
+}
+
+/**
+ * Scroll-triggered entrance motion (landing page only). A separate token
+ * family from `--motion-*` above on purpose: those express interaction
+ * feedback, these express a one-time reveal as a section enters the
+ * viewport -- different job, so kept on its own scale instead of forced
+ * onto the interaction tokens.
+ */
+:root {
+  --stagger-dur: 500ms;
+  --stagger-distance: 12px;
+  --stagger-stagger: 40ms;
+  --stagger-blur: 3px;
+  --stagger-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --panel-open-dur: 400ms;
+  --panel-close-dur: 350ms;
+  --panel-translate-y: 24px; /* skill default 100px is a half-panel travel; a full section only needs a short rise to read as "entering" */
+  --panel-blur: 2px;
+  --panel-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.t-stagger-line {
+  display: block;
+  opacity: 0;
+  transform: translateY(var(--stagger-distance));
+  filter: blur(var(--stagger-blur));
+  transition:
+    opacity var(--stagger-dur) var(--stagger-ease),
+    transform var(--stagger-dur) var(--stagger-ease),
+    filter var(--stagger-dur) var(--stagger-ease);
+}
+.t-stagger-line--2 {
+  transition-delay: var(--stagger-stagger);
+}
+.t-stagger-line--3 {
+  transition-delay: calc(var(--stagger-stagger) * 2);
+}
+.t-stagger-line--4 {
+  transition-delay: calc(var(--stagger-stagger) * 3);
+}
+.t-stagger-line--5 {
+  transition-delay: calc(var(--stagger-stagger) * 4);
+}
+.t-stagger-line--6 {
+  transition-delay: calc(var(--stagger-stagger) * 5);
+}
+.t-stagger.is-shown .t-stagger-line {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+.t-panel-slide {
+  transform: translateY(var(--panel-translate-y));
+  opacity: 0;
+  filter: blur(var(--panel-blur));
+  transition:
+    transform var(--panel-close-dur) var(--panel-ease),
+    opacity var(--panel-close-dur) var(--panel-ease),
+    filter var(--panel-close-dur) var(--panel-ease);
+}
+.t-panel-slide[data-open="true"] {
+  transform: translateY(0);
+  opacity: 1;
+  filter: blur(0);
+  transition:
+    transform var(--panel-open-dur) var(--panel-ease),
+    opacity var(--panel-open-dur) var(--panel-ease),
+    filter var(--panel-open-dur) var(--panel-ease);
+}
+
+/**
+ * A revelação de entrada parte de `opacity: 0` e só chega ao estado final pelo
+ * `IntersectionObserver` de `ScrollReveal`. Onde esse caminho não roda, o padrão
+ * precisa ser o estado FINAL, não o inicial -- caso contrário a landing inteira
+ * renderiza em branco.
+ */
+@media (scripting: none) {
+  .t-stagger-line,
+  .t-panel-slide {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-stagger-line,
+  .t-panel-slide {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none !important;
+  }
+}
+
+/**
+ * Typography scale. Geist Sans is the interface voice; Geist Mono is
+ * functional-only (URLs, timestamps, counters); Geist Pixel is a small
+ * brand accent, never body/label/long text.
+ */
+@layer components {
+  .text-display {
+    font-family: var(--font-sans);
+    font-size: 48px;
+    font-weight: 560;
+    line-height: 1.02;
+    letter-spacing: -0.04em;
+  }
+  .text-headline-lg {
+    font-family: var(--font-sans);
+    font-size: 40px;
+    font-weight: 560;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+  }
+  .text-headline-md {
+    font-family: var(--font-sans);
+    font-size: 24px;
+    font-weight: 560;
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+  }
+  .text-headline-sm {
+    font-family: var(--font-sans);
+    font-size: 18px;
+    font-weight: 560;
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+  }
+  .text-body-lg {
+    font-family: var(--font-sans);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.55;
+  }
+  .text-body-md {
+    font-family: var(--font-sans);
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.5;
+  }
+  .text-body-sm {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.45;
+  }
+  .text-label-md {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 520;
+    line-height: 1.2;
+  }
+  .text-metadata {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 430;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+  }
+  .text-brand-pixel {
+    font-family: var(--font-pixel);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+    letter-spacing: 0.06em;
+  }
+}

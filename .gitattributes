@@ -1,0 +1,19 @@
+# Normaliza terminadores de linha para LF no repositório, independente do
+# sistema operacional de quem commita.
+* text=auto eol=lf
+
+# Arquivos binários: nunca normalizar, nunca gerar diff de texto.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+
+# Gerado automaticamente — não é útil revisar diffs linha a linha.
+pnpm-lock.yaml -diff linguist-generated=true
+lib/database/generated.types.ts -diff linguist-generated=true

@@ -1,0 +1,57 @@
+packages:
+  - "."
+
+minimumReleaseAge: 1440
+blockExoticSubdeps: true
+trustPolicy: no-downgrade
+
+# Pins below work around ERR_PNPM_TRUST_DOWNGRADE: pnpm's `trustPolicy:
+# no-downgrade` rejects a version published (by date, not semver) after an
+# earlier release of the *same package* already had provenance
+# attestation, if the flagged version itself lacks one — a real supply
+# chain-takeover signal, so it is never disabled. Each pin below targets a
+# specific version that predates its package's attestation streak, scoped
+# to the exact dependent (`parent>child`) so unrelated consumers that need
+# a newer major keep resolving normally.
+overrides:
+  # eslint-config-next -> eslint-plugin-import -> ^3.5.2. 3.10.1
+  # (2025-04-21) has no attestation; 4.2.6+ (from 2025-03-28) does. 3.10.0
+  # (2025-03-26) predates that streak.
+  eslint-import-resolver-typescript: "3.10.0"
+  # `semver@6.3.1` (2023-07-10) has no attestation; 7.5.1+ (from
+  # 2023-05-12) does — flagged as ERR_PNPM_TRUST_DOWNGRADE. The obvious
+  # "fix", pinning to 6.3.0 (the last version before 6.3.1), instead
+  # reintroduces a real, confirmed high-severity ReDoS that 6.3.1 patched
+  # (GHSA-c2qf-rxjj-qqgw) — caught by `pnpm audit`. Between an unverified
+  # provenance heuristic and a confirmed CVE, the CVE wins: pin every
+  # `^6.3.1`-range consumer to the 7.x line instead, which has continuous
+  # attestation from 7.5.1 onward and is API-compatible for the simple
+  # version-comparison calls these tools make.
+  semver: "^7.7.3"
+  # shadcn's ajv chain (@dotenvx/dotenvx>conf, @modelcontextprotocol/sdk)
+  # pulls fast-uri <3.1.6, vulnerable to host-confusion/SSRF issues in its
+  # URI parsing (GHSA-5jgf-p345-68v8, GHSA-f65p-4m7j-42xc and others).
+  # 3.1.6 is the first patched release; shadcn itself only runs as a local
+  # CLI codegen tool, never against untrusted input, but there is no reason
+  # to ship the vulnerable version when a compatible patched one exists.
+  fast-uri: "^3.1.6"
+
+allowBuilds:
+  # Transitive dep of eslint-plugin-import's TypeScript resolver. Its
+  # postinstall (postinstall.js -> napi-postinstall) only selects/links the
+  # matching prebuilt native N-API binary for the current platform — no
+  # arbitrary network fetch or code beyond that. Reviewed, allowed.
+  unrs-resolver: true
+  # Vite's bundler dependency (pulled in transitively via vitest/vite). Its
+  # postinstall only downloads/links the matching prebuilt native esbuild
+  # binary for the current platform — same standard pattern, widely used,
+  # reviewed. Allowed.
+  esbuild: true
+  # `sharp` (link-preview thumbnail/favicon pipeline, lib/metadata/image.ts)
+  # does NOT need an entry here: since v0.32 it ships its native binary as
+  # a per-platform `optionalDependency` (`@img/sharp-*`) resolved directly
+  # by the package manager, with no install/postinstall/preinstall script
+  # on either `sharp` or the platform package itself (verified via `npm
+  # view sharp@0.35.3 scripts` and `pnpm install` producing no "Ignored
+  # build scripts" warning). Recorded here so a future reviewer doesn't
+  # add a no-op entry "just in case" the next time this file is touched.

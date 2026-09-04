@@ -1,0 +1,17 @@
+node_modules
+.next
+out
+coverage
+playwright-report
+test-results
+.git
+.github
+.env
+.env.*
+!.env.example
+supabase/.branches
+supabase/.temp
+docs
+*.md
+.vscode
+.worktrees

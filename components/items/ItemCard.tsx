@@ -1,0 +1,552 @@
+"use client";
+
+import { useState } from "react";
+import {
+  CheckIcon,
+  CodeXmlIcon,
+  CopyIcon,
+  ExternalLinkIcon,
+  FileTextIcon,
+  InfoIcon,
+  LinkIcon,
+  MaximizeIcon,
+  MoreHorizontalIcon,
+} from "lucide-react";
+import { toast } from "sonner";
+import type { LibraryItemSummary } from "@/lib/database/queries/items";
+import type { Tag } from "@/lib/database/queries/tags";
+import { copyToClipboard } from "@/lib/clipboard";
+import { normalizeHttpUrl } from "@/lib/validation/item";
+import { MORPH_CLASS, MORPH_TITLE_CLASS } from "@/lib/motion/view-transition";
+import { cn } from "@/lib/utils";
+import { TagChip } from "@/components/tags/TagChip";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { LinkPreviewMedia, previewImageSrc } from "./LinkPreviewMedia";
+import { SiteIdentity } from "./SiteIdentity";
+
+/**
+ * Type badge (Figma "Meta"): lowercase Geist Pixel label in the type's own
+ * hue, always visible. The colors are theme-aware tokens (`--type-*`), not
+ * the raw tag palette -- emerald/orange at their mockup shade reprove AA on
+ * the light surface at this size, and the mockup is dark-only.
+ *
+ * `hint` is the accessible name of the trailing info button and the text of
+ * its tooltip: the pixel face plus a 3-letter word is a weak label on its
+ * own, so the type is also available as plain prose to anyone hovering,
+ * focusing, or using a screen reader.
+ */
+const TYPE_META = {
+  link: {
+    label: "link",
+    hue: "text-type-link",
+    Icon: LinkIcon,
+    hint: "Link salvo: abre o site original em uma nova aba.",
+  },
+  prompt: {
+    label: "prompt",
+    hue: "text-type-prompt",
+    Icon: FileTextIcon,
+    hint: "Prompt: texto reutilizável para modelos de IA.",
+  },
+  code_component: {
+    label: "code",
+    hue: "text-type-code",
+    Icon: CodeXmlIcon,
+    hint: "Componente de código: trecho reutilizável para colar no projeto.",
+  },
+} as const;
+
+/**
+ * Shared by every quick action: only the badge stays visible at rest.
+ * Gate é capacidade de ponteiro (`hover: hover` + `pointer: fine`), não
+ * breakpoint -- `sm:` tratava largura como proxy de "tem mouse", mas um
+ * iPad é >= 640px e touch. Em touch as ações ficam sempre visíveis; o
+ * esconder-em-repouso só se aplica a quem realmente pode passar o mouse.
+ */
+const ACTION_CLASS =
+  "opacity-100 transition-opacity duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100";
+
+/**
+ * Crossfade entre o ícone de "copiar" e o Check de confirmação: os dois
+ * ficam empilhados na mesma célula (não teleporta, e o botão não muda de
+ * largura) e só opacidade/escala trocam. Nunca anima a partir de scale(0)
+ * -- nada no mundo real aparece do nada, 0.8 é o piso. O ícone que está
+ * saindo leva pointer-events-none: o Button (não o svg) continua sendo o
+ * único alvo de clique, e o aria-label dele já dá o nome acessível.
+ */
+function CopyStateIcon({
+  copied,
+  Icon,
+}: {
+  copied: boolean;
+  Icon: typeof CopyIcon;
+}) {
+  const layer =
+    "absolute inset-0 transition-[opacity,transform] duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none";
+  return (
+    <span className="relative inline-block size-4">
+      <CheckIcon
+        aria-hidden="true"
+        className={cn(
+          layer,
+          "text-brand-accent",
+          copied
+            ? "scale-100 opacity-100"
+            : "pointer-events-none scale-[0.8] opacity-0",
+        )}
+      />
+      <Icon
+        aria-hidden="true"
+        className={cn(
+          layer,
+          copied
+            ? "pointer-events-none scale-[0.8] opacity-0"
+            : "scale-100 opacity-100",
+        )}
+      />
+    </span>
+  );
+}
+
+export function ItemCard({
+  item,
+  tags,
+  morphing,
+  isPending = false,
+  onEdit,
+  onDelete,
+  onView,
+  onRefreshPreview,
+}: {
+  item: LibraryItemSummary;
+  tags: Tag[];
+  /** This card is the origin (or destination) of the open prompt or code dialog. */
+  morphing: boolean;
+  isPending?: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  onView: () => void;
+  /**
+   * Injected instead of ItemCard calling the `refreshItemPreview` server
+   * action itself: this is a presentational component, and a direct import
+   * of a "use server" action here drags its whole server-only dependency
+   * graph (enrich -> ssrf -> node:net) into any bundler that doesn't apply
+   * Next's RSC transform. The real implementation lives one level up, in
+   * ItemsPage.
+   */
+  onRefreshPreview: () => void;
+}) {
+  const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+  const associatedTags = item.tagIds.flatMap((tagId) => {
+    const tag = tags.find((candidate) => candidate.id === tagId);
+    return tag ? [tag] : [];
+  });
+  const safeHref = item.url ? normalizeHttpUrl(item.url) : null;
+  const domain = safeHref ? new URL(safeHref).hostname : null;
+  // The user's own description always wins; the enrichment pipeline's
+  // remote_description only fills a gap the user left empty, never
+  // overrides authored text.
+  const displayDescription =
+    item.type === "link"
+      ? (item.description ?? item.preview?.remoteDescription ?? null)
+      : item.description;
+  const faviconSrc =
+    item.type === "link" && item.preview?.faviconHash
+      ? previewImageSrc(item.id, "icon", item.preview.faviconHash)
+      : null;
+  // A link with a usable URL gets the media layout: the header (type badge
+  // + quick actions) floats over the thumbnail instead of sitting in the
+  // card body, so the whole card below it can be one anchor.
+  const clickableMedia = item.type === "link" && Boolean(safeHref);
+  const typeMeta = TYPE_META[item.type];
+
+  async function handleCopyPrompt() {
+    if (item.type !== "prompt") return;
+    const success = await copyToClipboard(item.contentPreview);
+    if (success) {
+      setCopiedPrompt(true);
+      setTimeout(() => setCopiedPrompt(false), 1500);
+      toast.success("Prompt copiado para a área de transferência.");
+    } else {
+      toast.error("Não foi possível copiar o prompt.");
+    }
+  }
+
+  async function handleCopyCode() {
+    if (item.type !== "code_component") return;
+    const success = await copyToClipboard(item.contentPreview);
+    if (success) {
+      setCopiedCode(true);
+      setTimeout(() => setCopiedCode(false), 1500);
+      toast.success("Código copiado para a área de transferência.");
+    } else {
+      toast.error("Não foi possível copiar o código.");
+    }
+  }
+
+  async function handleCopyLink() {
+    if (!safeHref) return;
+    const success = await copyToClipboard(safeHref);
+    if (success) {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 1500);
+      toast.success("Link copiado para a área de transferência.");
+    } else {
+      toast.error("Não foi possível copiar o link.");
+    }
+  }
+
+  const typeBadge = (
+    <div className="flex min-w-0 items-center gap-2">
+      <typeMeta.Icon
+        aria-hidden="true"
+        className={cn("size-3", typeMeta.hue)}
+      />
+      {/* Concatenação literal, não `cn()`: twMerge trata qualquer par
+          `text-*` como o mesmo grupo "cor de texto" e descartaria
+          text-brand-pixel (fonte) em favor de typeMeta.hue (cor). */}
+      <span className={`text-brand-pixel ${typeMeta.hue}`}>
+        {typeMeta.label}
+      </span>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <button
+              type="button"
+              aria-label={typeMeta.hint}
+              className="rounded-full text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+            />
+          }
+        >
+          <InfoIcon aria-hidden="true" className="size-2.5" />
+        </TooltipTrigger>
+        <TooltipContent>{typeMeta.hint}</TooltipContent>
+      </Tooltip>
+    </div>
+  );
+
+  // Kept in one place so the media layout (header floating over the
+  // thumbnail) and the plain layout (header in the card body) can't drift.
+  const actions = (
+    <div className="pointer-events-auto flex shrink-0 items-center gap-1">
+      {clickableMedia && safeHref ? (
+        // Redundant with the card-wide anchor by design (Figma): the
+        // card's own click target is invisible, so this icon is what makes
+        // "opens the site" discoverable. A real <a>, not a button, so
+        // middle-click and "open in new tab" behave normally.
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                nativeButton={false}
+                aria-label="Abrir link em nova aba"
+                className={ACTION_CLASS}
+                render={
+                  <a
+                    href={safeHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  />
+                }
+              />
+            }
+          >
+            <ExternalLinkIcon aria-hidden="true" />
+          </TooltipTrigger>
+          <TooltipContent>Abrir link</TooltipContent>
+        </Tooltip>
+      ) : item.type === "prompt" || item.type === "code_component" ? (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={
+                  item.type === "prompt"
+                    ? "Ver conteúdo completo"
+                    : "Ver código completo"
+                }
+                onClick={onView}
+                className={ACTION_CLASS}
+              />
+            }
+          >
+            <MaximizeIcon aria-hidden="true" />
+          </TooltipTrigger>
+          <TooltipContent>
+            {item.type === "prompt"
+              ? "Ver conteúdo completo"
+              : "Ver código completo"}
+          </TooltipContent>
+        </Tooltip>
+      ) : null}
+      {item.type === "prompt" && (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Copiar prompt"
+                onClick={handleCopyPrompt}
+                className={ACTION_CLASS}
+              />
+            }
+          >
+            <CopyStateIcon copied={copiedPrompt} Icon={CopyIcon} />
+          </TooltipTrigger>
+          <TooltipContent>
+            {copiedPrompt ? "Copiado!" : "Copiar prompt"}
+          </TooltipContent>
+        </Tooltip>
+      )}
+      {item.type === "code_component" && (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Copiar código"
+                onClick={handleCopyCode}
+                className={ACTION_CLASS}
+              />
+            }
+          >
+            <CopyStateIcon copied={copiedCode} Icon={CopyIcon} />
+          </TooltipTrigger>
+          <TooltipContent>
+            {copiedCode ? "Copiado!" : "Copiar código"}
+          </TooltipContent>
+        </Tooltip>
+      )}
+      {((item.type === "link" && safeHref) ||
+        (item.type === "code_component" && safeHref)) && (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Copiar link"
+                onClick={handleCopyLink}
+                className={ACTION_CLASS}
+              />
+            }
+          >
+            <CopyStateIcon
+              copied={copiedLink}
+              Icon={item.type === "code_component" ? LinkIcon : CopyIcon}
+            />
+          </TooltipTrigger>
+          <TooltipContent>
+            {copiedLink ? "Copiado!" : "Copiar link"}
+          </TooltipContent>
+        </Tooltip>
+      )}
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="ghost" size="icon-sm" className={ACTION_CLASS} />
+          }
+        >
+          <MoreHorizontalIcon aria-hidden="true" />
+          <span className="sr-only">Ações de {item.title}</span>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {item.type === "link" && (
+            <>
+              <DropdownMenuItem onClick={onRefreshPreview}>
+                Atualizar prévia
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
+          <DropdownMenuItem onClick={onEdit}>Editar</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem variant="destructive" onClick={onDelete}>
+            Excluir
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+
+  // Favicon/monogram + hostname (Figma: the row under the media). A link
+  // whose URL didn't survive `normalizeHttpUrl` has no media layout to sit
+  // in, so this row is also where "Link inválido" is reported -- the card
+  // must still say why it can't be opened.
+  const siteRow = item.type === "link" && (
+    <div className="flex min-w-0 items-center gap-2">
+      {domain ? (
+        <SiteIdentity domain={domain} faviconSrc={faviconSrc} />
+      ) : (
+        <LinkIcon
+          aria-hidden="true"
+          className="size-4 shrink-0 text-muted-foreground"
+        />
+      )}
+      <span className="text-metadata min-w-0 flex-1 truncate text-muted-foreground">
+        {domain ?? "Link inválido"}
+      </span>
+    </div>
+  );
+
+  const content = (
+    <div className="flex flex-col gap-1">
+      <h2
+        dir="auto"
+        className={cn(
+          "text-headline-sm line-clamp-2 [overflow-wrap:anywhere]",
+          morphing && MORPH_TITLE_CLASS,
+        )}
+      >
+        {item.title}
+      </h2>
+      {displayDescription && (
+        <p
+          dir="auto"
+          className="text-body-sm line-clamp-1 [overflow-wrap:anywhere] text-muted-foreground"
+        >
+          {displayDescription}
+        </p>
+      )}
+    </div>
+  );
+
+  // Prompt/code preview is a filled panel now, not a rule-separated
+  // paragraph: at the same size and color as the description it used to
+  // read as one continuous block, and the panel says "this is the stored
+  // content" without spending a second type size on it.
+  const previewPanel = (item.type === "prompt" ||
+    item.type === "code_component") && (
+    <div className="flex min-h-0 flex-1 overflow-hidden rounded-md bg-secondary p-3">
+      <p
+        dir="auto"
+        className={cn(
+          "text-body-sm line-clamp-6 [overflow-wrap:anywhere] whitespace-pre-line text-muted-foreground",
+          item.type === "code_component" && "font-mono",
+        )}
+      >
+        {item.contentPreview}
+      </p>
+    </div>
+  );
+
+  const tagsBlock = associatedTags.length > 0 && (
+    <div className="mt-auto flex flex-wrap gap-1.5">
+      {associatedTags.slice(0, 3).map((tag) => (
+        <TagChip
+          key={tag.id}
+          name={tag.name}
+          colorToken={tag.colorToken}
+          href={`/tags/${tag.id}`}
+        />
+      ))}
+      {associatedTags.length > 3 && (
+        <span className="text-metadata self-center text-muted-foreground">
+          +{associatedTags.length - 3}
+        </span>
+      )}
+    </div>
+  );
+
+  return (
+    <article
+      aria-busy={isPending || undefined}
+      className={cn(
+        "group relative flex min-h-56 flex-col overflow-hidden rounded-xl border border-border bg-card transition-[background-color,border-color,transform,opacity] duration-(--motion-fast) ease-out-muvuca hover:border-foreground/20 hover:bg-secondary/30 motion-safe:hover:-translate-y-px motion-reduce:transition-none",
+        morphing && MORPH_CLASS,
+        isPending && "pointer-events-none opacity-75",
+      )}
+    >
+      {clickableMedia && domain && safeHref ? (
+        <>
+          <a
+            href={safeHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-1 flex-col rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+          >
+            <div className="relative">
+              <LinkPreviewMedia
+                itemId={item.id}
+                domain={domain}
+                preview={item.preview}
+              />
+              {/* Scrim, not decoration: the badge and the action icons sit
+                on whatever the thumbnail happens to show there, and without
+                it their contrast is whatever the remote page decided. */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 bg-gradient-to-b from-card to-transparent"
+              />
+            </div>
+            <div className="flex flex-1 flex-col gap-4 p-4">
+              {siteRow}
+              {content}
+            </div>
+          </a>
+          {/* The header floats over the media instead of nesting inside the
+            anchor: a <button> inside an <a> is invalid HTML and would add a
+            second tab stop. It comes *after* the anchor in DOM order so Tab
+            still reaches the card's own link first, and
+            `pointer-events-none` on the wrapper hands the clicks it covers
+            back to that anchor underneath; the actions themselves opt back
+            in. */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2.5 p-4 pb-2">
+            {typeBadge}
+            {actions}
+          </div>
+          {tagsBlock && <div className="flex px-4 pb-4">{tagsBlock}</div>}
+        </>
+      ) : (
+        <>
+          <div className="flex flex-col gap-4 p-4">
+            <div className="flex items-start justify-between gap-2.5">
+              {typeBadge}
+              {actions}
+            </div>
+            {siteRow}
+            {item.type === "prompt" || item.type === "code_component" ? (
+              <button
+                type="button"
+                onClick={onView}
+                className="rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                {content}
+              </button>
+            ) : (
+              content
+            )}
+          </div>
+          <div className="flex flex-1 flex-col gap-4 px-4 pt-2 pb-4">
+            {previewPanel}
+            {tagsBlock}
+          </div>
+        </>
+      )}
+    </article>
+  );
+}
