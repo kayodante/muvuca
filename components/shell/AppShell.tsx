@@ -78,6 +78,21 @@ export function AppShell({
         <main className="mx-auto w-full max-w-[var(--layout-content-max)] flex-1 px-4 pt-4 pb-6 sm:px-6 lg:px-8">
           {children}
         </main>
+        {/* Decorative bottom fade, dissolves the gallery into the canvas.
+            Sticky (not fixed) so it tracks the content column's own width
+            through the sidebar collapse. `-mt-32` cancels `h-32` so it
+            overlays the last 128px of `main` instead of adding scroll
+            height. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none sticky bottom-0 z-20 -mt-32 h-32"
+        >
+          <div className="absolute inset-0 bg-linear-to-t from-background/10 to-transparent" />
+          {/* One masked layer standing in for a true progressive blur (which
+              needs 4-5 stacked partial-blur layers). Upgrade to stacked
+              masked layers if the ramp ever reads visibly wrong. */}
+          <div className="absolute inset-0 [mask-image:linear-gradient(to_top,black_0%,transparent_50%)] backdrop-blur-[8px]" />
+        </div>
       </div>
     </div>
   );
