@@ -63,7 +63,7 @@ export function AppShell({
           mobileNav={<MobileNav>{sidebar}</MobileNav>}
           sidebarToggle={
             <Button
-              variant="ghost"
+              variant="secondary"
               size="icon"
               aria-label={
                 collapsed ? "Expandir barra lateral" : "Recolher barra lateral"
