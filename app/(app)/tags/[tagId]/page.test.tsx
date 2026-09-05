@@ -74,8 +74,8 @@ describe("TagDetailPage", () => {
     expect(notFoundMock).toHaveBeenCalled();
   });
 
-  it("chama notFound quando searchParams contêm dados inválidos", async () => {
-    getTagByIdMock.mockResolvedValue({
+  it("degrada suavemente quando searchParams contêm dados inválidos ou desconhecidos sem chamar notFound", async () => {
+    const mockTag = {
       id: validTagId,
       name: "Tecnologia",
       parentId: null,
@@ -83,17 +83,35 @@ describe("TagDetailPage", () => {
       colorToken: "tag-blue",
       createdAt: "2026-01-01T00:00:00Z",
       updatedAt: "2026-01-01T00:00:00Z",
+    };
+    const mockFlatTags = [mockTag];
+    const mockAncestors = [{ id: validTagId, name: "Tecnologia", depth: 0 }];
+    const mockItemsResult = {
+      items: [],
+      nextCursor: null,
+      prevCursor: null,
+    };
+
+    getTagByIdMock.mockResolvedValue(mockTag);
+    getTagListMock.mockResolvedValue(mockFlatTags);
+    getTagAncestorsMock.mockResolvedValue(mockAncestors);
+    getLibraryItemsMock.mockResolvedValue(mockItemsResult);
+    getLibraryItemsCountForTagMock.mockResolvedValue(0);
+
+    const element = await TagDetailPage({
+      params: Promise.resolve({ tagId: validTagId }),
+      searchParams: Promise.resolve({
+        sort: "invalid_sort_value",
+        type: "unknown_type",
+        utm_source: "newsletter",
+      }),
     });
 
-    await expect(
-      TagDetailPage({
-        params: Promise.resolve({ tagId: validTagId }),
-        searchParams: Promise.resolve({ sort: "invalid_sort_value" }),
-      }),
-    ).rejects.toThrow("NEXT_NOT_FOUND");
-
-    expect(notFoundMock).toHaveBeenCalled();
-    expect(getLibraryItemsMock).not.toHaveBeenCalled();
+    expect(notFoundMock).not.toHaveBeenCalled();
+    expect(getLibraryItemsMock).toHaveBeenCalledWith({
+      tag: validTagId,
+    });
+    expect(element).toBeDefined();
   });
 
   it("busca tag, ancestrais, lista de tags e itens com rollup e repassa para TagDetailView", async () => {

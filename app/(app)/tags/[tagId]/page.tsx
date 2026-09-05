@@ -11,7 +11,7 @@ import {
   getTagById,
   getTagList,
 } from "@/lib/database/queries/tags";
-import { librarySearchParamsSchema } from "@/lib/validation/search";
+import { parseLibrarySearchParams } from "@/lib/validation/search";
 
 /** A single tag's own detail, actions and direct children. */
 export default async function TagDetailPage({
@@ -36,15 +36,12 @@ export default async function TagDetailPage({
     notFound();
   }
 
-  const parsed = librarySearchParamsSchema.safeParse(rawSearchParams);
-  if (!parsed.success) {
-    notFound();
-  }
+  const parsed = parseLibrarySearchParams(rawSearchParams);
 
   const [flatTags, ancestors, results, itemsCount] = await Promise.all([
     getTagList(),
     getTagAncestors(tagId),
-    getLibraryItems({ ...parsed.data, tag: tagId }),
+    getLibraryItems({ ...parsed, tag: tagId }),
     getLibraryItemsCountForTag(tagId),
   ]);
 

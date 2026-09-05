@@ -14,21 +14,90 @@ export type SearchSort = (typeof SEARCH_SORTS)[number];
 
 export const searchSortSchema = z.enum(SEARCH_SORTS);
 
-const searchQuerySchema = z.string().trim().min(1).max(240).optional();
+const SEARCH_QUERY_MAX_LENGTH = 240;
 
-export const librarySearchParamsSchema = z
-  .object({
-    q: searchQuerySchema,
-    tag: z.uuid().optional(),
-    type: itemTypeSchema.optional(),
-    sort: searchSortSchema.optional(),
-    cursor: z.string().min(1).max(512).optional(),
-    create: z.literal("1").optional(),
-    import: z.literal("1").optional(),
-  })
-  .strip();
+const searchQuerySchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(SEARCH_QUERY_MAX_LENGTH)
+  .optional();
+
+const libraryTagSchema = z.uuid();
+const libraryCursorSchema = z.string().min(1).max(512);
+
+const libraryFields = {
+  q: searchQuerySchema,
+  tag: libraryTagSchema.optional(),
+  type: itemTypeSchema.optional(),
+  sort: searchSortSchema.optional(),
+  cursor: libraryCursorSchema.optional(),
+  create: z.literal("1").optional(),
+  import: z.literal("1").optional(),
+};
+
+export const librarySearchParamsSchema = z.object(libraryFields).strip();
 
 export type LibrarySearchParams = z.infer<typeof librarySearchParamsSchema>;
+
+/**
+ * Same rule as `q` above, but truncates overlong input by code point
+ * (surrogate-pair safe) instead of rejecting it, so a long query degrades
+ * instead of failing validation (AAA-79).
+ */
+const degradedQSchema = z
+  .string()
+  .trim()
+  .transform((value) => [...value].slice(0, SEARCH_QUERY_MAX_LENGTH).join(""))
+  .pipe(z.string().min(1))
+  .optional()
+  .catch(undefined);
+
+/**
+ * Same fields as `librarySearchParamsSchema`, built from the same
+ * `libraryFields` definitions, but each invalid value degrades to
+ * `undefined` instead of failing the whole parse (AAA-79): an unknown sort,
+ * a non-UUID tag, an overlong cursor, etc. no longer 404 the page, they just
+ * fall back to "no filter".
+ */
+const degradedLibrarySearchParamsSchema = z.object({
+  q: degradedQSchema,
+  tag: libraryFields.tag.catch(undefined),
+  type: libraryFields.type.catch(undefined),
+  sort: libraryFields.sort.catch(undefined),
+  cursor: libraryFields.cursor.catch(undefined),
+  create: libraryFields.create.catch(undefined),
+  import: libraryFields.import.catch(undefined),
+});
+
+/**
+ * Parses library search params with graceful degradation (AAA-79): unknown
+ * keys are stripped, Next.js array-valued params are unwrapped to their
+ * first element, and any invalid value falls back to `undefined` instead of
+ * failing validation, so a bad query string never produces a 404.
+ */
+export function parseLibrarySearchParams(raw: unknown): LibrarySearchParams {
+  if (!raw || typeof raw !== "object") {
+    return {};
+  }
+
+  const unwrapped: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    unwrapped[key] = Array.isArray(value) ? value[0] : value;
+  }
+
+  const parsed = degradedLibrarySearchParamsSchema.parse(unwrapped);
+
+  const result: LibrarySearchParams = {};
+  if (parsed.q !== undefined) result.q = parsed.q;
+  if (parsed.tag !== undefined) result.tag = parsed.tag;
+  if (parsed.type !== undefined) result.type = parsed.type;
+  if (parsed.sort !== undefined) result.sort = parsed.sort;
+  if (parsed.cursor !== undefined) result.cursor = parsed.cursor;
+  if (parsed.create !== undefined) result.create = parsed.create;
+  if (parsed.import !== undefined) result.import = parsed.import;
+  return result;
+}
 
 export type CursorDirection = "next" | "prev";
 
