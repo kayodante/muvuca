@@ -75,14 +75,15 @@ export function AppShell({
             </Button>
           }
         />
-        <main className="mx-auto w-full max-w-[var(--layout-content-max)] flex-1 px-4 pt-4 pb-6 sm:px-6 lg:px-8">
+        <main className="mx-auto w-full max-w-[var(--layout-content-max)] flex-1 px-4 pt-4 pb-32 sm:px-6 lg:px-8">
           {children}
         </main>
         {/* Decorative bottom fade, dissolves the gallery into the canvas.
             Sticky (not fixed) so it tracks the content column's own width
             through the sidebar collapse. `-mt-32` cancels `h-32` so it
             overlays the last 128px of `main` instead of adding scroll
-            height. */}
+            height. `z-20` stays below the topbar's `z-30` (Topbar.tsx) so
+            the header always wins when both are stuck on screen. */}
         <div
           aria-hidden="true"
           className="pointer-events-none sticky bottom-0 z-20 -mt-32 h-32"
