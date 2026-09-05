@@ -104,7 +104,7 @@ test("pesquisa por texto filtra a biblioteca", async ({ page }) => {
 
   await page.goto("/library");
   await page
-    .getByRole("searchbox", { name: "Pesquisar biblioteca" })
+    .getByRole("searchbox", { name: "Buscar na biblioteca" })
     .fill("Zebra");
 
   // Debounce de 250ms + router.replace: espera-se a URL, não um sleep.
@@ -125,7 +125,7 @@ test("pesquisa por texto filtra a biblioteca", async ({ page }) => {
 
   // Busca por termo no código do componente
   await page
-    .getByRole("searchbox", { name: "Pesquisar biblioteca" })
+    .getByRole("searchbox", { name: "Buscar na biblioteca" })
     .fill("Accordion");
   await expect(page).toHaveURL(/[?&]q=Accordion/);
   await expect(
@@ -137,7 +137,7 @@ test("pesquisa por texto filtra a biblioteca", async ({ page }) => {
 
   // Busca sem resultado tem estado próprio, não a biblioteca vazia.
   await page
-    .getByRole("searchbox", { name: "Pesquisar biblioteca" })
+    .getByRole("searchbox", { name: "Buscar na biblioteca" })
     .fill("Ornitorrinco");
   await expect(page.getByText("Nenhum resultado")).toBeVisible();
 
