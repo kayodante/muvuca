@@ -1,8 +1,7 @@
-﻿import { ItemsPage } from "@/components/items/ItemsPage";
+import { ItemsPage } from "@/components/items/ItemsPage";
 import { getLibraryItems } from "@/lib/database/queries/items";
 import { getTagList } from "@/lib/database/queries/tags";
-import { librarySearchParamsSchema } from "@/lib/validation/search";
-import { notFound } from "next/navigation";
+import { parseLibrarySearchParams } from "@/lib/validation/search";
 
 export default async function LibraryPage({
   searchParams,
@@ -10,11 +9,10 @@ export default async function LibraryPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const rawSearchParams = await searchParams;
-  const parsed = librarySearchParamsSchema.safeParse(rawSearchParams);
-  if (!parsed.success) notFound();
+  const parsed = parseLibrarySearchParams(rawSearchParams);
 
   const [results, tags] = await Promise.all([
-    getLibraryItems(parsed.data),
+    getLibraryItems(parsed),
     getTagList(),
   ]);
 
