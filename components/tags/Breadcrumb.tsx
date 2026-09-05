@@ -78,5 +78,10 @@ export function Breadcrumb({
 }
 
 function Separator() {
-  return <ChevronRightIcon aria-hidden="true" className="size-3.5 shrink-0" />;
+  return (
+    <ChevronRightIcon
+      aria-hidden="true"
+      className="size-3.5 shrink-0 text-primary"
+    />
+  );
 }
