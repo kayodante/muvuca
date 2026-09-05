@@ -50,13 +50,16 @@ export function SiteIdentity({
 
   if (faviconSrc && !broken) {
     return (
-      <img
-        src={faviconSrc}
-        alt=""
-        aria-hidden="true"
-        className="size-4 shrink-0 rounded-[2px]"
-        onError={() => setBroken(true)}
-      />
+      <>
+        {/* eslint-disable-next-line @next/next/no-img-element -- favicon is small, remote-origin derived content and does not benefit from Next image optimization */}
+        <img
+          src={faviconSrc}
+          alt=""
+          aria-hidden="true"
+          className="size-4 shrink-0 rounded-[2px]"
+          onError={() => setBroken(true)}
+        />
+      </>
     );
   }
 

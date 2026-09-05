@@ -23,6 +23,12 @@ const eslintConfig = defineConfig([
     "supabase/.branches/**",
     "supabase/.temp/**",
     ".worktrees/**",
+    ".agent/**",
+    ".agents/**",
+    ".claude/**",
+    ".codex/**",
+    ".cursor/**",
+    ".gemini/**",
   ]),
 ]);
 

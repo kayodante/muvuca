@@ -19,6 +19,7 @@ export default defineConfig({
       "node_modules/**",
       ".next/**",
       ".worktrees/**",
+      ".claude/worktrees/**",
       "e2e/**",
       "supabase/**",
     ],

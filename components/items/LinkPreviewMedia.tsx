@@ -50,19 +50,22 @@ export function LinkPreviewMedia({
 
   if (!broken && preview?.status === "ready" && preview.thumbnailHash) {
     return (
-      <div className="aspect-[365/172] w-full overflow-hidden border-b border-border">
-        <img
-          src={previewImageSrc(itemId, "thumb", preview.thumbnailHash)}
-          alt=""
-          aria-hidden="true"
-          width={640}
-          height={360}
-          loading="lazy"
-          decoding="async"
-          className="h-full w-full object-cover"
-          onError={() => setBroken(true)}
-        />
-      </div>
+      <>
+        <div className="aspect-[365/172] w-full overflow-hidden border-b border-border">
+          {/* eslint-disable-next-line @next/next/no-img-element -- image is already processed and served from same-origin */}
+          <img
+            src={previewImageSrc(itemId, "thumb", preview.thumbnailHash)}
+            alt=""
+            aria-hidden="true"
+            width={640}
+            height={360}
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover"
+            onError={() => setBroken(true)}
+          />
+        </div>
+      </>
     );
   }
 
