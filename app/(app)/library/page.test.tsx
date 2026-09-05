@@ -1,16 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const {
-  getTagListMock,
-  getLibraryItemsMock,
-  notFoundMock,
-} = vi.hoisted(() => ({
-  getTagListMock: vi.fn(),
-  getLibraryItemsMock: vi.fn(),
-  notFoundMock: vi.fn().mockImplementation(() => {
-    throw new Error("NEXT_NOT_FOUND");
+const { getTagListMock, getLibraryItemsMock, notFoundMock } = vi.hoisted(
+  () => ({
+    getTagListMock: vi.fn(),
+    getLibraryItemsMock: vi.fn(),
+    notFoundMock: vi.fn().mockImplementation(() => {
+      throw new Error("NEXT_NOT_FOUND");
+    }),
   }),
-}));
+);
 
 vi.mock("next/navigation", () => ({
   notFound: notFoundMock,
