@@ -54,6 +54,17 @@ const tags: FlatTag[] = [
   },
 ];
 
+const tagsWithGrandchild: FlatTag[] = [
+  ...tags,
+  {
+    id: "react",
+    parentId: "frontend",
+    name: "React",
+    colorToken: "lime",
+    description: null,
+  },
+];
+
 function setInputValue(input: HTMLInputElement, value: string) {
   const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
     window.HTMLInputElement.prototype,
@@ -101,5 +112,27 @@ describe("TagNavigation", () => {
     expect(dom.textContent).toContain(
       "Nenhuma tag encontrada para “inexistente”.",
     );
+  });
+
+  it("renderiza uma guia por nível de ancestral, e nenhuma na raiz", async () => {
+    const dom = await renderTagNavigation(tagsWithGrandchild);
+
+    const rootLink = dom.querySelector('a[href="/tags/design"]');
+    const depth1Link = dom.querySelector('a[href="/tags/frontend"]');
+    const depth2Link = dom.querySelector('a[href="/tags/react"]');
+
+    // Each row's guides live in its own flex container, alongside its
+    // chevron and link — the nested <ul> of children sits outside that
+    // container, so counting within the link's parent never picks up a
+    // descendant row's guides.
+    expect(rootLink?.parentElement?.querySelectorAll(".bg-border").length).toBe(
+      0,
+    );
+    expect(
+      depth1Link?.parentElement?.querySelectorAll(".bg-border").length,
+    ).toBe(1);
+    expect(
+      depth2Link?.parentElement?.querySelectorAll(".bg-border").length,
+    ).toBe(2);
   });
 });

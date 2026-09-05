@@ -7,7 +7,6 @@ import { ChevronRightIcon, SearchIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { swatchClassFor } from "@/lib/tags/colors";
-import { indentClassFor } from "@/lib/tags/indent";
 import {
   buildTagTree,
   filterTagTree,
@@ -85,10 +84,23 @@ function TagNavigationRow({ node, depth }: { node: TagNode; depth: number }) {
       <div
         className={cn(
           "flex min-w-0 items-center rounded-md pr-1 focus-within:bg-secondary/60 hover:bg-secondary/60",
-          indentClassFor(depth),
           active && "bg-secondary",
         )}
       >
+        {/* One 28px guide column per ancestor level, each with a 1px line
+            centered on where that ancestor's chevron sits. The item's own
+            chevron slot never gets a guide. Decorative and out of the tab
+            order; the row's hover/active highlight still covers these
+            columns because they live inside the same flex container. */}
+        {Array.from({ length: depth }, (_, index) => (
+          <span
+            key={index}
+            aria-hidden="true"
+            className="flex w-7 shrink-0 justify-center self-stretch"
+          >
+            <span className="w-px self-stretch bg-border" />
+          </span>
+        ))}
         {hasChildren ? (
           <button
             type="button"
