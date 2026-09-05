@@ -114,6 +114,29 @@ describe("TagNavigation", () => {
     );
   });
 
+  it("filtrar com um ramo recolhido ainda mostra o descendente que combina", async () => {
+    const dom = await renderTagNavigation(tags);
+
+    const toggle = dom.querySelector(
+      'button[aria-label="Recolher Dev"]',
+    ) as HTMLButtonElement;
+    expect(toggle).not.toBeNull();
+    await act(async () => {
+      toggle.click();
+    });
+
+    const input = dom.querySelector('input[type="search"]') as HTMLInputElement;
+    await act(async () => {
+      setInputValue(input, "front");
+    });
+
+    expect(tagLinks(dom)).toEqual(["Dev", "Frontend"]);
+    const subtree = dom
+      .querySelector('a[href="/tags/frontend"]')
+      ?.closest("ul");
+    expect(subtree?.hasAttribute("inert")).toBe(false);
+  });
+
   it("renderiza uma guia por nível de ancestral, e nenhuma na raiz", async () => {
     const dom = await renderTagNavigation(tagsWithGrandchild);
 
