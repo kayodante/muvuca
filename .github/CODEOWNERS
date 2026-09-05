@@ -1,0 +1,12 @@
+# Default owner for the repository.
+* @kayodante
+
+# Sensitive and project-governance areas.
+.github/ @kayodante
+supabase/ @kayodante
+lib/security/ @kayodante
+lib/auth/ @kayodante
+lib/metadata/ @kayodante
+SECURITY.md @kayodante
+CONTRIBUTING.md @kayodante
+CODE_OF_CONDUCT.md @kayodante

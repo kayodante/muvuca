@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Reportar vulnerabilidade de segurança
+    url: https://github.com/kayodante/muvuca/security/advisories/new
+    about: Não publique vulnerabilidades em issues. Use o canal privado descrito em SECURITY.md.

@@ -1,0 +1,64 @@
+name: Sugerir feature
+description: Proponha uma melhoria alinhada ao escopo do Muvuca.
+title: "[Feature] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Antes de propor, consulte o escopo em `CONTRIBUTING.md`.
+        O Muvuca é deliberadamente pequeno e prioriza uma biblioteca pessoal, single-user e segura.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema ou necessidade
+      description: Qual problema real esta proposta resolve?
+      placeholder: "Hoje, quando ..., preciso ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Solução proposta
+      description: Descreva o comportamento desejado, sem precisar definir a implementação.
+    validations:
+      required: true
+
+  - type: textarea
+    id: value
+    attributes:
+      label: Benefício para o Muvuca
+      description: Como isso melhora a experiência ou a manutenção do projeto?
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Relação com o escopo atual
+      description: Explique como a proposta se encaixa no produto single-user e nas restrições descritas em CONTRIBUTING.md.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+      description: Há alguma solução mais simples, workaround ou abordagem que você já considerou?
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto adicional
+      description: Adicione referências, screenshots, fluxos ou exemplos, se ajudarem.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: Li o escopo do projeto em `CONTRIBUTING.md`.
+          required: true
+        - label: Procurei por issues existentes e não encontrei uma proposta equivalente.
+          required: true

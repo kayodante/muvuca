@@ -1,0 +1,97 @@
+name: Relatar bug
+description: Informe um problema reproduzível no Muvuca.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por ajudar a melhorar o Muvuca.
+
+        **Problemas de segurança não devem ser publicados aqui.** Use o canal privado indicado em `SECURITY.md`.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Área afetada
+      description: Onde o problema acontece principalmente?
+      options:
+        - Interface / acessibilidade
+        - Autenticação
+        - Itens
+        - Tags
+        - Busca
+        - Importação de favoritos
+        - Preview de links / metadata
+        - Banco de dados / RLS
+        - Build / CI / deploy
+        - Outro
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Descrição
+      description: Explique de forma objetiva o que está acontecendo.
+      placeholder: "Ao fazer ..., o Muvuca ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Passos para reproduzir
+      description: Liste o menor conjunto de passos que reproduz o problema.
+      placeholder: |
+        1. Acesse ...
+        2. Clique em ...
+        3. Informe ...
+        4. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamento esperado
+      description: O que deveria acontecer?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportamento atual
+      description: O que acontece no lugar?
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Versão / commit
+      description: Informe a branch, tag ou SHA, se souber.
+      placeholder: "main @ abc1234"
+
+  - type: input
+    id: environment
+    attributes:
+      label: Ambiente
+      description: Sistema operacional, navegador e versão do Node.js, quando relevante.
+      placeholder: "Windows 11, Chrome 152, Node.js 24"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs ou evidências
+      description: Cole logs relevantes ou arraste screenshots. Remova tokens, chaves, emails e outros dados sensíveis.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: Procurei por issues existentes e não encontrei um relato equivalente.
+          required: true
+        - label: Removi segredos e dados pessoais dos logs e evidências.
+          required: true

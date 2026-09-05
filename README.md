@@ -1,5 +1,8 @@
 # Muvuca
 
+[![CI](https://shieldcn.dev/github/ci/kayodante/muvuca.svg)](https://github.com/kayodante/muvuca/actions/workflows/ci.yml)
+[![License](https://shieldcn.dev/github/license/kayodante/muvuca.svg)](./LICENSE)
+
 > Biblioteca pessoal de links, prompts de IA e snippets de código, organizada
 > por tags hierárquicas com rollup automático e busca instantânea.
 
