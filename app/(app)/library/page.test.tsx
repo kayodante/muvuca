@@ -42,6 +42,15 @@ describe("LibraryPage", () => {
   });
 
   it("renderiza a biblioteca com search params válidos", async () => {
+    const mockItems = [{ id: "item-1" }];
+    const mockTags = [{ id: "tag-1" }];
+    getTagListMock.mockResolvedValue(mockTags);
+    getLibraryItemsMock.mockResolvedValue({
+      items: mockItems,
+      nextCursor: "next-cursor-token",
+      prevCursor: "prev-cursor-token",
+    });
+
     const element = await LibraryPage({
       searchParams: Promise.resolve({ q: "nextjs", sort: "title_asc" }),
     });
@@ -52,7 +61,12 @@ describe("LibraryPage", () => {
       sort: "title_asc",
     });
     expect(getTagListMock).toHaveBeenCalled();
-    expect(element).toBeDefined();
+    expect(element.props).toEqual({
+      items: mockItems,
+      tags: mockTags,
+      nextCursor: "next-cursor-token",
+      prevCursor: "prev-cursor-token",
+    });
   });
 
   it("não chama notFound e degrada suavemente quando search params forem inválidos ou desconhecidos", async () => {

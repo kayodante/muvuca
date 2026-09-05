@@ -14,97 +14,88 @@ export type SearchSort = (typeof SEARCH_SORTS)[number];
 
 export const searchSortSchema = z.enum(SEARCH_SORTS);
 
-const searchQuerySchema = z.string().trim().min(1).max(240).optional();
+const SEARCH_QUERY_MAX_LENGTH = 240;
 
-export const librarySearchParamsSchema = z
-  .object({
-    q: searchQuerySchema,
-    tag: z.uuid().optional(),
-    type: itemTypeSchema.optional(),
-    sort: searchSortSchema.optional(),
-    cursor: z.string().min(1).max(512).optional(),
-    create: z.literal("1").optional(),
-    import: z.literal("1").optional(),
-  })
-  .strip();
+const searchQuerySchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(SEARCH_QUERY_MAX_LENGTH)
+  .optional();
+
+const libraryTagSchema = z.uuid();
+const libraryCursorSchema = z.string().min(1).max(512);
+
+const libraryFields = {
+  q: searchQuerySchema,
+  tag: libraryTagSchema.optional(),
+  type: itemTypeSchema.optional(),
+  sort: searchSortSchema.optional(),
+  cursor: libraryCursorSchema.optional(),
+  create: z.literal("1").optional(),
+  import: z.literal("1").optional(),
+};
+
+export const librarySearchParamsSchema = z.object(libraryFields).strip();
 
 export type LibrarySearchParams = z.infer<typeof librarySearchParamsSchema>;
 
 /**
- * Normaliza o valor de um search param caso venha como array do Next.js ou tipo inesperado.
+ * Same rule as `q` above, but truncates overlong input by code point
+ * (surrogate-pair safe) instead of rejecting it, so a long query degrades
+ * instead of failing validation (AAA-79).
  */
-function normalizeParamValue(value: unknown): string | undefined {
-  if (typeof value === "string") return value;
-  if (Array.isArray(value) && typeof value[0] === "string") return value[0];
-  return undefined;
-}
+const degradedQSchema = z
+  .string()
+  .trim()
+  .transform((value) => [...value].slice(0, SEARCH_QUERY_MAX_LENGTH).join(""))
+  .pipe(z.string().min(1))
+  .optional()
+  .catch(undefined);
 
 /**
- * Parse com degradação suave (graceful degradation) para search params da biblioteca.
- * - Desempacota arrays de parâmetros de query string (pega o primeiro elemento).
- * - Descarta parâmetros desconhecidos silenciosamente (strip).
- * - Faz fallback para undefined / default em caso de valores inválidos (sort inválido, type inválido, tag inválida).
- * - Garante que search params nunca resultem em 404 indevido na biblioteca (AAA-79).
+ * Same fields as `librarySearchParamsSchema`, built from the same
+ * `libraryFields` definitions, but each invalid value degrades to
+ * `undefined` instead of failing the whole parse (AAA-79): an unknown sort,
+ * a non-UUID tag, an overlong cursor, etc. no longer 404 the page, they just
+ * fall back to "no filter".
+ */
+const degradedLibrarySearchParamsSchema = z.object({
+  q: degradedQSchema,
+  tag: libraryFields.tag.catch(undefined),
+  type: libraryFields.type.catch(undefined),
+  sort: libraryFields.sort.catch(undefined),
+  cursor: libraryFields.cursor.catch(undefined),
+  create: libraryFields.create.catch(undefined),
+  import: libraryFields.import.catch(undefined),
+});
+
+/**
+ * Parses library search params with graceful degradation (AAA-79): unknown
+ * keys are stripped, Next.js array-valued params are unwrapped to their
+ * first element, and any invalid value falls back to `undefined` instead of
+ * failing validation, so a bad query string never produces a 404.
  */
 export function parseLibrarySearchParams(raw: unknown): LibrarySearchParams {
   if (!raw || typeof raw !== "object") {
     return {};
   }
 
-  const rawObj = raw as Record<string, unknown>;
+  const unwrapped: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    unwrapped[key] = Array.isArray(value) ? value[0] : value;
+  }
+
+  const parsed = degradedLibrarySearchParamsSchema.parse(unwrapped);
+
   const result: LibrarySearchParams = {};
-
-  // q: text search (trim, max 240 chars)
-  const rawQ = normalizeParamValue(rawObj.q);
-  if (rawQ) {
-    const trimmed = rawQ.trim();
-    if (trimmed.length > 0) {
-      result.q = trimmed.slice(0, 240);
-    }
-  }
-
-  // tag: uuid optional
-  const rawTag = normalizeParamValue(rawObj.tag);
-  if (rawTag && z.uuid().safeParse(rawTag).success) {
-    result.tag = rawTag;
-  }
-
-  // type: itemTypeSchema optional ('link' | 'prompt')
-  const rawType = normalizeParamValue(rawObj.type);
-  if (rawType) {
-    const parsedType = itemTypeSchema.safeParse(rawType);
-    if (parsedType.success) {
-      result.type = parsedType.data;
-    }
-  }
-
-  // sort: searchSortSchema optional ('newest' | 'oldest' | 'title_asc' | 'title_desc' | 'updated')
-  const rawSort = normalizeParamValue(rawObj.sort);
-  if (rawSort) {
-    const parsedSort = searchSortSchema.safeParse(rawSort);
-    if (parsedSort.success) {
-      result.sort = parsedSort.data;
-    }
-  }
-
-  // cursor: string optional (1..512 chars)
-  const rawCursor = normalizeParamValue(rawObj.cursor);
-  if (rawCursor && rawCursor.length >= 1 && rawCursor.length <= 512) {
-    result.cursor = rawCursor;
-  }
-
-  // create: literal '1' optional
-  const rawCreate = normalizeParamValue(rawObj.create);
-  if (rawCreate === "1") {
-    result.create = "1";
-  }
-
-  // import: literal '1' optional
-  const rawImport = normalizeParamValue(rawObj.import);
-  if (rawImport === "1") {
-    result.import = "1";
-  }
-
+  if (parsed.q !== undefined) result.q = parsed.q;
+  if (parsed.tag !== undefined) result.tag = parsed.tag;
+  if (parsed.type !== undefined) result.type = parsed.type;
+  if (parsed.sort !== undefined) result.sort = parsed.sort;
+  if (parsed.cursor !== undefined) result.cursor = parsed.cursor;
+  if (parsed.create !== undefined) result.create = parsed.create;
+  if (parsed.import !== undefined) result.import = parsed.import;
   return result;
 }
 

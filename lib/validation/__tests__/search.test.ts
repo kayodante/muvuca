@@ -217,6 +217,11 @@ describe("parseLibrarySearchParams graceful degradation", () => {
     expect(parseLibrarySearchParams({ q: "     " })).toEqual({});
   });
 
+  it("degrada cursor fora dos limites de tamanho para undefined", () => {
+    expect(parseLibrarySearchParams({ cursor: "" })).toEqual({});
+    expect(parseLibrarySearchParams({ cursor: "x".repeat(513) })).toEqual({});
+  });
+
   it("degrada valores inválidos de create e import para undefined", () => {
     expect(parseLibrarySearchParams({ create: "true" })).toEqual({});
     expect(parseLibrarySearchParams({ create: "yes" })).toEqual({});
