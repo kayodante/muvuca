@@ -122,8 +122,11 @@ function TagNavigationRow({
           <button
             type="button"
             aria-expanded={open}
+            // Named after `open`, not `expanded`: while a query forces a
+            // collapsed branch open, a button labelled "Expandir" alongside
+            // `aria-expanded="true"` contradicts itself.
             aria-label={
-              expanded ? `Recolher ${node.name}` : `Expandir ${node.name}`
+              open ? `Recolher ${node.name}` : `Expandir ${node.name}`
             }
             onClick={() => setExpanded((value) => !value)}
             className="flex size-7 shrink-0 items-center justify-center rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
