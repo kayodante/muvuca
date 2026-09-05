@@ -87,7 +87,7 @@ export function LibrarySearch() {
   }
 
   return (
-    <div className="relative max-w-md flex-1" aria-busy={isPending}>
+    <div className="relative w-full max-w-lg" aria-busy={isPending}>
       <SearchIcon
         aria-hidden="true"
         className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
@@ -99,9 +99,9 @@ export function LibrarySearch() {
         maxLength={240}
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        placeholder="Pesquisar biblioteca..."
-        aria-label="Pesquisar biblioteca"
-        className="pr-14 pl-9 [&::-webkit-search-cancel-button]:hidden"
+        placeholder="Buscar na biblioteca"
+        aria-label="Buscar na biblioteca"
+        className="bg-background pr-14 pl-9 dark:bg-background [&::-webkit-search-cancel-button]:hidden"
       />
       {query ? (
         <button

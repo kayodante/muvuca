@@ -1,5 +1,8 @@
 /**
- * Depth indentation for every tag tree (sidebar, manager, import preview).
+ * Depth indentation for the tag manager tree, the tag select field, and the
+ * import bookmarks preview tree. The sidebar's `TagNavigation` renders its
+ * own 28px guide columns instead, since its indent has to line up with the
+ * center of each ancestor's chevron column rather than a flat padding step.
  *
  * A lookup table rather than a computed inline style: production CSP keeps
  * `style-src-attr` exempt only for the runtime positioning third-party
@@ -8,9 +11,9 @@
  * Tailwind only emits classes it can find literally in the source, so the
  * six variants are written out.
  *
- * One 16px step for all three trees, short and consistent; the tag
- * hierarchy is capped at 6 levels, so six entries cover every valid depth
- * and deeper input clamps to the last one.
+ * One 16px step, short and consistent; the tag hierarchy is capped at 6
+ * levels, so six entries cover every valid depth and deeper input clamps to
+ * the last one.
  */
 const TREE_INDENT = [
   "pl-0",

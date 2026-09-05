@@ -22,15 +22,19 @@ export function Topbar({
 }) {
   return (
     // Opaque, not a blurred scrim: glass is not part of this design
-    // language, and at 95% opacity the blur was paying for an effect nobody
-    // could see.
-    <header className="sticky top-0 z-30 flex min-h-[var(--layout-topbar-min-height)] items-center gap-3 border-b border-border bg-background px-4 py-3 sm:px-6 lg:px-8">
-      <div className="md:hidden">{mobileNav}</div>
-      <div className="hidden md:block">{sidebarToggle}</div>
+    // language, and the surface tone (not the canvas tone) is what lifts
+    // the header off the page.
+    <header className="sticky top-0 z-30 flex min-h-[var(--layout-topbar-min-height)] items-center gap-3 border-b border-border bg-card px-4 py-3 sm:px-6 lg:px-8">
+      <div className="flex items-center gap-3">
+        <div className="md:hidden">{mobileNav}</div>
+        <div className="hidden md:block">{sidebarToggle}</div>
+      </div>
 
-      <LibrarySearch />
+      <div className="flex flex-1 justify-center">
+        <LibrarySearch />
+      </div>
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="flex items-center gap-2">
         <Button
           size="sm"
           nativeButton={false}
