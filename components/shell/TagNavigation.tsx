@@ -3,37 +3,73 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRightIcon } from "lucide-react";
+import { ChevronRightIcon, SearchIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { swatchClassFor } from "@/lib/tags/colors";
 import { indentClassFor } from "@/lib/tags/indent";
-import { buildTagTree, type FlatTag, type TagNode } from "@/lib/tags/tree";
+import {
+  buildTagTree,
+  filterTagTree,
+  type FlatTag,
+  type TagNode,
+} from "@/lib/tags/tree";
+import { Input } from "@/components/ui/input";
 
 /** Compact, navigation-only tag tree for the persistent app shell. */
 export function TagNavigation({ tags }: { tags: FlatTag[] }) {
   const nodes = buildTagTree(tags);
+  const [query, setQuery] = useState("");
 
   if (nodes.length === 0) return null;
+
+  const visibleNodes = filterTagTree(nodes, query);
 
   return (
     <section
       aria-labelledby="sidebar-tags-heading"
       className="flex min-h-0 flex-1 flex-col"
     >
-      <h2
-        id="sidebar-tags-heading"
-        // Sans, not mono: this is a navigation section label, and Geist Mono
-        // is reserved for URLs, counters and timestamps.
-        className="text-label-md mb-2 px-2 tracking-wide text-muted-foreground uppercase"
-      >
-        Tags
-      </h2>
-      <ul className="min-h-0 flex-1 overflow-y-auto">
-        {nodes.map((node) => (
-          <TagNavigationRow key={node.id} node={node} depth={0} />
-        ))}
-      </ul>
+      <div className="shrink-0">
+        <h2
+          id="sidebar-tags-heading"
+          // Sans, not mono: this is a navigation section label, and Geist
+          // Mono is reserved for URLs, counters and timestamps.
+          className="text-label-md mb-2 px-2 tracking-wide text-muted-foreground uppercase"
+        >
+          Tags
+        </h2>
+        <div className="relative mb-2">
+          <SearchIcon
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+          />
+          <Input
+            type="search"
+            dir="auto"
+            maxLength={80}
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Filtrar tags"
+            aria-label="Filtrar tags por nome"
+            className="pl-9 [&::-webkit-search-cancel-button]:hidden"
+          />
+        </div>
+      </div>
+      {visibleNodes.length > 0 ? (
+        <ul className="min-h-0 flex-1 overflow-y-auto">
+          {visibleNodes.map((node) => (
+            <TagNavigationRow key={node.id} node={node} depth={0} />
+          ))}
+        </ul>
+      ) : (
+        <p
+          dir="auto"
+          className="text-body-sm py-2 [overflow-wrap:anywhere] text-muted-foreground"
+        >
+          Nenhuma tag encontrada para “{query}”.
+        </p>
+      )}
     </section>
   );
 }
