@@ -50,8 +50,8 @@ export function TagNavigation({ tags }: { tags: FlatTag[] }) {
             maxLength={80}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Filtrar tags"
-            aria-label="Filtrar tags por nome"
+            placeholder="Buscar tags"
+            aria-label="Buscar tags por nome"
             className="pl-9 [&::-webkit-search-cancel-button]:hidden"
           />
         </div>
