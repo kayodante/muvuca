@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   encodeSearchCursor,
   librarySearchParamsSchema,
+  parseLibrarySearchParams,
   parseSearchCursor,
 } from "@/lib/validation/search";
 
@@ -121,5 +122,105 @@ describe("library search validation", () => {
 
     const defaultNext = searchCursorForItem(item, "updated");
     expect(parseSearchCursor(defaultNext, "updated")?.dir).toBe("next");
+  });
+});
+
+describe("parseLibrarySearchParams graceful degradation", () => {
+  it("retorna objeto vazio para entradas nulas, indefinidas ou não-objeto", () => {
+    expect(parseLibrarySearchParams(undefined)).toEqual({});
+    expect(parseLibrarySearchParams(null)).toEqual({});
+    expect(parseLibrarySearchParams("string")).toEqual({});
+    expect(parseLibrarySearchParams(123)).toEqual({});
+  });
+
+  it("aceita parâmetros válidos e normaliza query com trim", () => {
+    const result = parseLibrarySearchParams({
+      q: "  nextjs docs  ",
+      tag: id,
+      type: "link",
+      sort: "title_asc",
+      cursor: "valid-cursor-token",
+      create: "1",
+      import: "1",
+    });
+
+    expect(result).toEqual({
+      q: "nextjs docs",
+      tag: id,
+      type: "link",
+      sort: "title_asc",
+      cursor: "valid-cursor-token",
+      create: "1",
+      import: "1",
+    });
+  });
+
+  it("descarta parâmetros desconhecidos sem falhar (strip)", () => {
+    const result = parseLibrarySearchParams({
+      q: "react",
+      utm_source: "newsletter",
+      utm_medium: "email",
+      ref: "twitter",
+      fbclid: "987654",
+      custom_param: "value",
+    });
+
+    expect(result).toEqual({
+      q: "react",
+    });
+    expect((result as Record<string, unknown>).utm_source).toBeUndefined();
+    expect((result as Record<string, unknown>).custom_param).toBeUndefined();
+  });
+
+  it("degrada graciosamente valores inválidos de sort para undefined", () => {
+    expect(parseLibrarySearchParams({ sort: "alpha" })).toEqual({});
+    expect(parseLibrarySearchParams({ sort: "invalid_sort" })).toEqual({});
+    expect(parseLibrarySearchParams({ sort: 123 })).toEqual({});
+  });
+
+  it("degrada graciosamente valores inválidos de type para undefined", () => {
+    expect(parseLibrarySearchParams({ type: "video" })).toEqual({});
+    expect(parseLibrarySearchParams({ type: "audio" })).toEqual({});
+    expect(parseLibrarySearchParams({ type: "invalid" })).toEqual({});
+  });
+
+  it("degrada graciosamente tag que não seja UUID para undefined", () => {
+    expect(parseLibrarySearchParams({ tag: "not-a-uuid" })).toEqual({});
+    expect(parseLibrarySearchParams({ tag: "123" })).toEqual({});
+  });
+
+  it("desempacota arrays de query do Next.js pegando o primeiro valor", () => {
+    const result = parseLibrarySearchParams({
+      sort: ["title_desc", "newest"],
+      q: ["pesquisa", "outra"],
+      type: ["prompt", "link"],
+      tag: [id, "22222222-2222-4222-8222-222222222222"],
+    });
+
+    expect(result).toEqual({
+      sort: "title_desc",
+      q: "pesquisa",
+      type: "prompt",
+      tag: id,
+    });
+  });
+
+  it("trunca queries de busca com mais de 240 caracteres", () => {
+    const longQuery = "a".repeat(300);
+    const result = parseLibrarySearchParams({ q: longQuery });
+    expect(result.q).toHaveLength(240);
+    expect(result.q).toBe("a".repeat(240));
+  });
+
+  it("ignora query vazia ou apenas com espaços em branco", () => {
+    expect(parseLibrarySearchParams({ q: "" })).toEqual({});
+    expect(parseLibrarySearchParams({ q: "     " })).toEqual({});
+  });
+
+  it("degrada valores inválidos de create e import para undefined", () => {
+    expect(parseLibrarySearchParams({ create: "true" })).toEqual({});
+    expect(parseLibrarySearchParams({ create: "yes" })).toEqual({});
+    expect(parseLibrarySearchParams({ import: "0" })).toEqual({});
+    expect(parseLibrarySearchParams({ import: "false" })).toEqual({});
   });
 });
