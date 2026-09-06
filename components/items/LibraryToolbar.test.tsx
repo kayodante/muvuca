@@ -167,9 +167,7 @@ describe("LibraryToolbar", () => {
       // Simula o pai propagando isDraining=true e depois false, como o
       // usePreviewDrain faz ao concluir a rodada disparada pelo clique.
       await act(async () => {
-        root?.render(
-          <LibraryToolbar {...props} isRefreshingPreviews={true} />,
-        );
+        root?.render(<LibraryToolbar {...props} isRefreshingPreviews={true} />);
       });
       await act(async () => {
         root?.render(

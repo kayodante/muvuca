@@ -151,9 +151,8 @@ export function LibraryToolbar({
   onRefreshPreviews,
   onFilterChange,
 }: LibraryToolbarProps) {
-  const { done: isDone, markRequested } = useRefreshDoneFlash(
-    isRefreshingPreviews,
-  );
+  const { done: isDone, markRequested } =
+    useRefreshDoneFlash(isRefreshingPreviews);
   const refreshState = isRefreshingPreviews
     ? "refreshing"
     : isDone
