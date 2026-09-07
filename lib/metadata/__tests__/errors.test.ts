@@ -34,6 +34,7 @@ describe("isPermanent", () => {
     "blocked_host",
     "blocked_private_ip",
     "http_gone",
+    "http_not_found",
     "invalid_content_type",
     "image_rejected",
     "decode_failed",

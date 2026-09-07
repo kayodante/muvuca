@@ -19,6 +19,7 @@ export const PREVIEW_ERROR_CODES = [
   "timeout",
   "http_error",
   "http_gone",
+  "http_not_found",
   "invalid_content_type",
   "too_large",
   "no_image_found",
@@ -61,6 +62,7 @@ export function isPermanent(code: PreviewErrorCode): boolean {
     case "blocked_host":
     case "blocked_private_ip":
     case "http_gone":
+    case "http_not_found":
     case "invalid_content_type":
     case "image_rejected":
     case "decode_failed":

@@ -66,12 +66,22 @@ const HTML_MAX_BYTES = 512 * 1024;
 const HTML_ACCEPT_CONTENT_TYPES = ["text/html", "application/xhtml+xml"];
 
 const IMAGE_MAX_BYTES = 3 * 1024 * 1024;
-const IMAGE_ACCEPT_CONTENT_TYPES = [
+// `application/octet-stream`/`binary/octet-stream` are accepted alongside
+// the real image MIME types: some hosts (e.g. GitHub's
+// repository-images.githubusercontent.com, serving og:image for repo
+// cards) mislabel a valid image with a generic binary Content-Type. This
+// does not weaken the security gate -- `sniffImageFormat` (image.ts)
+// decides purely from magic bytes regardless of what Content-Type said,
+// and still rejects SVG/ICO/anything else unrecognized. Exported for
+// `__tests__` to assert against directly.
+export const IMAGE_ACCEPT_CONTENT_TYPES = [
   "image/jpeg",
   "image/png",
   "image/webp",
   "image/gif",
   "image/avif",
+  "application/octet-stream",
+  "binary/octet-stream",
 ];
 
 /** Any exception from the ssrf/fetch layer is already a `PreviewError`; anything else is an unexpected bug. */
@@ -90,6 +100,10 @@ export async function enrichOne(
     const htmlResponse = await deps.safeRequest(initialUrl, {
       maxBytes: HTML_MAX_BYTES,
       acceptContentTypes: HTML_ACCEPT_CONTENT_TYPES,
+      // Only the `<head>` matters (extractHeadMetadata already bounds
+      // itself to the same 512 KiB), so a large HTML document should
+      // degrade to "read what we could" instead of failing the whole job.
+      truncateOnOverflow: true,
     });
 
     const html = htmlResponse.body.toString("utf-8");
