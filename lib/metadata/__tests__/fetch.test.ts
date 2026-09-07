@@ -239,10 +239,21 @@ describe("safeRequest", () => {
     });
   });
 
-  it("rejects with http_error for a 404", async () => {
+  it("rejects with http_not_found for a 404", async () => {
     const { url } = await listen((_req, res) => {
       res.writeHead(404, { "Content-Type": "text/html" });
       res.end("not found");
+    });
+
+    await expect(safeRequest(url, baseOptions)).rejects.toMatchObject({
+      code: "http_not_found",
+    });
+  });
+
+  it("rejects with http_error (not http_not_found) for a 403 -- a bot-blocking site is still alive", async () => {
+    const { url } = await listen((_req, res) => {
+      res.writeHead(403, { "Content-Type": "text/html" });
+      res.end("forbidden");
     });
 
     await expect(safeRequest(url, baseOptions)).rejects.toMatchObject({

@@ -315,6 +315,12 @@ function performHttpRequest(
         return;
       }
 
+      if (status === 404) {
+        res.resume();
+        settleReject(new PreviewError("http_not_found"));
+        return;
+      }
+
       if (status < 200 || status >= 300) {
         res.resume();
         settleReject(new PreviewError("http_error"));

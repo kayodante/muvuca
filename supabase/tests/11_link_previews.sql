@@ -16,7 +16,7 @@
 
 begin;
 
-select plan(65);
+select plan(69);
 
 select ok(
   (select relforcerowsecurity from pg_class where oid = 'public.link_previews'::regclass),
@@ -478,6 +478,52 @@ select is(
   'an invalid_content_type failed preview is never reclaimed, even long overdue'
 );
 
+-- http_not_found (20260907000000_0027_http_not_found_permanent_error.sql):
+-- a 404 means the resource is confirmed gone -- unlike a generic
+-- http_error (which also covers a 403 from a bot-blocking but alive site,
+-- and must stay retryable). complete_preview_job must fail it on the first
+-- attempt and never reschedule it back to pending, same as the other
+-- permanent codes above.
+with new_http_not_found_item as (
+  insert into public.library_items (user_id, type, title, url, normalized_url)
+  values ((select auth.uid()), 'link', 'Http Not Found Item', 'https://a.example/http-not-found', 'https://a.example/http-not-found')
+  returning id
+)
+insert into fixture_ids select 'item_http_not_found', id from new_http_not_found_item;
+
+do $$
+begin
+  perform public.complete_preview_job(
+    (select id from fixture_ids where label = 'item_http_not_found'),
+    'failed'::public.preview_status,
+    'http_not_found'
+  );
+end;
+$$;
+
+select is(
+  (select status::text from public.link_previews where item_id = (select id from fixture_ids where label = 'item_http_not_found')),
+  'failed',
+  'http_not_found fails on the first attempt and is not rescheduled back to pending, matching isPermanent() on the TypeScript side'
+);
+
+select is(
+  (select attempts from public.link_previews where item_id = (select id from fixture_ids where label = 'item_http_not_found')),
+  1::smallint,
+  'http_not_found does not accumulate extra retry attempts'
+);
+
+update public.link_previews
+   set next_attempt_at = now() - interval '60 days'
+ where item_id = (select id from fixture_ids where label = 'item_http_not_found');
+
+select is(
+  (select count(*)::int from public.claim_preview_jobs(6)
+    where item_id = (select id from fixture_ids where label = 'item_http_not_found')),
+  0,
+  'an http_not_found failed preview is never reclaimed by claim_preview_jobs, even long overdue'
+);
+
 with new_transient_exhausted as (
   insert into public.library_items (user_id, type, title, url, normalized_url)
   values ((select auth.uid()), 'link', 'Transient Exhausted Item', 'https://a.example/transient-exhausted', 'https://a.example/transient-exhausted')
@@ -703,9 +749,9 @@ select is(
 );
 
 -- request_preview_reschedule_for_items must never touch a 'failed' row
--- whose error_code is one of the 7 permanent codes (same set as
+-- whose error_code is one of the 8 permanent codes (same set as
 -- is_preview_job_claimable() / isPermanent() in lib/metadata/errors.ts,
--- canonicalized by 20260819010000_0023_link_previews_permanent_error_parity.sql).
+-- canonicalized by 20260907000000_0027_http_not_found_permanent_error.sql).
 -- Batch-rescheduling any of these would silently retry a URL the fetcher
 -- has already determined can never succeed.
 do $$
@@ -715,7 +761,7 @@ declare
 begin
   foreach v_code in array array[
     'blocked_private_ip', 'blocked_scheme', 'blocked_host', 'http_gone',
-    'invalid_content_type', 'image_rejected', 'decode_failed'
+    'http_not_found', 'invalid_content_type', 'image_rejected', 'decode_failed'
   ]
   loop
     insert into public.library_items (user_id, type, title, url, normalized_url)
@@ -781,6 +827,23 @@ select ok(
      where item_id = (select id from fixture_ids where label = 'item_permanent_reschedule_http_gone')
   ),
   'request_preview_reschedule_for_items does not touch a failed row with permanent error_code http_gone'
+);
+
+-- http_not_found (20260907000000_0027_http_not_found_permanent_error.sql):
+-- a 404 means the resource itself is confirmed gone, unlike a generic
+-- http_error (which also covers a bot-blocking 403 from an alive site).
+-- Both stay permanent -- never rescheduled back to pending here, nor
+-- reclaimed/retried by claim_preview_jobs.
+select ok(
+  (select public.request_preview_reschedule_for_items(
+    array[(select id from fixture_ids where label = 'item_permanent_reschedule_http_not_found')]
+  ) = 0)
+  and (
+    select status = 'failed' and error_code = 'http_not_found' and attempts = 1::smallint
+      from public.link_previews
+     where item_id = (select id from fixture_ids where label = 'item_permanent_reschedule_http_not_found')
+  ),
+  'request_preview_reschedule_for_items does not touch a failed row with permanent error_code http_not_found'
 );
 
 select ok(

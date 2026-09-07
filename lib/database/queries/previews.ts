@@ -10,6 +10,7 @@ export type PreviewSummary = {
   faviconHash: string | null;
   remoteDescription: string | null;
   siteName: string | null;
+  errorCode: string | null;
 };
 
 /**
@@ -28,7 +29,7 @@ export async function getPreviewsForItems(
   const { data, error } = await supabase
     .from("link_previews")
     .select(
-      "item_id, status, thumbnail_hash, thumbnail_width, thumbnail_height, favicon_hash, remote_description, site_name",
+      "item_id, status, thumbnail_hash, thumbnail_width, thumbnail_height, favicon_hash, remote_description, site_name, error_code",
     )
     .in("item_id", itemIds);
 
@@ -54,6 +55,7 @@ export async function getPreviewsForItems(
       faviconHash: row.favicon_hash,
       remoteDescription: row.remote_description,
       siteName: row.site_name,
+      errorCode: row.error_code,
     });
   }
   return previews;
