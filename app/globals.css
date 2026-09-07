@@ -686,28 +686,10 @@ body {
     transform var(--modal-close-dur) var(--modal-ease),
     opacity var(--modal-close-dur) var(--modal-ease);
 }
-/* Base UI centers these popups with translate on the same transform property
-   used by the transition, so compose both operations explicitly. */
-.t-modal[data-slot="dialog-content"],
-.t-modal[data-slot="alert-dialog-content"] {
-  transform: translate(-50%, -50%) scale(var(--modal-scale));
-}
-.t-modal[data-slot="dialog-content"][data-open],
-.t-modal[data-slot="alert-dialog-content"][data-open] {
-  transform: translate(-50%, -50%) scale(1);
-}
-.t-modal[data-slot="dialog-content"][data-ending-style],
-.t-modal[data-slot="alert-dialog-content"][data-ending-style] {
-  transform: translate(-50%, -50%) scale(var(--modal-scale-close));
-}
 .t-modal[data-starting-style] {
   transform: scale(var(--modal-scale));
   opacity: 0;
   pointer-events: none;
-}
-.t-modal[data-slot="dialog-content"][data-starting-style],
-.t-modal[data-slot="alert-dialog-content"][data-starting-style] {
-  transform: translate(-50%, -50%) scale(var(--modal-scale));
 }
 
 .t-icon-swap {

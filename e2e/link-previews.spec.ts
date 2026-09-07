@@ -132,14 +132,10 @@ test("'Atualizar prévia' não quebra o card", async ({ page }) => {
     page.getByText("Atualização da prévia solicitada."),
   ).toBeVisible();
 
-  // Regression guard: refreshItemPreview() must
-  // revalidate /library so the card actually re-enters the pending state
-  // (skeleton) instead of the toast firing while the job silently sits
-  // queued until a hard reload. The skeleton's animation class carries a
-  // `motion-safe:` variant prefix (`motion-safe:animate-pulse`), so this
-  // has to be a substring attribute match, not a `.animate-pulse` class
-  // selector -- the literal class token never matches that alone.
-  await expect(card.locator('[class*="animate-pulse"]')).toBeVisible();
+  // Regression guard: refreshItemPreview() must revalidate /library so the
+  // card actually re-enters the pending state instead of the toast firing
+  // while the job silently sits queued until a hard reload.
+  await expect(card.locator('[data-state="loading"]')).toBeVisible();
 
   // The card is still intact -- title, domain, and open-link affordance
   // all still render after the manual refresh round-trip.
@@ -168,7 +164,7 @@ test("'Atualizar pré-visualizações' numa página sem pendência mostra o toas
   // Wait for the auto-drain to resolve the job to its permanent failed
   // state (skeleton gone) before touching the toolbar button, so the
   // subsequent click is provably against a page with nothing pending.
-  await expect(card.locator('[class*="animate-pulse"]')).toHaveCount(0, {
+  await expect(card.locator('[data-state="loading"]')).toHaveCount(0, {
     timeout: 10_000,
   });
   // Positive proof the job actually completed (not just "never enqueued"):
