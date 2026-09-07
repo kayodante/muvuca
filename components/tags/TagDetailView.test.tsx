@@ -2,17 +2,14 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { routerMock, searchParamsState, drainPreviewQueueMock } = vi.hoisted(
-  () => {
-    return {
-      // `useRouter()` is stable across renders in the App Router; a fresh
-      // object per call would re-fire every effect depending on it.
-      routerMock: { replace: vi.fn(), push: vi.fn(), refresh: vi.fn() },
-      searchParamsState: { current: new URLSearchParams() },
-      drainPreviewQueueMock: vi.fn(),
-    };
-  },
-);
+const { routerMock, searchParamsState } = vi.hoisted(() => {
+  return {
+    // `useRouter()` is stable across renders in the App Router; a fresh
+    // object per call would re-fire every effect depending on it.
+    routerMock: { replace: vi.fn(), push: vi.fn(), refresh: vi.fn() },
+    searchParamsState: { current: new URLSearchParams() },
+  };
+});
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/tags/11111111-1111-4111-8111-111111111111",
@@ -20,12 +17,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => searchParamsState.current,
 }));
 
-// TagDetailView renders ItemsPage, whose usePreviewDrain drains the link
-// items this page renders -- without this mock its effect would call the
-// real server action and hit `cookies() outside request scope` in this
-// non-request test env.
 vi.mock("@/lib/actions/previews", () => ({
-  drainPreviewQueue: drainPreviewQueueMock,
   refreshItemPreview: vi.fn(),
 }));
 
@@ -35,10 +27,21 @@ let root: Root | null = null;
 let container: HTMLDivElement | null = null;
 
 beforeEach(() => {
-  drainPreviewQueueMock.mockResolvedValue({
-    ok: true,
-    data: { processed: 0, ready: 0, failed: 0, remaining: 0 },
-  });
+  // TagDetailView renders ItemsPage, whose usePreviewDrain now reaches the
+  // drain queue via `fetch()` (a Route Handler, not a Server Action) --
+  // without stubbing it, the effect would attempt a real network call in
+  // this non-request test environment.
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        ok: true,
+        data: { processed: 0, ready: 0, failed: 0, remaining: 0 },
+      }),
+    } as Response),
+  );
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -49,6 +52,7 @@ afterEach(async () => {
   container?.remove();
   root = null;
   container = null;
+  vi.unstubAllGlobals();
   vi.clearAllMocks();
   searchParamsState.current = new URLSearchParams();
 });

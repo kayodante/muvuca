@@ -9,7 +9,6 @@ const {
   searchParamsState,
   routerMock,
   getItemDetailsMock,
-  drainPreviewQueueMock,
   reschedulePreviewsForItemsMock,
   refreshItemPreviewMock,
   notifyPreviewQueueChangedMock,
@@ -24,7 +23,6 @@ const {
     routerMock: { replace, push: vi.fn(), refresh },
     searchParamsState: { current: new URLSearchParams() },
     getItemDetailsMock: vi.fn(),
-    drainPreviewQueueMock: vi.fn(),
     reschedulePreviewsForItemsMock: vi.fn(),
     refreshItemPreviewMock: vi.fn(),
     notifyPreviewQueueChangedMock: vi.fn(),
@@ -50,7 +48,6 @@ vi.mock("@/lib/actions/items", () => ({
 }));
 
 vi.mock("@/lib/actions/previews", () => ({
-  drainPreviewQueue: drainPreviewQueueMock,
   reschedulePreviewsForItems: reschedulePreviewsForItemsMock,
   refreshItemPreview: refreshItemPreviewMock,
 }));
@@ -64,12 +61,28 @@ const { ItemsPage } = await import("@/components/items/ItemsPage");
 
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
+let fetchMock: ReturnType<typeof vi.fn>;
+
+/** `usePreviewDrain` now reaches the drain queue via `fetch()` (a Route
+ * Handler, not a Server Action -- see the hook's header comment). Every
+ * call here resolves the same "nothing to do" shape: scoped phase reports
+ * `remaining: 0` (moves the session to the global phase), and the global
+ * phase's own first round reports `processed: 0` (its own stop guard), so
+ * a default-mocked test session always settles after exactly 2 calls. */
+function stubEmptyDrainFetch() {
+  fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      ok: true,
+      data: { processed: 0, ready: 0, failed: 0, remaining: 0 },
+    }),
+  } as Response);
+  vi.stubGlobal("fetch", fetchMock);
+}
 
 beforeEach(() => {
-  drainPreviewQueueMock.mockResolvedValue({
-    ok: true,
-    data: { processed: 0, ready: 0, failed: 0, remaining: 0 },
-  });
+  stubEmptyDrainFetch();
   reschedulePreviewsForItemsMock.mockResolvedValue({
     ok: true,
     data: { rescheduled: 1 },
@@ -82,6 +95,7 @@ afterEach(async () => {
   container?.remove();
   root = null;
   container = null;
+  vi.unstubAllGlobals();
   vi.clearAllMocks();
   searchParamsState.current = new URLSearchParams();
 });
@@ -330,16 +344,19 @@ describe("ItemsPage preview drain escopado", () => {
   it("não drena nem oferece o botão quando a página não tem item de link", async () => {
     await renderItemsPage({ items: [promptItem] });
 
-    expect(drainPreviewQueueMock).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(container?.textContent).not.toContain("Atualizar pré-visualizações");
   });
 
   it("drena apenas os ids de link desta página", async () => {
     await renderItemsPage({ items: [...sampleItems, promptItem] });
 
-    expect(drainPreviewQueueMock).toHaveBeenCalledWith({
-      itemIds: [sampleItems[0]!.id],
-    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/previews/drain",
+      expect.objectContaining({
+        body: JSON.stringify({ itemIds: [sampleItems[0]!.id] }),
+      }),
+    );
   });
 
   it("reagenda as prévias da página ao clicar em 'Atualizar pré-visualizações'", async () => {
