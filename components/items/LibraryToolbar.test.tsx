@@ -129,21 +129,81 @@ describe("LibraryToolbar", () => {
     expect(onRefreshPreviews).toHaveBeenCalledOnce();
   });
 
-  it("marca o botão como ocupado enquanto as prévias são atualizadas", async () => {
+  it("mostra o rótulo 'Atualizando' e desabilita o botão enquanto as prévias são atualizadas", async () => {
     const dom = await renderToolbar({
       canRefreshPreviews: true,
       isRefreshingPreviews: true,
     });
 
-    // Amarrado a este botão, não a "algum botão ocupado da toolbar": com o
-    // texto escondido pelo spinner, o `aria-label` de pendente é o que
-    // identifica o controle.
-    const pendingButton = dom.querySelector(
-      'button[aria-busy="true"][aria-label="Carregando"]',
-    );
+    const pendingButton = dom.querySelector('button[aria-busy="true"]');
     expect(pendingButton).not.toBeNull();
-    expect(pendingButton?.textContent).toContain("Atualizar pré-visualizações");
-    expect(dom.querySelectorAll('button[aria-busy="true"]')).toHaveLength(1);
+    expect(pendingButton?.textContent).toContain("Atualizando");
     expect(pendingButton?.hasAttribute("disabled")).toBe(true);
+  });
+
+  it("mostra 'Atualizado' por 1500ms depois de um clique e então volta ao rótulo padrão", async () => {
+    vi.useFakeTimers();
+    try {
+      const props = {
+        type: null,
+        sort: "newest" as const,
+        isPending: false,
+        canRefreshPreviews: true,
+        onRefreshPreviews: vi.fn(),
+        onFilterChange: vi.fn(),
+      };
+      const dom = await renderToolbar({
+        ...props,
+        isRefreshingPreviews: false,
+      });
+
+      const refreshButton = Array.from(dom.querySelectorAll("button")).find(
+        (btn) => btn.textContent?.includes("Atualizar pré-visualizações"),
+      );
+      await act(async () => {
+        refreshButton?.click();
+      });
+
+      // Simula o pai propagando isDraining=true e depois false, como o
+      // usePreviewDrain faz ao concluir a rodada disparada pelo clique.
+      await act(async () => {
+        root?.render(<LibraryToolbar {...props} isRefreshingPreviews={true} />);
+      });
+      await act(async () => {
+        root?.render(
+          <LibraryToolbar {...props} isRefreshingPreviews={false} />,
+        );
+      });
+
+      expect(dom.textContent).toContain("Atualizado");
+      expect(dom.textContent).not.toContain("Atualizar pré-visualizações");
+
+      await act(async () => {
+        vi.advanceTimersByTime(1500);
+      });
+
+      expect(dom.textContent).toContain("Atualizar pré-visualizações");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("não mostra 'Atualizado' quando a drenagem automática termina sem clique no botão", async () => {
+    const props = {
+      type: null,
+      sort: "newest" as const,
+      isPending: false,
+      canRefreshPreviews: true,
+      onRefreshPreviews: vi.fn(),
+      onFilterChange: vi.fn(),
+    };
+    const dom = await renderToolbar({ ...props, isRefreshingPreviews: true });
+
+    await act(async () => {
+      root?.render(<LibraryToolbar {...props} isRefreshingPreviews={false} />);
+    });
+
+    expect(dom.textContent).not.toContain("Atualizado");
+    expect(dom.textContent).toContain("Atualizar pré-visualizações");
   });
 });
