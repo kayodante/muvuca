@@ -12,6 +12,8 @@ describe("LandingProblem", () => {
     expect(markup).toContain("Pastas que não acompanham sua cabeça");
     expect(markup).toContain("O esforço de busca supera o conteúdo");
     expect(markup).toContain("Recuperação imediata em qualquer contexto");
+    expect(markup).toContain("t-panel-slide");
+    expect(markup).toContain('data-open="true"');
   });
 
   it("does not render generic step-number labels", () => {

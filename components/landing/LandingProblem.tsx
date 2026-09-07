@@ -298,7 +298,9 @@ const VISUAL_COMPONENTS = [
 
 export function LandingProblem() {
   const [activeStep, setActiveStep] = useState(0);
+  const [visualState, setVisualState] = useState({ step: 0, open: true });
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const previousActiveStep = useRef(activeStep);
 
   useEffect(() => {
     const observers: IntersectionObserver[] = [];
@@ -329,7 +331,20 @@ export function LandingProblem() {
     };
   }, []);
 
-  const ActiveVisual = VISUAL_COMPONENTS[activeStep] ?? VISUAL_COMPONENTS[0]!;
+  useEffect(() => {
+    if (previousActiveStep.current === activeStep) return;
+
+    previousActiveStep.current = activeStep;
+    setVisualState((current) => ({ ...current, open: false }));
+    const frame = window.requestAnimationFrame(() => {
+      setVisualState({ step: activeStep, open: true });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeStep]);
+
+  const ActiveVisual =
+    VISUAL_COMPONENTS[visualState.step] ?? VISUAL_COMPONENTS[0]!;
 
   return (
     <section id="problema" className="py-20 md:py-28">
@@ -399,11 +414,8 @@ export function LandingProblem() {
           </div>
 
           {/* Right Column: Sticky preview container */}
-          <div className="sticky top-28">
-            <div
-              key={activeStep}
-              className="animate-in duration-(--motion-base) ease-out-muvuca fade-in-50 slide-in-from-bottom-2 motion-reduce:animate-none"
-            >
+          <div className="sticky top-28 overflow-hidden">
+            <div className="t-panel-slide" data-open={visualState.open}>
               <ActiveVisual />
             </div>
           </div>

@@ -9,6 +9,9 @@ describe("LandingGalleryOverview", () => {
       "Uma biblioteca que continua legível quando cresce.",
     );
     expect(markup).toContain("O Muvuca reúne seus itens em uma galeria visual");
+    expect(markup).toContain("t-tabs");
+    expect(markup).toContain("t-tabs-pill");
+    expect(markup).toContain("t-tab");
   });
 
   it("does not render the redundant three-card callout bar", () => {

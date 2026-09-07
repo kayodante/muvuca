@@ -156,11 +156,14 @@ describe("ItemCard", () => {
     const dom = await renderCard(mockPrompt);
     const copyButton = dom.querySelector('button[aria-label="Copiar prompt"]');
     expect(copyButton).not.toBeNull();
+    const iconSwap = copyButton?.querySelector(".t-icon-swap");
+    expect(iconSwap?.getAttribute("data-state")).toBe("a");
 
     await act(async () => {
       (copyButton as HTMLButtonElement).click();
     });
 
+    expect(iconSwap?.getAttribute("data-state")).toBe("b");
     expect(writeText).toHaveBeenCalledWith(
       "You are a senior TypeScript engineer...",
     );

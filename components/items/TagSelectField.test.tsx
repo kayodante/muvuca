@@ -123,6 +123,9 @@ describe("TagSelectField", () => {
     });
 
     expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    const dropdown = document.querySelector(".t-dropdown");
+    expect(dropdown?.getAttribute("data-origin")).toBe("top-left");
+    expect(dropdown?.classList.contains("is-open")).toBe(true);
     const listbox = document.querySelector('[role="listbox"]');
     expect(listbox).not.toBeNull();
 
@@ -196,6 +199,9 @@ describe("TagSelectField", () => {
     });
 
     expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    expect(
+      document.querySelector(".t-dropdown")?.classList.contains("is-closing"),
+    ).toBe(true);
   });
 
   it("renderiza estado desabilitado quando tags está vazio", async () => {

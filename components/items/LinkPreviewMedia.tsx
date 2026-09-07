@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link2Off } from "lucide-react";
 import type { PreviewSummary } from "@/lib/database/queries/previews";
 import { cn } from "@/lib/utils";
@@ -49,6 +49,9 @@ export function LinkPreviewMedia({
   preview: PreviewSummary | null;
 }) {
   const [broken, setBroken] = useState(false);
+  const pending = !broken && preview?.status === "pending";
+  const [revealed, setRevealed] = useState(!pending);
+  const [wasPending, setWasPending] = useState(pending);
   // A stale `broken` flag must not keep hiding a thumbnail that just got
   // replaced by a newer, valid one: once the identity of
   // the asset behind the URL changes, any previous <img> error is moot.
@@ -62,59 +65,71 @@ export function LinkPreviewMedia({
     setLastThumbnailHash(preview?.thumbnailHash ?? null);
     setBroken(false);
   }
-
-  if (!broken && preview?.status === "ready" && preview.thumbnailHash) {
-    return (
-      <>
-        <div className="aspect-[365/172] w-full overflow-hidden border-b border-border">
-          {/* eslint-disable-next-line @next/next/no-img-element -- image is already processed and served from same-origin */}
-          <img
-            src={previewImageSrc(itemId, "thumb", preview.thumbnailHash)}
-            alt=""
-            aria-hidden="true"
-            width={640}
-            height={360}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover"
-            onError={() => setBroken(true)}
-          />
-        </div>
-      </>
-    );
+  if (pending !== wasPending) {
+    setWasPending(pending);
+    if (pending) setRevealed(false);
   }
 
-  if (!broken && preview?.status === "pending") {
-    return (
-      <div
-        aria-hidden="true"
-        className="aspect-[365/172] w-full border-b border-border bg-secondary motion-safe:animate-pulse"
-      />
-    );
-  }
+  useEffect(() => {
+    if (pending) return;
+    const frame = requestAnimationFrame(() => setRevealed(true));
+    return () => cancelAnimationFrame(frame);
+  }, [pending]);
 
-  if (
-    preview?.status === "failed" &&
-    preview.errorCode !== null &&
-    BROKEN_LINK_ERROR_CODES.has(preview.errorCode)
-  ) {
-    return (
+  const content =
+    !broken && preview?.status === "ready" && preview.thumbnailHash ? (
+      <div className="h-full w-full overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element -- image is already processed and served from same-origin */}
+        <img
+          src={previewImageSrc(itemId, "thumb", preview.thumbnailHash)}
+          alt=""
+          aria-hidden="true"
+          width={640}
+          height={360}
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover"
+          onError={() => setBroken(true)}
+        />
+      </div>
+    ) : pending ? null : preview?.status === "failed" &&
+      preview.errorCode !== null &&
+      BROKEN_LINK_ERROR_CODES.has(preview.errorCode) ? (
       <div
         aria-hidden="true"
         title="Link indisponível"
-        className="flex aspect-[365/172] w-full items-center justify-center border-b border-border bg-secondary/40"
+        className="flex h-full w-full items-center justify-center bg-secondary/40"
       >
         <Link2Off className="size-6 text-muted-foreground" />
       </div>
+    ) : (
+      <PreviewFallback domain={domain} />
     );
-  }
 
+  return (
+    <div
+      data-state={pending ? "loading" : "ready"}
+      className={cn(
+        "t-skel aspect-[365/172] w-full border-b border-border",
+        revealed && "is-revealed",
+        pending && "is-resetting",
+      )}
+    >
+      <div className={cn("t-skel-skeleton", pending && "is-pulsing")}>
+        <span className="block h-full w-full bg-secondary" />
+      </div>
+      <div className="t-skel-content">{content}</div>
+    </div>
+  );
+}
+
+function PreviewFallback({ domain }: { domain: string }) {
   const { letter, swatchClass, textClass } = getDomainMonogram(domain);
   return (
     <div
       aria-hidden="true"
       title="Prévia indisponível"
-      className="flex aspect-[365/172] w-full items-center justify-center border-b border-border bg-secondary/40"
+      className="flex h-full w-full items-center justify-center bg-secondary/40"
     >
       <span
         className={cn(

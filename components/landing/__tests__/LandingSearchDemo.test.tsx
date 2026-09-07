@@ -13,5 +13,10 @@ describe("LandingSearchDemo", () => {
       "Buscar por título, domínio, descrição ou prompt...",
     );
     expect(markup).toContain("Minimal Gallery — Curated web");
+    expect(markup).toContain("t-clear");
+    expect(markup).toContain("has-value");
+    expect(markup).toContain("t-clear-mirror");
+    expect(markup).toContain("t-clear-placeholder");
+    expect(markup).toContain("t-clear-glow");
   });
 });
