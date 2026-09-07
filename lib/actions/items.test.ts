@@ -48,7 +48,7 @@ vi.mock("@/lib/database/queries/items", () => ({
   getLibraryItemById: getLibraryItemByIdMock,
 }));
 
-vi.mock("@/lib/actions/previews", () => ({
+vi.mock("@/lib/previews/drain", () => ({
   drainPreviewQueue: drainPreviewQueueMock,
 }));
 

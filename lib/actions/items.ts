@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 
-import { drainPreviewQueue } from "@/lib/actions/previews";
+import { drainPreviewQueue } from "@/lib/previews/drain";
 import { requireUser } from "@/lib/auth/require-user";
 import {
   getLibraryItemById,
