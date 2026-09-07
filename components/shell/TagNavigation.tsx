@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRightIcon, SearchIcon } from "lucide-react";
+import { ChevronDownIcon, SearchIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { swatchClassFor } from "@/lib/tags/colors";
@@ -97,7 +97,7 @@ function TagNavigationRow({
   const open = filtering || expanded;
 
   return (
-    <li>
+    <li className="t-acc" data-open={open}>
       <div
         className={cn(
           "flex min-w-0 items-center rounded-md pr-1 focus-within:bg-secondary/60 hover:bg-secondary/60",
@@ -131,13 +131,9 @@ function TagNavigationRow({
             onClick={() => setExpanded((value) => !value)}
             className="flex size-7 shrink-0 items-center justify-center rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
-            <ChevronRightIcon
-              aria-hidden="true"
-              className={cn(
-                "size-3.5 transition-transform duration-(--motion-base) ease-out-muvuca motion-reduce:transition-none",
-                open && "rotate-90",
-              )}
-            />
+            <span className="t-acc-chevron">
+              <ChevronDownIcon aria-hidden="true" className="size-3.5" />
+            </span>
           </button>
         ) : (
           <span aria-hidden="true" className="size-7 shrink-0" />
@@ -172,13 +168,8 @@ function TagNavigationRow({
         // content-driven height. The subtree stays mounted so the browser has
         // something to animate, and `inert` keeps the collapsed rows out of
         // the tab order and the accessibility tree.
-        <div
-          className={cn(
-            "grid transition-[grid-template-rows] duration-(--motion-base) ease-out-muvuca motion-reduce:transition-none",
-            open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-          )}
-        >
-          <ul className="overflow-hidden" inert={!open}>
+        <div className="t-acc-panel">
+          <ul className="t-acc-panel-inner" inert={!open}>
             {node.children.map((child) => (
               <TagNavigationRow
                 key={child.id}

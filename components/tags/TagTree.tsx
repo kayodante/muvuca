@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRightIcon, MoreHorizontalIcon } from "lucide-react";
+import { ChevronDownIcon, MoreHorizontalIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { swatchClassFor } from "@/lib/tags/colors";
@@ -74,7 +74,7 @@ function TagTreeRow({
   const isActive = node.id === activeTagId;
 
   return (
-    <li>
+    <li className="t-acc" data-open={expanded}>
       <div
         className={cn(
           "group flex items-center gap-1 rounded-md py-1 pr-1 transition-colors duration-(--motion-fast) ease-out-muvuca focus-within:bg-secondary/60 hover:bg-secondary/60",
@@ -92,13 +92,9 @@ function TagTreeRow({
             }
             className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
-            <ChevronRightIcon
-              aria-hidden="true"
-              className={cn(
-                "size-3.5 transition-transform duration-(--motion-base) ease-out-muvuca motion-reduce:transition-none",
-                expanded && "rotate-90",
-              )}
-            />
+            <span className="t-acc-chevron">
+              <ChevronDownIcon aria-hidden="true" className="size-3.5" />
+            </span>
           </button>
         ) : (
           <span className="size-6 shrink-0" aria-hidden="true" />
@@ -160,14 +156,9 @@ function TagTreeRow({
       {hasChildren && (
         // See TagNavigation: 0fr -> 1fr is what makes a content-driven height
         // animatable, and `inert` keeps the collapsed rows unreachable.
-        <div
-          className={cn(
-            "grid transition-[grid-template-rows] duration-(--motion-base) ease-out-muvuca motion-reduce:transition-none",
-            expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
-          )}
-        >
+        <div className="t-acc-panel">
           <ul
-            className="flex flex-col gap-0.5 overflow-hidden"
+            className="t-acc-panel-inner flex flex-col gap-0.5"
             inert={!expanded}
           >
             {node.children.map((child) => (

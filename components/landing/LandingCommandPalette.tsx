@@ -33,6 +33,7 @@ export function LandingCommandPalette({
   );
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(open);
+  const [entered, setEntered] = useState(false);
   const prevOpenRef = useRef(open);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -40,14 +41,33 @@ export function LandingCommandPalette({
   if (open !== prevOpenRef.current) {
     prevOpenRef.current = open;
     if (open && !mounted) setMounted(true);
+    if (!open && entered) setEntered(false);
   }
   const closing = !open && mounted;
 
+  useEffect(() => {
+    if (!open || !mounted) return;
+    const frame = window.requestAnimationFrame(() => setEntered(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, mounted]);
+
   // Keep the dialog mounted long enough to play its exit animation
-  // instead of vanishing instantly on close (release stays fast: 120ms).
+  // instead of vanishing instantly on close.
   useEffect(() => {
     if (!closing) return;
-    const timer = setTimeout(() => setMounted(false), 120);
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const closeDuration = Number.parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue(
+        "--modal-close-dur",
+      ),
+    );
+    const closeDelay = Number.isFinite(closeDuration) ? closeDuration : 150;
+    const timer = window.setTimeout(
+      () => setMounted(false),
+      reducedMotion ? 0 : closeDelay,
+    );
     return () => clearTimeout(timer);
   }, [closing]);
 
@@ -152,10 +172,8 @@ export function LandingCommandPalette({
     >
       <div
         className={cn(
-          "relative flex w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-border bg-card text-foreground shadow-2xl motion-reduce:animate-none",
-          closing
-            ? "animate-out duration-(--motion-fast) zoom-out-95"
-            : "animate-in duration-(--motion-base) zoom-in-95",
+          "t-modal relative flex w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-border bg-card text-foreground shadow-2xl",
+          closing ? "is-closing" : entered ? "is-open" : undefined,
         )}
       >
         {/* Header Search Bar */}

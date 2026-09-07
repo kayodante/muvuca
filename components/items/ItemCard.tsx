@@ -93,28 +93,13 @@ function CopyStateIcon({
   copied: boolean;
   Icon: typeof CopyIcon;
 }) {
-  const layer =
-    "absolute inset-0 transition-[opacity,transform] duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none";
   return (
-    <span className="relative inline-block size-4">
+    <span className="t-icon-swap size-4" data-state={copied ? "b" : "a"}>
+      <Icon aria-hidden="true" data-icon="a" className="t-icon size-4" />
       <CheckIcon
         aria-hidden="true"
-        className={cn(
-          layer,
-          "text-brand-accent",
-          copied
-            ? "scale-100 opacity-100"
-            : "pointer-events-none scale-[0.8] opacity-0",
-        )}
-      />
-      <Icon
-        aria-hidden="true"
-        className={cn(
-          layer,
-          copied
-            ? "pointer-events-none scale-[0.8] opacity-0"
-            : "scale-100 opacity-100",
-        )}
+        data-icon="b"
+        className="t-icon size-4 text-brand-accent"
       />
     </span>
   );

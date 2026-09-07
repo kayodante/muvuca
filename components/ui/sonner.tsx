@@ -13,6 +13,7 @@ import {
   OctagonXIcon,
   Loader2Icon,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 /**
  * No `next-themes`: theme here is "system" unconditionally. Sonner resolves
@@ -21,11 +22,15 @@ import {
  * consistent with the account-based theme system and the no-inline-script
  * CSP.
  */
-const Toaster = ({ ...props }: ToasterProps) => {
+const Toaster = ({ className, toastOptions, ...props }: ToasterProps) => {
   return (
     <Sonner
       theme="system"
-      className="toaster group"
+      className={cn("toaster group", className)}
+      toastOptions={{
+        ...toastOptions,
+        className: cn("t-toast", toastOptions?.className),
+      }}
       icons={{
         success: <CircleCheckIcon className="size-4" />,
         info: <InfoIcon className="size-4" />,

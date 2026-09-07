@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DEMO_ITEMS, type DemoItem } from "@/lib/landing/demo-data";
 import {
   SearchIcon,
@@ -16,16 +16,56 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
+import { cn } from "@/lib/utils";
 
 interface LandingSearchDemoProps {
   onOpenCommandPalette?: () => void;
+}
+
+function cubicBezier(value: string): (progress: number) => number {
+  const match = value.match(
+    /cubic-bezier\(([-\d.]+),([\-\d.]+),([\-\d.]+),([\-\d.]+)\)/,
+  );
+  if (!match) return (progress) => progress;
+
+  const [x1 = 0, y1 = 0, x2 = 1, y2 = 1] = match.slice(1).map(Number);
+  const cx = 3 * x1;
+  const bx = 3 * (x2 - x1) - cx;
+  const ax = 1 - cx - bx;
+  const cy = 3 * y1;
+  const by = 3 * (y2 - y1) - cy;
+  const ay = 1 - cy - by;
+
+  return (progress) => {
+    if (progress <= 0) return 0;
+    if (progress >= 1) return 1;
+
+    let sample = progress;
+    for (let index = 0; index < 8; index += 1) {
+      const delta = ((ax * sample + bx) * sample + cx) * sample - progress;
+      const slope = (3 * ax * sample + 2 * bx) * sample + cx;
+      if (Math.abs(delta) < 0.000001 || slope === 0) break;
+      sample -= delta / slope;
+    }
+
+    return ((ay * sample + by) * sample + cy) * sample;
+  };
 }
 
 export function LandingSearchDemo({
   onOpenCommandPalette,
 }: LandingSearchDemoProps) {
   const [query, setQuery] = useState("design");
+  const [mirroredQuery, setMirroredQuery] = useState("design");
+  const [isClearing, setIsClearing] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const clearRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const mirrorRef = useRef<HTMLDivElement>(null);
+  const placeholderRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
+  const clearFrameRef = useRef<number | null>(null);
+  const clearingRef = useRef(false);
 
   const quickQueries = ["design", "prompt", "frontend", "linear", "tailwind"];
 
@@ -40,6 +80,160 @@ export function LandingSearchDemo({
           (i.url && i.url.toLowerCase().includes(query.toLowerCase())),
       )
     : DEMO_ITEMS;
+
+  useEffect(() => {
+    return () => {
+      if (clearFrameRef.current !== null) {
+        window.cancelAnimationFrame(clearFrameRef.current);
+      }
+    };
+  }, []);
+
+  function setSearchQuery(value: string) {
+    setQuery(value);
+    setMirroredQuery(value);
+  }
+
+  function clearSearch() {
+    const wrapper = clearRef.current;
+    const input = inputRef.current;
+    const mirror = mirrorRef.current;
+    const placeholder = placeholderRef.current;
+    const glow = glowRef.current;
+    if (!wrapper || !input || !mirror || !placeholder || !glow || !query)
+      return;
+
+    const keepFocus = document.activeElement === input;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setSearchQuery("");
+      if (keepFocus) {
+        window.requestAnimationFrame(() =>
+          input.focus({ preventScroll: true }),
+        );
+      }
+      return;
+    }
+    if (clearingRef.current) return;
+
+    clearingRef.current = true;
+    setIsClearing(true);
+    setQuery("");
+
+    const rootStyles = getComputedStyle(document.documentElement);
+    const numberVariable = (name: string, fallback: number) => {
+      const value = Number.parseFloat(rootStyles.getPropertyValue(name));
+      return Number.isFinite(value) ? value : fallback;
+    };
+    const total = numberVariable("--clear-dur", 1000);
+    const outDuration = numberVariable("--clear-out-dur", 400);
+    const inDuration = numberVariable("--clear-in-dur", 400);
+    const outFly = numberVariable("--clear-out-fly", 12);
+    const inFly = numberVariable("--clear-in-fly", 12);
+    const blur = numberVariable("--clear-blur", 2);
+    const glowDelay = numberVariable("--glow-delay", 50);
+    const glowPeakAt = numberVariable("--glow-peak-at", 0.15);
+    const glowOpacity = numberVariable("--glow-opacity", 0.42);
+    const glowSpread = numberVariable("--glow-spread", 1.5);
+    const easeOut = cubicBezier(
+      rootStyles.getPropertyValue("--clear-out-ease"),
+    );
+    const easeIn = cubicBezier(rootStyles.getPropertyValue("--clear-in-ease"));
+    const context = document.createElement("canvas").getContext("2d");
+
+    const buildGlow = (text: string) => {
+      if (!context) return "";
+
+      context.font = getComputedStyle(input).font;
+      const isDark = document.documentElement.classList.contains("dark");
+      const rgb = isDark ? "255,255,255" : "0,0,0";
+      const width = wrapper.clientWidth || 280;
+      const paddingLeft =
+        Number.parseFloat(getComputedStyle(input).paddingLeft) || 12;
+      const layers: string[] = [];
+      let offset = 0;
+
+      for (const segment of text.split(/(\s+)/)) {
+        const segmentWidth = context.measureText(segment).width;
+        if (segment.trim()) {
+          const center = paddingLeft + offset + segmentWidth / 2;
+          const halfWidth = Math.max(segmentWidth * 0.45, 8) * glowSpread;
+          const glowParts: ReadonlyArray<
+            readonly [number, number, number, number]
+          > = [
+            [0, 0.8, 7, 0.22],
+            [halfWidth * 0.45, 0.55, 8, 0.18],
+            [-halfWidth * 0.4, 0.65, 6, 0.16],
+            [halfWidth * 0.15, 0.9, 5, 0.14],
+          ];
+          for (const [offsetX, widthMultiplier, height, alpha] of glowParts) {
+            const left = (((center + offsetX) / width) * 100).toFixed(2);
+            layers.push(
+              `radial-gradient(ellipse ${Math.max(halfWidth * widthMultiplier, 2).toFixed(1)}px ${height}px at ${left}% 100%, rgba(${rgb},${alpha}), transparent)`,
+            );
+          }
+        }
+        offset += segmentWidth;
+      }
+
+      return layers.join(", ");
+    };
+
+    mirror.style.transform = "translateY(0)";
+    mirror.style.opacity = "1";
+    mirror.style.filter = "blur(0)";
+    glow.style.background = buildGlow(mirroredQuery);
+    glow.style.opacity = "0";
+    placeholder.style.transform = `translateY(-${inFly}px)`;
+    placeholder.style.opacity = "0.9";
+    placeholder.style.filter = `blur(${blur}px)`;
+
+    const startedAt = performance.now();
+    const tick = (now: number) => {
+      const elapsed = now - startedAt;
+      const outProgress = easeOut(Math.min(1, elapsed / outDuration));
+      const inProgress = easeIn(Math.min(1, elapsed / inDuration));
+      mirror.style.transform = `translateY(${(outProgress * outFly).toFixed(1)}px)`;
+      mirror.style.opacity = (1 - outProgress).toFixed(3);
+      mirror.style.filter = `blur(${(outProgress * blur).toFixed(1)}px)`;
+      placeholder.style.transform = `translateY(${(-inFly + inProgress * inFly).toFixed(1)}px)`;
+      placeholder.style.opacity = (0.9 + inProgress * 0.1).toFixed(3);
+      placeholder.style.filter = `blur(${(blur - inProgress * blur).toFixed(1)}px)`;
+
+      let glowProgress = 0;
+      if (elapsed > glowDelay) {
+        const progress = Math.min(
+          1,
+          (elapsed - glowDelay) / Math.max(1, total - glowDelay),
+        );
+        glowProgress =
+          progress < glowPeakAt
+            ? progress / glowPeakAt
+            : 1 - (progress - glowPeakAt) / (1 - glowPeakAt);
+      }
+      glow.style.opacity = (glowProgress * glowOpacity).toFixed(3);
+
+      if (elapsed < total) {
+        clearFrameRef.current = window.requestAnimationFrame(tick);
+        return;
+      }
+
+      clearFrameRef.current = null;
+      clearingRef.current = false;
+      setIsClearing(false);
+      setMirroredQuery("");
+      mirror.style.cssText = "";
+      placeholder.style.cssText = "";
+      glow.style.opacity = "0";
+      glow.style.background = "";
+      if (keepFocus) {
+        window.requestAnimationFrame(() =>
+          input.focus({ preventScroll: true }),
+        );
+      }
+    };
+
+    clearFrameRef.current = window.requestAnimationFrame(tick);
+  }
 
   async function handleCopy(item: DemoItem) {
     if (!item.contentPreview) return;
@@ -89,34 +283,64 @@ export function LandingSearchDemo({
 
         {/* Live Search Input Component with Quick Pills */}
         <ScrollReveal variant="panel" className="mt-16 max-w-3xl">
-          <div className="relative overflow-hidden rounded-xl border border-border bg-card p-2 shadow-xs">
-            <div className="flex items-center gap-3 px-3">
-              <SearchIcon
-                className="size-5 shrink-0 text-muted-foreground"
-                aria-hidden="true"
-              />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Buscar por título, domínio, descrição ou prompt..."
-                className="text-body-md w-full bg-transparent py-2 text-foreground outline-none placeholder:text-muted-foreground"
-                aria-label="Demonstração interativa de busca"
-              />
-              {query && (
-                <button
-                  type="button"
-                  onClick={() => setQuery("")}
-                  className="flex size-6 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
-                  aria-label="Limpar busca"
-                >
-                  <XIcon className="size-4" />
-                </button>
-              )}
+          <div
+            ref={clearRef}
+            className={cn(
+              "t-clear grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl border border-border bg-card p-2 shadow-xs",
+              query && "has-value",
+              isClearing && "is-clearing",
+            )}
+          >
+            <SearchIcon
+              className="relative z-10 ml-3 size-5 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              className="text-body-md relative z-10 w-full bg-transparent py-2 text-foreground outline-none"
+              aria-label="Demonstração interativa de busca"
+            />
+            <div
+              ref={mirrorRef}
+              aria-hidden="true"
+              className="t-clear-mirror text-body-md pr-12 pl-11 text-foreground"
+            >
+              {mirroredQuery.replace(/ /g, "\u00a0")}
             </div>
+            <div
+              ref={placeholderRef}
+              aria-hidden="true"
+              className="t-clear-placeholder text-body-md pr-12 pl-11 text-muted-foreground"
+            >
+              Buscar por título, domínio, descrição ou prompt...
+            </div>
+            <div ref={glowRef} aria-hidden="true" className="t-clear-glow" />
+            {query && !isClearing && (
+              <button
+                type="button"
+                onPointerDown={(event) => {
+                  if (document.activeElement === inputRef.current) {
+                    event.preventDefault();
+                  }
+                }}
+                onMouseDown={(event) => {
+                  if (document.activeElement === inputRef.current) {
+                    event.preventDefault();
+                  }
+                }}
+                onClick={clearSearch}
+                className="t-clear-btn relative z-10 mr-1 flex size-6 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+                aria-label="Limpar busca"
+              >
+                <XIcon className="size-4" />
+              </button>
+            )}
 
             {/* Subtle sweep loading indicator */}
-            <div className="mt-1 h-0.5 w-full animate-search-sweep rounded-full bg-primary motion-reduce:animate-none" />
+            <div className="col-span-3 mt-1 h-0.5 w-full animate-search-sweep rounded-full bg-primary motion-reduce:animate-none" />
           </div>
 
           {/* Quick query suggestion chips */}
@@ -128,7 +352,7 @@ export function LandingSearchDemo({
               <button
                 key={term}
                 type="button"
-                onClick={() => setQuery(term)}
+                onClick={() => setSearchQuery(term)}
                 className={`text-metadata rounded-md px-2.5 py-1 transition-colors duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none ${
                   query.toLowerCase() === term
                     ? "bg-primary font-medium text-primary-foreground"

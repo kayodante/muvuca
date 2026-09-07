@@ -12,6 +12,8 @@ afterEach(async () => {
   root = null;
   container = null;
   vi.clearAllMocks();
+  document.documentElement.style.removeProperty("--text-swap-dur");
+  vi.useRealTimers();
 });
 
 async function renderToolbar(
@@ -46,6 +48,8 @@ describe("LibraryToolbar", () => {
       '[role="group"][aria-label="Filtrar por tipo"]',
     );
     expect(group).not.toBeNull();
+    expect(group?.classList.contains("t-tabs")).toBe(true);
+    expect(group?.querySelector(".t-tabs-pill")).not.toBeNull();
 
     const buttons = Array.from(group?.querySelectorAll("button") ?? []);
     expect(buttons.map((btn) => btn.textContent)).toEqual([
@@ -139,6 +143,43 @@ describe("LibraryToolbar", () => {
     expect(pendingButton).not.toBeNull();
     expect(pendingButton?.textContent).toContain("Atualizando");
     expect(pendingButton?.hasAttribute("disabled")).toBe(true);
+    expect(
+      pendingButton?.querySelector('.t-icon-swap[data-state="b"]'),
+    ).not.toBeNull();
+    expect(
+      pendingButton?.querySelectorAll('.t-matrix[data-variant="orbit"] i'),
+    ).toHaveLength(16);
+    expect(pendingButton?.querySelector(".t-text-swap")).not.toBeNull();
+  });
+
+  it("troca o texto de status somente após a fase de saída", async () => {
+    vi.useFakeTimers();
+    document.documentElement.style.setProperty("--text-swap-dur", "150ms");
+    const props = {
+      type: null,
+      sort: "newest" as const,
+      isPending: false,
+      canRefreshPreviews: true,
+      onRefreshPreviews: vi.fn(),
+      onFilterChange: vi.fn(),
+    };
+    const dom = await renderToolbar({ ...props, isRefreshingPreviews: false });
+
+    await act(async () => {
+      root?.render(<LibraryToolbar {...props} isRefreshingPreviews />);
+    });
+
+    const label = dom.querySelector(".t-text-swap");
+    expect(label?.textContent).toBe("Atualizar pré-visualizações");
+    expect(label?.classList.contains("is-exit")).toBe(true);
+
+    await act(async () => vi.advanceTimersByTime(149));
+    expect(label?.textContent).toBe("Atualizar pré-visualizações");
+
+    await act(async () => vi.advanceTimersByTime(1));
+    expect(label?.textContent).toBe("Atualizando");
+    expect(label?.classList.contains("is-exit")).toBe(false);
+    expect(label?.classList.contains("is-enter-start")).toBe(false);
   });
 
   it("mostra 'Atualizado' por 1500ms depois de um clique e então volta ao rótulo padrão", async () => {
@@ -174,6 +215,7 @@ describe("LibraryToolbar", () => {
           <LibraryToolbar {...props} isRefreshingPreviews={false} />,
         );
       });
+      await act(async () => vi.advanceTimersByTime(150));
 
       expect(dom.textContent).toContain("Atualizado");
       expect(dom.textContent).not.toContain("Atualizar pré-visualizações");
@@ -181,6 +223,7 @@ describe("LibraryToolbar", () => {
       await act(async () => {
         vi.advanceTimersByTime(1500);
       });
+      await act(async () => vi.advanceTimersByTime(150));
 
       expect(dom.textContent).toContain("Atualizar pré-visualizações");
     } finally {
@@ -189,6 +232,7 @@ describe("LibraryToolbar", () => {
   });
 
   it("não mostra 'Atualizado' quando a drenagem automática termina sem clique no botão", async () => {
+    vi.useFakeTimers();
     const props = {
       type: null,
       sort: "newest" as const,
@@ -202,6 +246,7 @@ describe("LibraryToolbar", () => {
     await act(async () => {
       root?.render(<LibraryToolbar {...props} isRefreshingPreviews={false} />);
     });
+    await act(async () => vi.advanceTimersByTime(150));
 
     expect(dom.textContent).not.toContain("Atualizado");
     expect(dom.textContent).toContain("Atualizar pré-visualizações");

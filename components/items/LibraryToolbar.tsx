@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CheckIcon, ChevronDownIcon, RefreshCwIcon } from "lucide-react";
 import type { ItemType } from "@/lib/validation/item";
 import { SEARCH_SORTS, type SearchSort } from "@/lib/validation/search";
@@ -40,71 +40,112 @@ function useRefreshDoneFlash(isRefreshing: boolean) {
   return { done, markRequested: () => (requested.current = true) };
 }
 
-/** Hex Orbit dot matrix (https://dotmatrix.zzzzshawn.cloud/playground?loader=dotm-hex-1),
- * reimplemented by hand as ~19 CSS-driven dots instead of pulling in that
- * project's shared animation framework (two more modules and a 26KB
- * stylesheet meant for its 55+ loaders) for one 14px icon. A hex laid out
- * as 3-4-5-4-3 dot rows; the 12 outer-ring dots share one opacity keyframe
- * at half the ring's lap time, each delayed by its position on the ring --
- * two dots exactly opposite land in the same phase for free, which is what
- * gives the two simultaneous "chasers"; the center dot and the 6 remaining
- * inner dots just sit dim and static, same as the source loader. */
-const HEX_ROWS = [3, 4, 5, 4, 3] as const;
-const HEX_LAP_MS = 900;
-const HEX_PERIMETER_ORDER = [
-  "0,0",
-  "0,1",
-  "0,2",
-  "1,3",
-  "2,4",
-  "3,3",
-  "4,2",
-  "4,1",
-  "4,0",
-  "3,0",
-  "2,0",
-  "1,0",
-] as const;
-const HEX_RING_INDEX = new Map<string, number>(
-  HEX_PERIMETER_ORDER.map((id, index) => [id, index]),
-);
+const MATRIX_RING = [1, 2, 7, 11, 14, 13, 8, 4];
+const MATRIX_CORNERS = new Set([0, 3, 12, 15]);
 
-function hexInnerDotOpacity(row: number, col: number) {
-  if (row === 2 && col === 2) return 0.1; // center
-  return col === 2 ? 0.2 : 0.18;
-}
-
-function HexOrbitIcon() {
+function MatrixIcon() {
   return (
     <span
       aria-hidden="true"
-      data-icon="inline-start"
-      className="inline-flex flex-col items-center justify-center gap-px"
+      className="t-matrix"
+      data-variant="orbit"
+      data-rounded="true"
     >
-      {HEX_ROWS.map((count, row) => (
-        <span key={row} className="flex justify-center gap-px">
-          {Array.from({ length: count }, (_, col) => {
-            const ringIndex = HEX_RING_INDEX.get(`${row},${col}`);
-            return (
-              <span
-                key={col}
-                className={cn(
-                  "size-0.5 rounded-full bg-brand-accent",
-                  ringIndex !== undefined &&
-                    "animate-hex-orbit-pulse motion-reduce:[animation-duration:900ms]",
-                )}
-                style={
-                  ringIndex !== undefined
-                    ? {
-                        animationDelay: `${-(ringIndex / HEX_PERIMETER_ORDER.length) * HEX_LAP_MS}ms`,
-                      }
-                    : { opacity: hexInnerDotOpacity(row, col) }
-                }
-              />
-            );
-          })}
+      {Array.from({ length: 16 }, (_, index) => {
+        const ring = MATRIX_RING.indexOf(index);
+        return (
+          <i
+            key={index}
+            ref={(dot) => dot?.style.setProperty("--d", String(ring * 150))}
+            className={MATRIX_CORNERS.has(index) ? "is-gap" : undefined}
+            style={ring < 0 ? { animation: "none" } : undefined}
+          />
+        );
+      })}
+    </span>
+  );
+}
+
+function RefreshStateIcon({
+  state,
+}: {
+  state: "idle" | "refreshing" | "done";
+}) {
+  const states = [
+    {
+      value: "idle",
+      content: <RefreshCwIcon aria-hidden="true" data-icon="inline-start" />,
+    },
+    { value: "refreshing", content: <MatrixIcon /> },
+    {
+      value: "done",
+      content: <CheckIcon aria-hidden="true" data-icon="inline-start" />,
+    },
+  ] as const;
+  return (
+    <span className="relative inline-block size-4">
+      {states.map(({ value, content }) => (
+        <span
+          key={value}
+          className="t-icon-swap absolute inset-0"
+          data-state={state === value ? "a" : "b"}
+        >
+          <span className="t-icon" data-icon="a">
+            {content}
+          </span>
+          <span className="t-icon" data-icon="b" />
         </span>
       ))}
+    </span>
+  );
+}
+
+function TextSwap({ text }: { text: string }) {
+  const [displayText, setDisplayText] = useState(text);
+  const elementRef = useRef<HTMLSpanElement>(null);
+  const timerRef = useRef<number | null>(null);
+  const enteringRef = useRef(false);
+
+  useEffect(() => {
+    if (text === displayText) return;
+    const element = elementRef.current;
+    if (!element) return;
+    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      timerRef.current = window.setTimeout(() => setDisplayText(text), 0);
+      return;
+    }
+    element.classList.add("is-exit");
+    const value = Number.parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue(
+        "--text-swap-dur",
+      ),
+    );
+    timerRef.current = window.setTimeout(
+      () => {
+        element.classList.remove("is-exit");
+        element.classList.add("is-enter-start");
+        enteringRef.current = true;
+        setDisplayText(text);
+      },
+      Number.isFinite(value) ? value : 150,
+    );
+    return () => {
+      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+    };
+  }, [displayText, text]);
+
+  useLayoutEffect(() => {
+    const element = elementRef.current;
+    if (!element || !enteringRef.current) return;
+    void element.offsetHeight;
+    element.classList.remove("is-enter-start");
+    enteringRef.current = false;
+  }, [displayText]);
+
+  return (
+    <span ref={elementRef} className="t-text-swap">
+      {displayText}
     </span>
   );
 }
@@ -158,6 +199,36 @@ export function LibraryToolbar({
     : isDone
       ? "done"
       : "idle";
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const pillRef = useRef<HTMLSpanElement>(null);
+
+  function movePill(tab: HTMLButtonElement, animate: boolean) {
+    const pill = pillRef.current;
+    if (!pill) return;
+    const transition = pill.style.transition;
+    if (!animate) pill.style.transition = "none";
+    pill.style.transform = `translateX(${tab.offsetLeft}px)`;
+    pill.style.width = `${tab.offsetWidth}px`;
+    if (!animate) {
+      void pill.offsetWidth;
+      pill.style.transition = transition;
+    }
+  }
+
+  useLayoutEffect(() => {
+    const sync = () => {
+      const active = tabsRef.current?.querySelector<HTMLButtonElement>(
+        '[aria-pressed="true"]',
+      );
+      if (active) movePill(active, false);
+    };
+    const frame = requestAnimationFrame(sync);
+    window.addEventListener("resize", sync);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", sync);
+    };
+  }, [type]);
 
   return (
     <section
@@ -180,26 +251,26 @@ export function LibraryToolbar({
               "bg-card! text-brand-accent disabled:opacity-100!",
           )}
         >
-          {refreshState === "done" ? (
-            <CheckIcon aria-hidden="true" data-icon="inline-start" />
-          ) : refreshState === "refreshing" ? (
-            <HexOrbitIcon />
-          ) : (
-            <RefreshCwIcon aria-hidden="true" data-icon="inline-start" />
-          )}
-          {refreshState === "refreshing"
-            ? "Atualizando"
-            : refreshState === "done"
-              ? "Atualizado"
-              : "Atualizar pré-visualizações"}
+          <RefreshStateIcon state={refreshState} />
+          <TextSwap
+            text={
+              refreshState === "refreshing"
+                ? "Atualizando"
+                : refreshState === "done"
+                  ? "Atualizado"
+                  : "Atualizar pré-visualizações"
+            }
+          />
         </Button>
       )}
 
       <div
         role="group"
         aria-label="Filtrar por tipo"
-        className="flex items-center gap-0.5 rounded-lg bg-card p-[3px]"
+        ref={tabsRef}
+        className="t-tabs"
       >
+        <span ref={pillRef} className="t-tabs-pill" aria-hidden="true" />
         {TYPE_TABS.map((tab) => {
           const active = type === tab.value;
           return (
@@ -208,11 +279,12 @@ export function LibraryToolbar({
               type="button"
               aria-pressed={active}
               onClick={() => onFilterChange({ type: tab.value })}
+              onClickCapture={(event) => movePill(event.currentTarget, true)}
               className={cn(
-                "text-body-sm rounded-md px-3 py-1 transition-colors duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none",
+                "t-tab text-body-sm",
                 active
-                  ? "border border-border bg-secondary text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
+                  ? "!text-foreground"
+                  : "!text-muted-foreground hover:!text-foreground",
               )}
             >
               {tab.label}

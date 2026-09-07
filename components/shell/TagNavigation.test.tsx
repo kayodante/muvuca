@@ -137,6 +137,26 @@ describe("TagNavigation", () => {
     expect(subtree?.hasAttribute("inert")).toBe(false);
   });
 
+  it("expõe o acordeão da árvore com o estado aberto sincronizado ao botão", async () => {
+    const dom = await renderTagNavigation(tags);
+    const toggle = dom.querySelector(
+      'button[aria-label="Recolher Dev"]',
+    ) as HTMLButtonElement;
+    const accordion = toggle.closest("li");
+
+    expect(accordion?.classList.contains("t-acc")).toBe(true);
+    expect(accordion?.getAttribute("data-open")).toBe("true");
+    expect(accordion?.querySelector(".t-acc-panel")).not.toBeNull();
+    expect(accordion?.querySelector(".t-acc-panel-inner")).not.toBeNull();
+
+    await act(async () => {
+      toggle.click();
+    });
+
+    expect(accordion?.getAttribute("data-open")).toBe("false");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+  });
+
   it("renderiza uma guia por nível de ancestral, e nenhuma na raiz", async () => {
     const dom = await renderTagNavigation(tagsWithGrandchild);
 
