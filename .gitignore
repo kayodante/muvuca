@@ -30,3 +30,6 @@ pnpm-debug.log*
 coverage/
 playwright-report/
 test-results/
+
+# Local Git worktrees
+.worktrees/

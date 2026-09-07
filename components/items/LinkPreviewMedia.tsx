@@ -5,6 +5,19 @@ import type { PreviewSummary } from "@/lib/database/queries/previews";
 import { cn } from "@/lib/utils";
 import { getDomainMonogram } from "./SiteIdentity";
 
+/**
+ * Error codes that mean the resource itself is confirmed gone (404/410) or
+ * unresolvable (DNS) -- as opposed to `http_error`, which also covers a
+ * site that is alive and simply blocking bots (403 from Medium, GitHub,
+ * etc.) and must keep showing the neutral "no preview" monogram, not a
+ * broken-link state.
+ */
+const BROKEN_LINK_ERROR_CODES = new Set([
+  "http_not_found",
+  "http_gone",
+  "dns_failure",
+]);
+
 /** Same-origin preview image URL -- never a remote host. */
 export function previewImageSrc(
   itemId: string,
@@ -17,12 +30,13 @@ export function previewImageSrc(
 /**
  * Media area at the top of a link `ItemCard` -- 365:172, not 16:9: captured
  * thumbnails are 16:9 and get cropped top/bottom by `object-cover` by
- * design. Covers 4 states: ready (thumbnail), pending (neutral skeleton, no
- * spinner), failed/no-image (domain monogram, no visible error text), and a
- * client-side `onError` on the `<img>` itself (stale/removed object, 401,
- * 404) falling back to the same monogram. The card stays 100% usable
- * without an image either way -- this is a bonus, never a dependency for
- * legibility.
+ * design. Covers 5 states: ready (thumbnail), pending (neutral skeleton, no
+ * spinner), failed with a confirmed-dead error code (broken-link icon, see
+ * `BROKEN_LINK_ERROR_CODES`), failed/no-image for every other reason
+ * (domain monogram, no visible error text), and a client-side `onError` on
+ * the `<img>` itself (stale/removed object, 401, 404) falling back to the
+ * same monogram. The card stays 100% usable without an image either way --
+ * this is a bonus, never a dependency for legibility.
  */
 export function LinkPreviewMedia({
   itemId,

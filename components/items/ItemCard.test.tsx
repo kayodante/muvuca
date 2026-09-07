@@ -365,6 +365,7 @@ describe("ItemCard", () => {
         faviconHash: null,
         remoteDescription: null,
         siteName: null,
+        errorCode: null,
       },
     });
 
@@ -386,6 +387,7 @@ describe("ItemCard", () => {
         faviconHash: null,
         remoteDescription: null,
         siteName: null,
+        errorCode: null,
       },
     });
 
@@ -403,6 +405,7 @@ describe("ItemCard", () => {
         faviconHash: null,
         remoteDescription: null,
         siteName: null,
+        errorCode: null,
       },
     });
 
@@ -421,6 +424,7 @@ describe("ItemCard", () => {
         faviconHash: null,
         remoteDescription: null,
         siteName: null,
+        errorCode: null,
       },
     });
 

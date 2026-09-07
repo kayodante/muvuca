@@ -33,6 +33,7 @@ function preview(overrides: Partial<PreviewSummary>): PreviewSummary {
     faviconHash: null,
     remoteDescription: null,
     siteName: null,
+    errorCode: null,
     ...overrides,
   };
 }
@@ -87,6 +88,57 @@ describe("LinkPreviewMedia", () => {
     expect(dom.querySelector("img")).toBeNull();
     expect(dom.textContent).toBe("N");
     expect(dom.textContent).not.toMatch(/erro|falh|indispon/i);
+  });
+
+  it.each(["http_not_found", "http_gone", "dns_failure"] as const)(
+    "renders the broken-link icon (not the monogram) when failed with errorCode %s",
+    async (errorCode) => {
+      const dom = await render(
+        <LinkPreviewMedia
+          itemId="item-1"
+          domain="nextjs.org"
+          preview={preview({ status: "failed", errorCode })}
+        />,
+      );
+
+      expect(dom.querySelector("img")).toBeNull();
+      // No monogram letter rendered, and the title distinguishes this from
+      // the generic "no preview" state instead of relying on color alone.
+      expect(dom.textContent).toBe("");
+      expect(dom.querySelector("svg")).not.toBeNull();
+      expect(dom.querySelector("[title]")?.getAttribute("title")).toBe(
+        "Link indisponível",
+      );
+    },
+  );
+
+  it("renders the domain monogram (not the broken-link icon) when failed with errorCode http_error", async () => {
+    const dom = await render(
+      <LinkPreviewMedia
+        itemId="item-1"
+        domain="nextjs.org"
+        preview={preview({ status: "failed", errorCode: "http_error" })}
+      />,
+    );
+
+    expect(dom.querySelector("svg")).toBeNull();
+    expect(dom.textContent).toBe("N");
+    expect(dom.querySelector("[title]")?.getAttribute("title")).toBe(
+      "Prévia indisponível",
+    );
+  });
+
+  it("renders the domain monogram (not the broken-link icon) when failed with no errorCode", async () => {
+    const dom = await render(
+      <LinkPreviewMedia
+        itemId="item-1"
+        domain="nextjs.org"
+        preview={preview({ status: "failed", errorCode: null })}
+      />,
+    );
+
+    expect(dom.querySelector("svg")).toBeNull();
+    expect(dom.textContent).toBe("N");
   });
 
   it("renders the domain monogram fallback when preview is null", async () => {
