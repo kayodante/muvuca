@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Link2Off } from "lucide-react";
 import type { PreviewSummary } from "@/lib/database/queries/previews";
 import { cn } from "@/lib/utils";
 import { getDomainMonogram } from "./SiteIdentity";
@@ -91,7 +92,17 @@ export function LinkPreviewMedia({
           onError={() => setBroken(true)}
         />
       </div>
-    ) : pending ? null : (
+    ) : pending ? null : preview?.status === "failed" &&
+      preview.errorCode !== null &&
+      BROKEN_LINK_ERROR_CODES.has(preview.errorCode) ? (
+      <div
+        aria-hidden="true"
+        title="Link indisponível"
+        className="flex h-full w-full items-center justify-center bg-secondary/40"
+      >
+        <Link2Off className="size-6 text-muted-foreground" />
+      </div>
+    ) : (
       <PreviewFallback domain={domain} />
     );
 
