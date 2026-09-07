@@ -70,6 +70,9 @@ describe("LinkPreviewMedia", () => {
 
     expect(dom.querySelector("img")).toBeNull();
     expect(dom.textContent).toBe("");
+    expect(dom.querySelector('.t-skel[data-state="loading"]')).not.toBeNull();
+    expect(dom.querySelector(".t-skel-skeleton.is-pulsing")).not.toBeNull();
+    expect(dom.querySelector(".t-skel-content")).not.toBeNull();
   });
 
   it("renders the domain monogram fallback, no visible error text, when failed", async () => {

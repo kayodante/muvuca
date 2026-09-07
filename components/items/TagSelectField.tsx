@@ -53,10 +53,12 @@ export function TagSelectField({
   const selectedIds = isControlled ? value : internalSelectedIds;
 
   const [isOpen, setIsOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeTimerRef = useRef<number | null>(null);
 
   // Map of tags by ID for instant O(1) lookup
   const tagsById = useMemo(() => {
@@ -105,8 +107,27 @@ export function TagSelectField({
 
   const closeDropdown = () => {
     setIsOpen(false);
+    setIsClosing(true);
     setSearchQuery("");
+    const duration = Number.parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue(
+        "--dropdown-close-dur",
+      ),
+    );
+    closeTimerRef.current = window.setTimeout(
+      () => setIsClosing(false),
+      Number.isFinite(duration) ? duration : 150,
+    );
   };
+
+  useEffect(
+    () => () => {
+      if (closeTimerRef.current !== null) {
+        window.clearTimeout(closeTimerRef.current);
+      }
+    },
+    [],
+  );
 
   // Close when clicking outside
   useEffect(() => {
@@ -207,6 +228,10 @@ export function TagSelectField({
           if (isOpen) {
             closeDropdown();
           } else {
+            if (closeTimerRef.current !== null) {
+              window.clearTimeout(closeTimerRef.current);
+            }
+            setIsClosing(false);
             setIsOpen(true);
           }
         }}
@@ -240,8 +265,16 @@ export function TagSelectField({
       </button>
 
       {/* Dropdown Popover */}
-      {isOpen && !isDisabled && (
-        <div className="z-50 mt-1 flex max-h-64 w-full flex-col overflow-hidden rounded-lg border border-border bg-popover text-sm text-popover-foreground shadow-overlay">
+      {(isOpen || isClosing) && !isDisabled && (
+        <div
+          data-origin="top-left"
+          aria-hidden={isClosing || undefined}
+          inert={isClosing}
+          className={cn(
+            "t-dropdown z-50 mt-1 flex max-h-64 w-full flex-col overflow-hidden rounded-lg border border-border bg-popover text-sm text-popover-foreground shadow-overlay",
+            isOpen ? "is-open" : "is-closing",
+          )}
+        >
           {/* Search filter input */}
           <div className="flex items-center border-b border-border px-2.5 py-1.5">
             <SearchIcon className="mr-2 size-3.5 shrink-0 text-muted-foreground" />

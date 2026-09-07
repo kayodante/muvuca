@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { DEMO_ITEMS, DEMO_TAGS, type DemoItem } from "@/lib/landing/demo-data";
 import { TagChip } from "@/components/tags/TagChip";
 import {
@@ -27,21 +27,45 @@ type FilterType = (typeof FILTER_TABS)[number]["id"];
 export function LandingGalleryOverview() {
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [pillStyle, setPillStyle] = useState<{ left: number; width: number }>({
-    left: 0,
-    width: 0,
-  });
+  const pillRef = useRef<HTMLSpanElement>(null);
   const tabRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
-  useEffect(() => {
-    const activeEl = tabRefs.current.get(filterType);
-    if (activeEl) {
-      setPillStyle({
-        left: activeEl.offsetLeft,
-        width: activeEl.offsetWidth,
-      });
+  const movePill = useCallback((tab: HTMLButtonElement, animate: boolean) => {
+    const pill = pillRef.current;
+    if (!pill) return;
+
+    if (!animate) {
+      const previousTransition = pill.style.transition;
+      pill.style.transition = "none";
+      pill.style.transform = `translateX(${tab.offsetLeft}px)`;
+      pill.style.width = `${tab.offsetWidth}px`;
+      void pill.offsetWidth;
+      pill.style.transition = previousTransition;
+      return;
     }
-  }, [filterType]);
+
+    pill.style.transform = `translateX(${tab.offsetLeft}px)`;
+    pill.style.width = `${tab.offsetWidth}px`;
+  }, []);
+
+  useEffect(() => {
+    const positionActiveTab = () => {
+      const activeTab = tabRefs.current.get(filterType);
+      if (activeTab) movePill(activeTab, false);
+    };
+    const frame = window.requestAnimationFrame(positionActiveTab);
+    window.addEventListener("resize", positionActiveTab);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", positionActiveTab);
+    };
+  }, [filterType, movePill]);
+
+  function selectFilter(tab: FilterType, element: HTMLButtonElement) {
+    setFilterType(tab);
+    movePill(element, true);
+  }
 
   const displayedItems = DEMO_ITEMS.filter((item) => {
     if (filterType === "all") return true;
@@ -77,6 +101,7 @@ export function LandingGalleryOverview() {
       const nextTab = FILTER_TABS[nextIndex]!;
       setFilterType(nextTab.id);
       const el = tabRefs.current.get(nextTab.id);
+      if (el) movePill(el, true);
       el?.focus();
     }
   }
@@ -115,19 +140,14 @@ export function LandingGalleryOverview() {
             <div
               role="tablist"
               aria-label="Filtrar acervo por tipo"
-              className="relative flex items-center gap-1 rounded-lg border border-border bg-background p-0.5"
+              className="t-tabs relative flex items-center gap-1 rounded-lg border border-border bg-background p-0.5"
             >
               {/* Sliding active pill indicator */}
-              {pillStyle.width > 0 && (
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute top-0.5 bottom-0.5 rounded bg-secondary transition-all duration-(--motion-base) ease-out-muvuca motion-reduce:transition-none"
-                  style={{
-                    left: `${pillStyle.left}px`,
-                    width: `${pillStyle.width}px`,
-                  }}
-                />
-              )}
+              <span
+                ref={pillRef}
+                aria-hidden="true"
+                className="t-tabs-pill pointer-events-none absolute top-0.5 bottom-0.5 rounded bg-secondary"
+              />
 
               {FILTER_TABS.map((tab) => {
                 const isSelected = filterType === tab.id;
@@ -144,10 +164,12 @@ export function LandingGalleryOverview() {
                     aria-controls="gallery-cards-grid"
                     tabIndex={isSelected ? 0 : -1}
                     type="button"
-                    onClick={() => setFilterType(tab.id)}
+                    onClick={(event) =>
+                      selectFilter(tab.id, event.currentTarget)
+                    }
                     onKeyDown={(e) => handleTabKeyDown(e, tab.id)}
                     className={cn(
-                      "text-metadata relative z-10 rounded px-2.5 py-1 transition-colors duration-(--motion-fast) focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden",
+                      "t-tab text-metadata relative z-10 rounded px-2.5 py-1 transition-colors duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-hidden",
                       isSelected
                         ? "font-medium text-foreground"
                         : "text-muted-foreground hover:text-foreground",

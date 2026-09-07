@@ -451,6 +451,42 @@ body {
     opacity var(--panel-open-dur) var(--panel-ease),
     filter var(--panel-open-dur) var(--panel-ease);
 }
+.t-panel-slide[data-side="right"] {
+  transform: translateX(var(--panel-translate-y));
+}
+.t-panel-slide[data-side="left"] {
+  transform: translateX(calc(var(--panel-translate-y) * -1));
+}
+.t-panel-slide[data-side="bottom"] {
+  transform: translateY(var(--panel-translate-y));
+}
+.t-panel-slide[data-side="top"] {
+  transform: translateY(calc(var(--panel-translate-y) * -1));
+}
+.t-panel-slide[data-side][data-open="true"] {
+  transform: translate(0);
+}
+.t-panel-slide[data-side][data-starting-style],
+.t-panel-slide[data-side][data-ending-style] {
+  opacity: 0;
+  filter: blur(var(--panel-blur));
+}
+.t-panel-slide[data-side="right"][data-starting-style],
+.t-panel-slide[data-side="right"][data-ending-style] {
+  transform: translateX(var(--panel-translate-y));
+}
+.t-panel-slide[data-side="left"][data-starting-style],
+.t-panel-slide[data-side="left"][data-ending-style] {
+  transform: translateX(calc(var(--panel-translate-y) * -1));
+}
+.t-panel-slide[data-side="bottom"][data-starting-style],
+.t-panel-slide[data-side="bottom"][data-ending-style] {
+  transform: translateY(var(--panel-translate-y));
+}
+.t-panel-slide[data-side="top"][data-starting-style],
+.t-panel-slide[data-side="top"][data-ending-style] {
+  transform: translateY(calc(var(--panel-translate-y) * -1));
+}
 
 /**
  * A revelação de entrada parte de `opacity: 0` e só chega ao estado final pelo
@@ -474,6 +510,550 @@ body {
     transform: none;
     filter: none;
     transition: none !important;
+  }
+}
+
+/* transitions.dev — shared hooks installed for the interactive surfaces used
+   by Muvuca. Component-specific colours and layout remain owned by Tailwind. */
+:root {
+  --text-swap-dur: 150ms;
+  --text-swap-translate-y: 4px;
+  --text-swap-blur: 2px;
+  --text-swap-ease: ease-in-out;
+  --dropdown-open-dur: 250ms;
+  --dropdown-close-dur: 150ms;
+  --dropdown-pre-scale: 0.97;
+  --dropdown-closing-scale: 0.99;
+  --dropdown-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --modal-open-dur: 250ms;
+  --modal-close-dur: 150ms;
+  --modal-scale: 0.96;
+  --modal-scale-close: 0.96;
+  --modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --icon-swap-dur: 250ms;
+  --icon-swap-blur: 2px;
+  --icon-swap-start-scale: 0.25;
+  --icon-swap-ease: ease-in-out;
+  --clear-dur: 1000ms;
+  --clear-out-dur: 400ms;
+  --clear-in-dur: 400ms;
+  --clear-out-fly: 12px;
+  --clear-in-fly: 12px;
+  --clear-out-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --clear-in-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --clear-blur: 2px;
+  --glow-delay: 50ms;
+  --glow-peak-at: 0.15;
+  --glow-opacity: 0.42;
+  --glow-spread: 1.5;
+  --pulse-dur: 1000ms;
+  --pulse-count: 1;
+  --pulse-min: 0.5;
+  --reveal-dur: 400ms;
+  --reveal-blur: 2px;
+  --reveal-ease: ease-in-out;
+  --tabs-dur: 250ms;
+  --tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --tabs-text-muted: rgba(15, 15, 15, 0.8);
+  --tabs-text-active: #0f0f0f;
+  --tabs-bar-bg: #f1f1f1;
+  --tabs-pill-bg: #ffffff;
+  --tt-in-dur: 150ms;
+  --tt-out-dur: 50ms;
+  --tt-scale: 0.98;
+  --tt-delay: 80ms;
+  --tt-in-ease: ease-out;
+  --tt-out-ease: ease-out;
+  --tt-bg: #ffffff;
+  --tt-fg: #2f2f2f;
+  --acc-expand: 250ms;
+  --acc-collapse: 250ms;
+  --acc-chevron: 250ms;
+  --acc-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --toast-open: 350ms;
+  --toast-close: 250ms;
+  --toast-distance: 16px;
+  --toast-blur: 2px;
+  --toast-scale: 0.97;
+  --toast-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --matrix-cycle: 1200ms;
+  --matrix-base: #d9d9d9;
+  --matrix-active: #85858f;
+  --matrix-ease: ease-in-out;
+}
+
+.dark {
+  --tabs-text-muted: var(--muted-foreground);
+  --tabs-text-active: var(--foreground);
+  --tabs-bar-bg: var(--card);
+  --tabs-pill-bg: var(--secondary);
+  --tt-bg: var(--foreground);
+  --tt-fg: var(--background);
+  --glow-opacity: 0.85;
+}
+
+.t-text-swap {
+  display: inline-block;
+  transform: translateY(0);
+  filter: blur(0);
+  opacity: 1;
+  transition:
+    transform var(--text-swap-dur) var(--text-swap-ease),
+    filter var(--text-swap-dur) var(--text-swap-ease),
+    opacity var(--text-swap-dur) var(--text-swap-ease);
+  will-change: transform, filter, opacity;
+}
+.t-text-swap.is-exit {
+  transform: translateY(calc(var(--text-swap-translate-y) * -1));
+  filter: blur(var(--text-swap-blur));
+  opacity: 0;
+}
+.t-text-swap.is-enter-start {
+  transform: translateY(var(--text-swap-translate-y));
+  filter: blur(var(--text-swap-blur));
+  opacity: 0;
+  transition: none;
+}
+
+.t-dropdown {
+  transform-origin: top left;
+  transform: scale(var(--dropdown-pre-scale));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--dropdown-open-dur) var(--dropdown-ease),
+    opacity var(--dropdown-open-dur) var(--dropdown-ease);
+  will-change: transform, opacity;
+}
+.t-dropdown[data-origin="top-right"] {
+  transform-origin: top right;
+}
+.t-dropdown[data-origin="top-center"] {
+  transform-origin: top center;
+}
+.t-dropdown[data-origin="bottom-left"] {
+  transform-origin: bottom left;
+}
+.t-dropdown[data-origin="bottom-center"] {
+  transform-origin: bottom center;
+}
+.t-dropdown[data-origin="bottom-right"] {
+  transform-origin: bottom right;
+}
+.t-dropdown.is-open,
+.t-dropdown[data-open] {
+  transform: scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+.t-dropdown.is-closing,
+.t-dropdown[data-ending-style] {
+  transform: scale(var(--dropdown-closing-scale));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--dropdown-close-dur) var(--dropdown-ease),
+    opacity var(--dropdown-close-dur) var(--dropdown-ease);
+}
+.t-dropdown[data-starting-style] {
+  transform: scale(var(--dropdown-pre-scale));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.t-modal {
+  transform-origin: center;
+  transform: scale(var(--modal-scale));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--modal-open-dur) var(--modal-ease),
+    opacity var(--modal-open-dur) var(--modal-ease);
+  will-change: transform, opacity;
+}
+.t-modal.is-open,
+.t-modal[data-open] {
+  transform: scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+.t-modal.is-closing,
+.t-modal[data-ending-style] {
+  transform: scale(var(--modal-scale-close));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--modal-close-dur) var(--modal-ease),
+    opacity var(--modal-close-dur) var(--modal-ease);
+}
+/* Base UI centers these popups with translate on the same transform property
+   used by the transition, so compose both operations explicitly. */
+.t-modal[data-slot="dialog-content"],
+.t-modal[data-slot="alert-dialog-content"] {
+  transform: translate(-50%, -50%) scale(var(--modal-scale));
+}
+.t-modal[data-slot="dialog-content"][data-open],
+.t-modal[data-slot="alert-dialog-content"][data-open] {
+  transform: translate(-50%, -50%) scale(1);
+}
+.t-modal[data-slot="dialog-content"][data-ending-style],
+.t-modal[data-slot="alert-dialog-content"][data-ending-style] {
+  transform: translate(-50%, -50%) scale(var(--modal-scale-close));
+}
+.t-modal[data-starting-style] {
+  transform: scale(var(--modal-scale));
+  opacity: 0;
+  pointer-events: none;
+}
+.t-modal[data-slot="dialog-content"][data-starting-style],
+.t-modal[data-slot="alert-dialog-content"][data-starting-style] {
+  transform: translate(-50%, -50%) scale(var(--modal-scale));
+}
+
+.t-icon-swap {
+  position: relative;
+  display: inline-grid;
+}
+.t-icon-swap .t-icon {
+  grid-area: 1 / 1;
+  transition:
+    opacity var(--icon-swap-dur) var(--icon-swap-ease),
+    filter var(--icon-swap-dur) var(--icon-swap-ease),
+    transform var(--icon-swap-dur) var(--icon-swap-ease);
+  will-change: opacity, filter, transform;
+}
+.t-icon-swap[data-state="a"] .t-icon[data-icon="a"],
+.t-icon-swap[data-state="b"] .t-icon[data-icon="b"] {
+  opacity: 1;
+  filter: blur(0);
+  transform: scale(1);
+}
+.t-icon-swap[data-state="a"] .t-icon[data-icon="b"],
+.t-icon-swap[data-state="b"] .t-icon[data-icon="a"] {
+  opacity: 0;
+  filter: blur(var(--icon-swap-blur));
+  transform: scale(var(--icon-swap-start-scale));
+}
+
+.t-clear {
+  position: relative;
+  overflow: hidden;
+}
+.t-clear-mirror,
+.t-clear-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  z-index: 2;
+}
+.t-clear-mirror {
+  opacity: 0;
+}
+.t-clear.has-value .t-clear-mirror,
+.t-clear.is-clearing .t-clear-mirror {
+  opacity: 1;
+}
+.t-clear.has-value > input,
+.t-clear.is-clearing > input {
+  -webkit-text-fill-color: transparent;
+}
+.t-clear.has-value .t-clear-placeholder {
+  opacity: 0;
+}
+.t-clear-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 3;
+  mix-blend-mode: multiply;
+}
+.dark .t-clear-glow {
+  mix-blend-mode: screen;
+}
+
+.t-skel {
+  position: relative;
+}
+.t-skel-skeleton,
+.t-skel-content {
+  position: absolute;
+  inset: 0;
+}
+.t-skel-skeleton {
+  z-index: 1;
+  opacity: 1;
+  filter: blur(0);
+  transition:
+    opacity var(--reveal-dur) var(--reveal-ease),
+    filter var(--reveal-dur) var(--reveal-ease);
+}
+.t-skel-content {
+  z-index: 2;
+  opacity: 0;
+  filter: blur(var(--reveal-blur));
+  transition:
+    opacity var(--reveal-dur) var(--reveal-ease),
+    filter var(--reveal-dur) var(--reveal-ease);
+}
+.t-skel.is-revealed .t-skel-skeleton {
+  opacity: 0;
+  filter: blur(var(--reveal-blur));
+}
+.t-skel.is-revealed .t-skel-content {
+  opacity: 1;
+  filter: blur(0);
+}
+.t-skel.is-resetting .t-skel-skeleton,
+.t-skel.is-resetting .t-skel-content {
+  transition: none !important;
+}
+.t-skel-skeleton.is-pulsing > * {
+  animation: t-skel-pulse var(--pulse-dur) ease-in-out var(--pulse-count);
+}
+@keyframes t-skel-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: var(--pulse-min);
+  }
+}
+
+.t-tabs {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 48px;
+  background: var(--tabs-bar-bg);
+}
+.t-tab {
+  position: relative;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  height: 30px;
+  padding: 4px 12px;
+  color: var(--tabs-text-muted);
+  cursor: pointer;
+  border-radius: 48px;
+  z-index: 1;
+  transition: color var(--tabs-dur) var(--tabs-ease);
+}
+.t-tab:not([aria-selected="true"]):hover,
+.t-tab[aria-selected="true"] {
+  color: var(--tabs-text-active);
+}
+.t-tabs-pill {
+  position: absolute;
+  top: 3px;
+  left: 0;
+  height: 30px;
+  width: 0;
+  background: var(--tabs-pill-bg);
+  border-radius: 48px;
+  transform: translateX(0);
+  transition:
+    transform var(--tabs-dur) var(--tabs-ease),
+    width var(--tabs-dur) var(--tabs-ease);
+  will-change: transform, width;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.t-tt-wrap {
+  position: relative;
+  display: inline-block;
+}
+.t-tt {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translate(-50%, 0) scale(var(--tt-scale));
+  transform-origin: 50% 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--tt-bg);
+  color: var(--tt-fg);
+  white-space: nowrap;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.06),
+    0 2px 6px 0 rgba(0, 0, 0, 0.05),
+    0 4px 42px 0 rgba(0, 0, 0, 0.06);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--tt-out-dur) var(--tt-out-ease),
+    transform var(--tt-out-dur) var(--tt-out-ease);
+}
+.t-tt-wrap:hover .t-tt,
+.t-tt-trigger:focus-visible + .t-tt,
+.t-tt[data-open] {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+  transition-duration: var(--tt-in-dur);
+  transition-timing-function: var(--tt-in-ease);
+  transition-delay: var(--tt-delay);
+}
+/* Base UI's Positioner owns screen placement; the popup only scales there. */
+.t-tt[data-slot="tooltip-content"] {
+  position: relative;
+  inset: auto;
+  transform: scale(var(--tt-scale));
+  transform-origin: var(--transform-origin);
+}
+.t-tt[data-slot="tooltip-content"][data-open] {
+  transform: scale(1);
+}
+.t-tt[data-slot="tooltip-content"][data-starting-style],
+.t-tt[data-slot="tooltip-content"][data-ending-style] {
+  transform: scale(var(--tt-scale));
+  opacity: 0;
+}
+.t-tt[data-instant] {
+  transition-duration: 0ms;
+  transition-delay: 0ms;
+}
+
+.t-acc-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--acc-collapse) var(--acc-ease);
+}
+.t-acc[data-open="true"] .t-acc-panel {
+  grid-template-rows: 1fr;
+  transition: grid-template-rows var(--acc-expand) var(--acc-ease);
+}
+.t-acc-panel-inner {
+  overflow: hidden;
+  opacity: 0;
+  filter: blur(2px);
+  transition:
+    opacity var(--acc-collapse) var(--acc-ease),
+    filter var(--acc-collapse) var(--acc-ease);
+}
+.t-acc[data-open="true"] .t-acc-panel-inner {
+  opacity: 1;
+  filter: blur(0);
+  transition:
+    opacity var(--acc-expand) var(--acc-ease),
+    filter var(--acc-expand) var(--acc-ease);
+}
+.t-acc-chevron {
+  display: inline-flex;
+  transform: scaleY(1);
+  transform-origin: center;
+  transition: transform var(--acc-chevron) var(--acc-ease);
+}
+.t-acc-chevron path {
+  vector-effect: non-scaling-stroke;
+}
+.t-acc[data-open="true"] .t-acc-chevron {
+  transform: scaleY(-1);
+}
+
+.t-toast {
+  opacity: 0;
+  transform: translateY(var(--toast-distance)) scale(var(--toast-scale));
+  filter: blur(var(--toast-blur));
+  will-change: transform, opacity, filter;
+  transition:
+    opacity var(--toast-close) var(--toast-ease),
+    transform var(--toast-close) var(--toast-ease),
+    filter var(--toast-close) var(--toast-ease);
+}
+.t-toast.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+  transition:
+    opacity var(--toast-open) var(--toast-ease),
+    transform var(--toast-open) var(--toast-ease),
+    filter var(--toast-open) var(--toast-ease);
+}
+/* Sonner stores stack/swipe placement in --y. Keep that transform and add the
+   transitions.dev scale around it without taking over swipe interactions. */
+[data-sonner-toast].t-toast.t-toast:not([data-swiping="true"]):not(
+    [data-swiped="true"]
+  ) {
+  transform: var(--y) scale(var(--toast-scale));
+  transition:
+    opacity var(--toast-close) var(--toast-ease),
+    transform var(--toast-close) var(--toast-ease),
+    filter var(--toast-close) var(--toast-ease),
+    height 400ms,
+    box-shadow 200ms;
+}
+[data-sonner-toast].t-toast.t-toast[data-mounted="true"]:not(
+    [data-removed="true"]
+  ):not([data-swiping="true"]):not([data-swiped="true"]) {
+  opacity: 1;
+  transform: var(--y) scale(1);
+  filter: blur(0);
+  transition:
+    opacity var(--toast-open) var(--toast-ease),
+    transform var(--toast-open) var(--toast-ease),
+    filter var(--toast-open) var(--toast-ease),
+    height 400ms,
+    box-shadow 200ms;
+}
+
+.t-matrix {
+  display: grid;
+  grid-template-columns: repeat(4, 2px);
+  grid-auto-rows: 2px;
+  gap: 2px;
+}
+.t-matrix i {
+  display: block;
+  background: var(--matrix-base);
+  animation: t-matrix-pulse var(--matrix-cycle) var(--matrix-ease) infinite;
+  animation-delay: calc(var(--d, 0) * 1ms);
+}
+.t-matrix i.is-gap {
+  visibility: hidden;
+  animation: none;
+}
+@keyframes t-matrix-pulse {
+  0%,
+  45%,
+  100% {
+    background-color: var(--matrix-base);
+  }
+  15% {
+    background-color: var(--matrix-active);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-text-swap,
+  .t-dropdown,
+  .t-modal,
+  .t-icon-swap .t-icon,
+  .t-skel-skeleton,
+  .t-skel-content,
+  .t-tabs-pill,
+  .t-tab,
+  .t-tt,
+  .t-acc-panel,
+  .t-acc-panel-inner,
+  .t-acc-chevron,
+  .t-toast {
+    transition: none !important;
+  }
+  .t-clear-glow {
+    opacity: 0 !important;
+  }
+  .t-skel-skeleton.is-pulsing > *,
+  .t-matrix i {
+    animation: none !important;
   }
 }
 

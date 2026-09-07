@@ -28,13 +28,32 @@ const THEME_META: Record<Theme, { label: string; icon: LucideIcon }> = {
   dark: { label: "Escuro", icon: MoonIcon },
 };
 
+function ThemeStateIcon({ theme }: { theme: Theme }) {
+  return (
+    <span className="relative inline-block size-4">
+      {THEME_ORDER.map((value) => {
+        const Icon = THEME_META[value].icon;
+        return (
+          <span
+            key={value}
+            className="t-icon-swap absolute inset-0"
+            data-state={theme === value ? "a" : "b"}
+          >
+            <Icon aria-hidden="true" data-icon="a" className="t-icon size-4" />
+            <span aria-hidden="true" data-icon="b" className="t-icon" />
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
 /** Theme picker. No client-side theme state: selecting an
  * option calls the `setTheme` Server Action, which revalidates the root
  * layout so the new class lands on `<html>` on the next render. */
 export function ThemeToggle({ theme }: { theme: Theme }) {
   const [isPending, startTransition] = useTransition();
   const current = THEME_META[theme];
-  const CurrentIcon = current.icon;
 
   return (
     <DropdownMenu>
@@ -48,7 +67,7 @@ export function ThemeToggle({ theme }: { theme: Theme }) {
           />
         }
       >
-        <CurrentIcon aria-hidden="true" />
+        <ThemeStateIcon theme={theme} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {THEME_ORDER.map((value) => {
