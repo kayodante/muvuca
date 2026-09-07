@@ -5,6 +5,7 @@ vi.mock("@/lib/security/logging", () => ({ logEvent: logEventMock }));
 
 import { enrichOne, type EnrichDeps } from "../enrich";
 import { PREVIEW_ERROR_CODES, PreviewError } from "../errors";
+import { extractHeadMetadata as realExtractHeadMetadata } from "../html";
 import type { HeadMetadata } from "../html";
 import type { SafeResponse } from "../fetch";
 import type { ProcessedImage } from "../image";
@@ -288,6 +289,43 @@ describe("enrichOne", () => {
       expect(outcome.thumbnail).toEqual(thumb);
       expect(outcome.thumbnailSource).toBe("og_image");
       expect(outcome.favicon).toEqual(icon);
+    }
+  });
+
+  it("still extracts title/description and fetches the thumbnail from HTML truncated mid-document past the 512 KiB head-extraction cap (real extractHeadMetadata, simulating fetch.ts's truncateOnOverflow)", async () => {
+    const headPrefix =
+      "<html><head><title>Big Site</title>" +
+      '<meta name="description" content="A big page.">' +
+      '<meta property="og:image" content="https://example.com/og.png">';
+    // Pushes the closing </head> well past both fetch.ts's HTML byte cap and
+    // extractHeadMetadata's own 512 KiB MAX_HTML_CHARS -- the truncated
+    // buffer below contains no </head> at all.
+    const filler = "a".repeat(600 * 1024);
+    const fullHtml = `${headPrefix}${filler}</head><body></body></html>`;
+    const truncatedBody = Buffer.from(fullHtml, "utf-8").subarray(
+      0,
+      512 * 1024,
+    );
+
+    const thumb = processedImage({ sha256: "d".repeat(64) });
+    const deps = baseDeps({
+      extractHeadMetadata: realExtractHeadMetadata,
+      safeRequest: vi
+        .fn()
+        .mockResolvedValueOnce(htmlResponse({ body: truncatedBody }))
+        .mockResolvedValueOnce(
+          htmlResponse({ body: Buffer.from("image-bytes") }),
+        ),
+      processThumbnail: vi.fn().mockResolvedValue(thumb),
+    });
+
+    const outcome = await enrichOne(JOB, deps);
+    expect(outcome.status).toBe("ready");
+    if (outcome.status === "ready") {
+      expect(outcome.title).toBe("Big Site");
+      expect(outcome.description).toBe("A big page.");
+      expect(outcome.thumbnail).toEqual(thumb);
+      expect(outcome.thumbnailSource).toBe("og_image");
     }
   });
 

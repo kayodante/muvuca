@@ -30,6 +30,16 @@ export type SafeRequestOptions = {
   totalTimeoutMs?: number;
   /** Injectable for tests (e.g. a permissive policy for a local test server); defaults to `defaultSsrfPolicy()`. */
   policy?: SsrfPolicy;
+  /**
+   * Default `false` (existing hard-cap behavior: reject with `too_large`,
+   * whether the overflow is detected from a declared `Content-Length` or
+   * from the body actually exceeding `maxBytes`). When `true`, both cases
+   * instead resolve with the bytes read up to `maxBytes` -- the body is
+   * truncated, not the request failed. Meant for HTML fetches where only
+   * the (small, front-of-document) `<head>` is needed; never set for
+   * images, which must decode as a whole file.
+   */
+  truncateOnOverflow?: boolean;
 };
 
 const USER_AGENT = "Muvuca/1.0 (+https://muvuca.app)";
@@ -74,6 +84,7 @@ export async function safeRequest(
       maxBytes: options.maxBytes,
       connectTimeoutMs,
       deadline,
+      truncateOnOverflow: options.truncateOnOverflow ?? false,
     });
 
     if (raw.kind === "redirect") {
@@ -184,6 +195,7 @@ function performHttpRequest(
     maxBytes: number;
     connectTimeoutMs: number;
     deadline: number;
+    truncateOnOverflow: boolean;
   },
 ): Promise<RawRedirect | RawSuccess> {
   return new Promise((resolve, reject) => {
@@ -326,6 +338,7 @@ function performHttpRequest(
           ? Number(res.headers["content-length"])
           : null;
       if (
+        !opts.truncateOnOverflow &&
         declaredLength !== null &&
         Number.isFinite(declaredLength) &&
         declaredLength > opts.maxBytes
@@ -334,12 +347,28 @@ function performHttpRequest(
         settleReject(new PreviewError("too_large"));
         return;
       }
+      // else (truncateOnOverflow): ignore the declared length up front --
+      // keep reading, and let the byte-count check below truncate once the
+      // body actually reaches maxBytes.
 
       const chunks: Buffer[] = [];
       let received = 0;
       res.on("data", (chunk: Buffer) => {
         received += chunk.length;
         if (received > opts.maxBytes) {
+          if (opts.truncateOnOverflow) {
+            const keep = chunk.length - (received - opts.maxBytes);
+            if (keep > 0) chunks.push(chunk.subarray(0, keep));
+            res.destroy();
+            req.destroy();
+            settleResolve({
+              kind: "success",
+              status,
+              contentType: contentTypeHeader,
+              body: Buffer.concat(chunks),
+            });
+            return;
+          }
           res.destroy();
           req.destroy();
           settleReject(new PreviewError("too_large"));

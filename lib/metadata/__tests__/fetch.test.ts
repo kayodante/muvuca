@@ -153,6 +153,70 @@ describe("safeRequest", () => {
     expect(serverSawClose).toBe(true);
   });
 
+  it("with truncateOnOverflow, resolves with the body truncated to maxBytes instead of rejecting", async () => {
+    const { url } = await listen((_req, res) => {
+      res.writeHead(200, { "Content-Type": "text/html" });
+      res.end("x".repeat(baseOptions.maxBytes * 4));
+    });
+
+    const response = await safeRequest(url, {
+      ...baseOptions,
+      truncateOnOverflow: true,
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.length).toBe(baseOptions.maxBytes);
+  });
+
+  it("without truncateOnOverflow (default), still rejects with too_large past the cap", async () => {
+    const { url } = await listen((_req, res) => {
+      res.writeHead(200, { "Content-Type": "text/html" });
+      res.end("x".repeat(baseOptions.maxBytes * 4));
+    });
+
+    await expect(safeRequest(url, baseOptions)).rejects.toMatchObject({
+      code: "too_large",
+    });
+  });
+
+  it("with truncateOnOverflow, a declared Content-Length above the cap does not reject up front -- it reads and truncates to maxBytes", async () => {
+    const { url } = await listen((_req, res) => {
+      res.writeHead(200, {
+        "Content-Type": "text/html",
+        "Content-Length": String(baseOptions.maxBytes * 10),
+      });
+      res.end("y".repeat(baseOptions.maxBytes * 10));
+    });
+
+    const response = await safeRequest(url, {
+      ...baseOptions,
+      truncateOnOverflow: true,
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.length).toBe(baseOptions.maxBytes);
+  });
+
+  it("without truncateOnOverflow, a declared Content-Length above the cap still rejects up front, before reading the body", async () => {
+    let bodyWasRead = false;
+    const { url } = await listen((_req, res) => {
+      res.writeHead(200, {
+        "Content-Type": "text/html",
+        "Content-Length": String(baseOptions.maxBytes * 10),
+      });
+      const timer = setInterval(() => {
+        bodyWasRead = true;
+        res.write("z".repeat(64));
+      }, 5);
+      res.on("close", () => clearInterval(timer));
+    });
+
+    await expect(safeRequest(url, baseOptions)).rejects.toMatchObject({
+      code: "too_large",
+    });
+    void bodyWasRead;
+  });
+
   it("rejects with invalid_content_type for a disallowed Content-Type", async () => {
     const { url } = await listen((_req, res) => {
       res.writeHead(200, { "Content-Type": "application/pdf" });

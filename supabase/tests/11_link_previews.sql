@@ -16,7 +16,7 @@
 
 begin;
 
-select plan(63);
+select plan(65);
 
 select ok(
   (select relforcerowsecurity from pg_class where oid = 'public.link_previews'::regclass),
@@ -641,9 +641,10 @@ select is(
   'A''s next_attempt_at is unchanged after B''s denied reschedule/claim attempts'
 );
 
--- request_preview_reschedule_for_items must never touch a 'ready' row: the
--- periodic 30-day refresh and the per-item "Atualizar prévia" already cover
--- it, and batch-rescheduling it would throw away a good cached preview.
+-- request_preview_reschedule_for_items must never touch a 'ready' row that
+-- HAS a thumbnail: the periodic 30-day refresh and the per-item "Atualizar
+-- prévia" already cover it, and batch-rescheduling it would throw away a
+-- good cached preview.
 with new_ready_reschedule_item as (
   insert into public.library_items (user_id, type, title, url, normalized_url)
   values ((select auth.uid()), 'link', 'Ready Reschedule Item', 'https://a.example/ready-reschedule', 'https://a.example/ready-reschedule')
@@ -652,7 +653,8 @@ with new_ready_reschedule_item as (
 insert into fixture_ids select 'item_ready_reschedule', id from new_ready_reschedule_item;
 
 update public.link_previews
-   set status = 'ready', attempts = 0, error_code = null, next_attempt_at = now() + interval '25 days'
+   set status = 'ready', attempts = 0, error_code = null, next_attempt_at = now() + interval '25 days',
+       thumbnail_hash = repeat('a', 64), thumbnail_width = 640, thumbnail_height = 360
  where item_id = (select id from fixture_ids where label = 'item_ready_reschedule');
 
 select is(
@@ -660,13 +662,44 @@ select is(
     array[(select id from fixture_ids where label = 'item_ready_reschedule')]
   )),
   0,
-  'request_preview_reschedule_for_items reschedules 0 rows for a ready item'
+  'request_preview_reschedule_for_items reschedules 0 rows for a ready item that has a thumbnail'
 );
 
 select is(
   (select status::text from public.link_previews where item_id = (select id from fixture_ids where label = 'item_ready_reschedule')),
   'ready',
-  'a ready row stays ready after request_preview_reschedule_for_items'
+  'a ready row with a thumbnail stays ready after request_preview_reschedule_for_items'
+);
+
+-- 20260827000000_0026_reschedule_ready_missing_thumbnail.sql: a 'ready' row
+-- with NO thumbnail_hash (enrichOne finishes 'ready' even when the
+-- thumbnail fetch failed transiently -- see lib/metadata/enrich.ts) is
+-- exactly the card the "Atualizar pré-visualizações" button is meant to
+-- fix, so it MUST be rescheduled unlike the thumbnailed case above.
+with new_ready_no_thumbnail_item as (
+  insert into public.library_items (user_id, type, title, url, normalized_url)
+  values ((select auth.uid()), 'link', 'Ready No Thumbnail Item', 'https://a.example/ready-no-thumbnail', 'https://a.example/ready-no-thumbnail')
+  returning id
+)
+insert into fixture_ids select 'item_ready_no_thumbnail', id from new_ready_no_thumbnail_item;
+
+update public.link_previews
+   set status = 'ready', attempts = 0, error_code = null, next_attempt_at = now() + interval '25 days',
+       thumbnail_hash = null, thumbnail_width = null, thumbnail_height = null
+ where item_id = (select id from fixture_ids where label = 'item_ready_no_thumbnail');
+
+select is(
+  (select public.request_preview_reschedule_for_items(
+    array[(select id from fixture_ids where label = 'item_ready_no_thumbnail')]
+  )),
+  1,
+  'request_preview_reschedule_for_items reschedules a ready row that has no thumbnail_hash'
+);
+
+select is(
+  (select status::text from public.link_previews where item_id = (select id from fixture_ids where label = 'item_ready_no_thumbnail')),
+  'pending',
+  'a ready row with no thumbnail_hash goes back to pending after request_preview_reschedule_for_items'
 );
 
 -- request_preview_reschedule_for_items must never touch a 'failed' row
