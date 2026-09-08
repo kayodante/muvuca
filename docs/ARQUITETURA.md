@@ -51,7 +51,8 @@ app/                  Rotas do Next.js App Router
   (app)/              Rotas autenticadas (biblioteca, tags, configurações)
   (auth)/login/       Tela de login (magic link)
   auth/confirm/       Route Handler que troca o token/code por sessão
-  api/previews/       Proxy same-origin para imagens de preview
+  api/previews/       Proxy same-origin para imagens de preview e a rota
+                      que drena a fila de enriquecimento
 components/           Componentes React, organizados por área de produto
 lib/
   actions/            Server Actions (mutações)
@@ -59,6 +60,7 @@ lib/
   validation/         Schemas Zod compartilhados entre cliente e servidor
   security/           Headers, CSP, logger central, validação de redirect
   metadata/           Fetcher SSRF-hardened para enriquecimento de link
+  previews/           Fila de previews: claim, enriquecimento, conclusão
   supabase/           Clientes Supabase (browser, server, proxy)
   tags/, bookmarks/, backup/, export/, prompt/, theme/, storage/
                        Lógica de domínio pura, testável sem I/O quando possível
@@ -86,6 +88,14 @@ Três entidades centrais, todas com `user_id` obrigatório e RLS:
 
 Tabelas de suporte: `user_preferences` (tema), `link_previews` (fila de
 enriquecimento de metadados e cache de thumbnail/favicon).
+
+A fila de previews é drenada pelo próprio cliente, através de um Route
+Handler dedicado — e não de uma Server Action, porque Server Actions são
+serializadas por cliente e uma varredura em segundo plano competiria com
+importação e edição. O hook drena primeiro os links visíveis na página e,
+quando esses acabam, o restante da fila do usuário. Retry, backoff e
+classificação de erro permanente vivem em RPCs (`claim_preview_jobs`,
+`complete_preview_job`), não no cliente.
 
 O schema completo, com todas as constraints e índices, está em
 `supabase/migrations/` — as migrations são a fonte de verdade, numeradas e
