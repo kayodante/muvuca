@@ -577,9 +577,23 @@ body {
   --toast-scale: 0.97;
   --toast-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --matrix-cycle: 1200ms;
-  --matrix-base: #d9d9d9;
-  --matrix-active: #85858f;
+  --matrix-base: color-mix(in oklch, var(--primary) 30%, transparent);
+  --matrix-active: var(--primary);
   --matrix-ease: ease-in-out;
+}
+
+@media (prefers-color-scheme: dark) {
+  /* Same system-theme exception as the color block above: a user who never
+     picked a theme still gets these on a dark OS, not the light defaults. */
+  :root:not(.light) {
+    --tabs-text-muted: var(--muted-foreground);
+    --tabs-text-active: var(--foreground);
+    --tabs-bar-bg: var(--card);
+    --tabs-pill-bg: var(--secondary);
+    --tt-bg: var(--foreground);
+    --tt-fg: var(--background);
+    --glow-opacity: 0.85;
+  }
 }
 
 .dark {
@@ -693,7 +707,6 @@ body {
 }
 
 .t-icon-swap {
-  position: relative;
   display: inline-grid;
 }
 .t-icon-swap .t-icon {
@@ -732,19 +745,15 @@ body {
   overflow: hidden;
   z-index: 2;
 }
-.t-clear-mirror {
+.t-clear-mirror,
+.t-clear-placeholder {
   opacity: 0;
 }
-.t-clear.has-value .t-clear-mirror,
 .t-clear.is-clearing .t-clear-mirror {
   opacity: 1;
 }
-.t-clear.has-value > input,
 .t-clear.is-clearing > input {
   -webkit-text-fill-color: transparent;
-}
-.t-clear.has-value .t-clear-placeholder {
-  opacity: 0;
 }
 .t-clear-glow {
   position: absolute;
