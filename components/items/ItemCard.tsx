@@ -52,19 +52,19 @@ const TYPE_META = {
     label: "link",
     hue: "text-type-link",
     Icon: LinkIcon,
-    hint: "Link salvo: abre o site original em uma nova aba.",
+    hint: "Um conteúdo salvo da web para acessar depois.",
   },
   prompt: {
     label: "prompt",
     hue: "text-type-prompt",
     Icon: FileTextIcon,
-    hint: "Prompt: texto reutilizável para modelos de IA.",
+    hint: "Um prompt salvo para usar novamente com IA.",
   },
   code_component: {
     label: "code",
     hue: "text-type-code",
     Icon: CodeXmlIcon,
-    hint: "Componente de código: trecho reutilizável para colar no projeto.",
+    hint: "Um código ou snippet para consultar e reutilizar.",
   },
 } as const;
 
@@ -213,7 +213,7 @@ export function ItemCard({
             <button
               type="button"
               aria-label={typeMeta.hint}
-              className="rounded-full text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+              className="pointer-events-auto rounded-full text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
             />
           }
         >

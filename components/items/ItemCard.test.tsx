@@ -96,6 +96,20 @@ async function renderCard(
 }
 
 describe("ItemCard", () => {
+  it.each([
+    [mockLink, "Um conteúdo salvo da web para acessar depois."],
+    [mockPrompt, "Um prompt salvo para usar novamente com IA."],
+    [mockCodeComponent, "Um código ou snippet para consultar e reutilizar."],
+  ] as const)(
+    "expõe a descrição do tipo no botão de ajuda",
+    async (item, hint) => {
+      const dom = await renderCard(item);
+      const helpButton = dom.querySelector(`button[aria-label="${hint}"]`);
+
+      expect(helpButton).not.toBeNull();
+    },
+  );
+
   it("renderiza card de link com hostname e link externo seguro", async () => {
     const dom = await renderCard(mockLink);
     expect(dom.textContent).toContain("Next.js Documentation");
