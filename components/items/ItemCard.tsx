@@ -213,7 +213,15 @@ export function ItemCard({
             <button
               type="button"
               aria-label={typeMeta.hint}
-              className="pointer-events-auto rounded-full text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+              // O ícone continua 10x10 (size-2.5, decisão de design fechada),
+              // mas o alvo de toque real era a própria caixa do botão --
+              // menor alvo interativo do produto. `after:-inset-[7px]` estica
+              // a área clicável para 24x24 sem tocar no layout: um
+              // pseudo-elemento absoluto sai do fluxo, então o `gap-2` da
+              // linha do badge não muda. O anel de foco fica no botão em si
+              // (10x10), não no pseudo-elemento -- o anel acompanha o ícone,
+              // a área de toque invisível é só clicável.
+              className="pointer-events-auto relative rounded-full text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca outline-none after:absolute after:-inset-[7px] after:content-[''] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
             />
           }
         >
@@ -451,6 +459,18 @@ export function ItemCard({
     </div>
   );
 
+  // Tags além das 3 exibidas: o "+N" era mudo -- dizia que havia mais e não
+  // dizia quais, nem para leitor de tela. Não vira tab stop (48 itens por
+  // página seriam 48 paradas de Tab por um dado secundário) nem Tooltip do
+  // Base UI (exige trigger focável); o número visível é `aria-hidden`, um
+  // irmão `sr-only` nomeia as tags restantes, e `title` cobre quem usa
+  // ponteiro sem focar.
+  const hiddenTags = associatedTags.slice(3);
+  const hiddenTagsLabel =
+    hiddenTags.length > 0
+      ? `Mais ${hiddenTags.length} ${hiddenTags.length === 1 ? "tag" : "tags"}: ${hiddenTags.map((tag) => tag.name).join(", ")}`
+      : null;
+
   const tagsBlock = associatedTags.length > 0 && (
     <div className="mt-auto flex flex-wrap gap-1.5">
       {associatedTags.slice(0, 3).map((tag) => (
@@ -461,9 +481,13 @@ export function ItemCard({
           href={`/tags/${tag.id}`}
         />
       ))}
-      {associatedTags.length > 3 && (
-        <span className="text-metadata self-center text-muted-foreground">
-          +{associatedTags.length - 3}
+      {hiddenTagsLabel && (
+        <span
+          className="text-metadata self-center text-muted-foreground"
+          title={hiddenTagsLabel}
+        >
+          <span aria-hidden="true">+{hiddenTags.length}</span>
+          <span className="sr-only">{hiddenTagsLabel}</span>
         </span>
       )}
     </div>
