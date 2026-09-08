@@ -412,7 +412,10 @@ export function ItemCard({
       {displayDescription && (
         <p
           dir="auto"
-          className="text-body-sm line-clamp-1 [overflow-wrap:anywhere] text-muted-foreground"
+          className={cn(
+            "text-body-sm [overflow-wrap:anywhere] text-muted-foreground",
+            item.type === "link" ? "line-clamp-2" : "line-clamp-1",
+          )}
         >
           {displayDescription}
         </p>
@@ -424,9 +427,18 @@ export function ItemCard({
   // paragraph: at the same size and color as the description it used to
   // read as one continuous block, and the panel says "this is the stored
   // content" without spending a second type size on it.
+  //
+  // The panel hugs its content instead of stretching (`flex-1` removed):
+  // the height cap already comes from `line-clamp-6` on the <p> +
+  // overflow-hidden, so `flex-1` had no job left except soaking up the
+  // grid row's `align-items: stretch` leftover as blank padding -- measured
+  // at 161.8px of panel for a single ~20px line of text. Whatever leftover
+  // the row still has now falls through to `tagsBlock`'s `mt-auto`, which
+  // anchors tags to the card's bottom edge; with no tags it just sits at
+  // the card's own bottom, same as the link layout.
   const previewPanel = (item.type === "prompt" ||
     item.type === "code_component") && (
-    <div className="flex min-h-0 flex-1 overflow-hidden rounded-md bg-secondary p-3">
+    <div className="overflow-hidden rounded-md bg-secondary p-3">
       <p
         dir="auto"
         className={cn(
