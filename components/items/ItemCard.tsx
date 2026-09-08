@@ -213,7 +213,15 @@ export function ItemCard({
             <button
               type="button"
               aria-label={typeMeta.hint}
-              className="pointer-events-auto rounded-full text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+              // O ícone continua 10x10 (size-2.5, decisão de design fechada),
+              // mas o alvo de toque real era a própria caixa do botão --
+              // menor alvo interativo do produto. `after:-inset-[7px]` estica
+              // a área clicável para 24x24 sem tocar no layout: um
+              // pseudo-elemento absoluto sai do fluxo, então o `gap-2` da
+              // linha do badge não muda. O anel de foco fica no botão em si
+              // (10x10), não no pseudo-elemento -- o anel acompanha o ícone,
+              // a área de toque invisível é só clicável.
+              className="pointer-events-auto relative rounded-full text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca outline-none after:absolute after:-inset-[7px] after:content-[''] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
             />
           }
         >
@@ -412,7 +420,10 @@ export function ItemCard({
       {displayDescription && (
         <p
           dir="auto"
-          className="text-body-sm line-clamp-1 [overflow-wrap:anywhere] text-muted-foreground"
+          className={cn(
+            "text-body-sm [overflow-wrap:anywhere] text-muted-foreground",
+            item.type === "link" ? "line-clamp-2" : "line-clamp-1",
+          )}
         >
           {displayDescription}
         </p>
@@ -424,9 +435,18 @@ export function ItemCard({
   // paragraph: at the same size and color as the description it used to
   // read as one continuous block, and the panel says "this is the stored
   // content" without spending a second type size on it.
+  //
+  // The panel hugs its content instead of stretching (`flex-1` removed):
+  // the height cap already comes from `line-clamp-6` on the <p> +
+  // overflow-hidden, so `flex-1` had no job left except soaking up the
+  // grid row's `align-items: stretch` leftover as blank padding -- measured
+  // at 161.8px of panel for a single ~20px line of text. Whatever leftover
+  // the row still has now falls through to `tagsBlock`'s `mt-auto`, which
+  // anchors tags to the card's bottom edge; with no tags it just sits at
+  // the card's own bottom, same as the link layout.
   const previewPanel = (item.type === "prompt" ||
     item.type === "code_component") && (
-    <div className="flex min-h-0 flex-1 overflow-hidden rounded-md bg-secondary p-3">
+    <div className="overflow-hidden rounded-md bg-secondary p-3">
       <p
         dir="auto"
         className={cn(
@@ -439,6 +459,18 @@ export function ItemCard({
     </div>
   );
 
+  // Tags além das 3 exibidas: o "+N" era mudo -- dizia que havia mais e não
+  // dizia quais, nem para leitor de tela. Não vira tab stop (48 itens por
+  // página seriam 48 paradas de Tab por um dado secundário) nem Tooltip do
+  // Base UI (exige trigger focável); o número visível é `aria-hidden`, um
+  // irmão `sr-only` nomeia as tags restantes, e `title` cobre quem usa
+  // ponteiro sem focar.
+  const hiddenTags = associatedTags.slice(3);
+  const hiddenTagsLabel =
+    hiddenTags.length > 0
+      ? `Mais ${hiddenTags.length} ${hiddenTags.length === 1 ? "tag" : "tags"}: ${hiddenTags.map((tag) => tag.name).join(", ")}`
+      : null;
+
   const tagsBlock = associatedTags.length > 0 && (
     <div className="mt-auto flex flex-wrap gap-1.5">
       {associatedTags.slice(0, 3).map((tag) => (
@@ -449,9 +481,13 @@ export function ItemCard({
           href={`/tags/${tag.id}`}
         />
       ))}
-      {associatedTags.length > 3 && (
-        <span className="text-metadata self-center text-muted-foreground">
-          +{associatedTags.length - 3}
+      {hiddenTagsLabel && (
+        <span
+          className="text-metadata self-center text-muted-foreground"
+          title={hiddenTagsLabel}
+        >
+          <span aria-hidden="true">+{hiddenTags.length}</span>
+          <span className="sr-only">{hiddenTagsLabel}</span>
         </span>
       )}
     </div>
@@ -482,10 +518,16 @@ export function ItemCard({
               />
               {/* Scrim, not decoration: the badge and the action icons sit
                 on whatever the thumbnail happens to show there, and without
-                it their contrast is whatever the remote page decided. */}
+                it their contrast is whatever the remote page decided. Fixed
+                height, not inset-0: the header (badge top 16.8px/13px tall,
+                action buttons top 16.8px/32px tall, base at 48.8px) needs
+                protection only up to ~49px, so the scrim is 96px tall,
+                opaque until 40% (~38px, clearing the header with margin)
+                and fading to transparent by 96px — leaving the rest of the
+                preview uncovered instead of veiling the whole thumbnail. */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 bg-gradient-to-b from-card to-transparent"
+                className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-card from-40% to-transparent"
               />
             </div>
             <div className="flex flex-1 flex-col gap-4 p-4">
@@ -507,30 +549,42 @@ export function ItemCard({
           {tagsBlock && <div className="flex px-4 pb-4">{tagsBlock}</div>}
         </>
       ) : (
-        <>
-          <div className="flex flex-col gap-4 p-4">
-            <div className="flex items-start justify-between gap-2.5">
-              {typeBadge}
-              {actions}
-            </div>
-            {siteRow}
-            {item.type === "prompt" || item.type === "code_component" ? (
-              <button
-                type="button"
-                onClick={onView}
-                className="rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                {content}
-              </button>
-            ) : (
-              content
-            )}
+        <div className="flex flex-1 flex-col gap-4 p-4">
+          <div className="flex items-start justify-between gap-2.5">
+            {typeBadge}
+            {actions}
           </div>
-          <div className="flex flex-1 flex-col gap-4 px-4 pt-2 pb-4">
-            {previewPanel}
-            {tagsBlock}
-          </div>
-        </>
+          {siteRow}
+          {item.type === "prompt" || item.type === "code_component" ? (
+            // The preview panel used to sit outside this button, so the
+            // biggest region of the card (168px measured) had no click
+            // target at all -- elementFromPoint() on it hit the bare <p>,
+            // no <a>/<button> ancestor. Folding previewPanel into the same
+            // button as `content` fixes that without adding a tab stop: it
+            // is still the one control the title/MaximizeIcon already
+            // pointed at (`onView`), just grown to cover the content that
+            // sits above it. `gap-6` (24px), not the surrounding `gap-4`,
+            // reproduces the exact description-to-panel gap the first pass
+            // set up (16px bottom padding + 8px top padding on the two
+            // containers that used to split here). `ring-inset` instead of
+            // the small button's `ring-offset-2`: at this footprint an
+            // offset ring would sit flush against the card's own edges,
+            // reading as a second border rather than focus -- the media
+            // card's full-body anchor already uses inset for the same
+            // reason.
+            <button
+              type="button"
+              onClick={onView}
+              className="flex flex-col gap-6 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+            >
+              {content}
+              {previewPanel}
+            </button>
+          ) : (
+            content
+          )}
+          {tagsBlock}
+        </div>
       )}
     </article>
   );

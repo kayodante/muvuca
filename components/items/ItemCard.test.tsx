@@ -160,6 +160,35 @@ describe("ItemCard", () => {
     expect(handleView).toHaveBeenCalledOnce();
   });
 
+  it.each([
+    [mockPrompt, "You are a senior TypeScript engineer..."],
+    [mockCodeComponent, "export function Button({ children }: ButtonProps) {"],
+  ] as const)(
+    "clicar no painel de preview aciona onView (%s)",
+    async (item, previewText) => {
+      const handleView = vi.fn();
+      const dom = await renderCard(
+        item,
+        mockTags,
+        false,
+        vi.fn(),
+        vi.fn(),
+        handleView,
+      );
+
+      const previewNode = Array.from(dom.querySelectorAll("p")).find((p) =>
+        p.textContent?.includes(previewText),
+      );
+      expect(previewNode).not.toBeUndefined();
+
+      await act(async () => {
+        previewNode?.click();
+      });
+
+      expect(handleView).toHaveBeenCalledOnce();
+    },
+  );
+
   it("copia o prompt com toast de confirmação ao clicar na ação rápida", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
@@ -537,5 +566,100 @@ describe("ItemCard", () => {
       document.body.querySelectorAll('[role="menuitem"]'),
     ).find((el) => el.textContent === "Atualizar prévia");
     expect(refreshItem).toBeUndefined();
+  });
+
+  it("nomeia as tags excedentes para leitor de tela e ponteiro quando há mais de 3", async () => {
+    const manyTags: Tag[] = [
+      ...mockTags,
+      {
+        id: "tag-2",
+        name: "Design",
+        colorToken: "purple",
+        description: null,
+        parentId: null,
+        createdAt: "2026-01-01",
+        updatedAt: "2026-01-01",
+      },
+      {
+        id: "tag-3",
+        name: "Front-end",
+        colorToken: "green",
+        description: null,
+        parentId: null,
+        createdAt: "2026-01-01",
+        updatedAt: "2026-01-01",
+      },
+      {
+        id: "tag-4",
+        name: "Backend",
+        colorToken: "orange",
+        description: null,
+        parentId: null,
+        createdAt: "2026-01-01",
+        updatedAt: "2026-01-01",
+      },
+      {
+        id: "tag-5",
+        name: "UX",
+        colorToken: "pink",
+        description: null,
+        parentId: null,
+        createdAt: "2026-01-01",
+        updatedAt: "2026-01-01",
+      },
+    ];
+    const itemWithManyTags: LibraryItemSummary = {
+      ...mockLink,
+      tagIds: ["tag-1", "tag-2", "tag-3", "tag-4", "tag-5"],
+    };
+
+    const dom = await renderCard(itemWithManyTags, manyTags);
+
+    const visibleCount = Array.from(dom.querySelectorAll("span")).find(
+      (span) => span.textContent === "+2",
+    );
+    expect(visibleCount).not.toBeUndefined();
+    expect(visibleCount?.getAttribute("aria-hidden")).toBe("true");
+
+    const outerSpan = visibleCount?.parentElement;
+    expect(outerSpan?.getAttribute("title")).toBe("Mais 2 tags: Backend, UX");
+
+    const srOnlyLabel = outerSpan?.querySelector("span.sr-only");
+    expect(srOnlyLabel?.textContent).toBe("Mais 2 tags: Backend, UX");
+  });
+
+  it("não mostra '+N' quando o item tem 3 tags ou menos", async () => {
+    const threeTags: Tag[] = [
+      ...mockTags,
+      {
+        id: "tag-2",
+        name: "Design",
+        colorToken: "purple",
+        description: null,
+        parentId: null,
+        createdAt: "2026-01-01",
+        updatedAt: "2026-01-01",
+      },
+      {
+        id: "tag-3",
+        name: "Front-end",
+        colorToken: "green",
+        description: null,
+        parentId: null,
+        createdAt: "2026-01-01",
+        updatedAt: "2026-01-01",
+      },
+    ];
+    const itemWithThreeTags: LibraryItemSummary = {
+      ...mockLink,
+      tagIds: ["tag-1", "tag-2", "tag-3"],
+    };
+
+    const dom = await renderCard(itemWithThreeTags, threeTags);
+
+    const overflowSpan = Array.from(dom.querySelectorAll("span")).find((span) =>
+      span.textContent?.startsWith("+"),
+    );
+    expect(overflowSpan).toBeUndefined();
   });
 });
