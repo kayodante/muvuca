@@ -33,3 +33,6 @@ test-results/
 
 # Local Git worktrees
 .worktrees/
+
+# repowise API keys (local)
+.repowise/.env
