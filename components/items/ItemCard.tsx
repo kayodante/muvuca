@@ -494,10 +494,16 @@ export function ItemCard({
               />
               {/* Scrim, not decoration: the badge and the action icons sit
                 on whatever the thumbnail happens to show there, and without
-                it their contrast is whatever the remote page decided. */}
+                it their contrast is whatever the remote page decided. Fixed
+                height, not inset-0: the header (badge top 16.8px/13px tall,
+                action buttons top 16.8px/32px tall, base at 48.8px) needs
+                protection only up to ~49px, so the scrim is 96px tall,
+                opaque until 40% (~38px, clearing the header with margin)
+                and fading to transparent by 96px — leaving the rest of the
+                preview uncovered instead of veiling the whole thumbnail. */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 bg-gradient-to-b from-card to-transparent"
+                className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-card from-40% to-transparent"
               />
             </div>
             <div className="flex flex-1 flex-col gap-4 p-4">
