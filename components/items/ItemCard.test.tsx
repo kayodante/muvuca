@@ -160,6 +160,35 @@ describe("ItemCard", () => {
     expect(handleView).toHaveBeenCalledOnce();
   });
 
+  it.each([
+    [mockPrompt, "You are a senior TypeScript engineer..."],
+    [mockCodeComponent, "export function Button({ children }: ButtonProps) {"],
+  ] as const)(
+    "clicar no painel de preview aciona onView (%s)",
+    async (item, previewText) => {
+      const handleView = vi.fn();
+      const dom = await renderCard(
+        item,
+        mockTags,
+        false,
+        vi.fn(),
+        vi.fn(),
+        handleView,
+      );
+
+      const previewNode = Array.from(dom.querySelectorAll("p")).find((p) =>
+        p.textContent?.includes(previewText),
+      );
+      expect(previewNode).not.toBeUndefined();
+
+      await act(async () => {
+        previewNode?.click();
+      });
+
+      expect(handleView).toHaveBeenCalledOnce();
+    },
+  );
+
   it("copia o prompt com toast de confirmação ao clicar na ação rápida", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {

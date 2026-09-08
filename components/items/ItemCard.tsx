@@ -525,30 +525,42 @@ export function ItemCard({
           {tagsBlock && <div className="flex px-4 pb-4">{tagsBlock}</div>}
         </>
       ) : (
-        <>
-          <div className="flex flex-col gap-4 p-4">
-            <div className="flex items-start justify-between gap-2.5">
-              {typeBadge}
-              {actions}
-            </div>
-            {siteRow}
-            {item.type === "prompt" || item.type === "code_component" ? (
-              <button
-                type="button"
-                onClick={onView}
-                className="rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              >
-                {content}
-              </button>
-            ) : (
-              content
-            )}
+        <div className="flex flex-1 flex-col gap-4 p-4">
+          <div className="flex items-start justify-between gap-2.5">
+            {typeBadge}
+            {actions}
           </div>
-          <div className="flex flex-1 flex-col gap-4 px-4 pt-2 pb-4">
-            {previewPanel}
-            {tagsBlock}
-          </div>
-        </>
+          {siteRow}
+          {item.type === "prompt" || item.type === "code_component" ? (
+            // The preview panel used to sit outside this button, so the
+            // biggest region of the card (168px measured) had no click
+            // target at all -- elementFromPoint() on it hit the bare <p>,
+            // no <a>/<button> ancestor. Folding previewPanel into the same
+            // button as `content` fixes that without adding a tab stop: it
+            // is still the one control the title/MaximizeIcon already
+            // pointed at (`onView`), just grown to cover the content that
+            // sits above it. `gap-6` (24px), not the surrounding `gap-4`,
+            // reproduces the exact description-to-panel gap the first pass
+            // set up (16px bottom padding + 8px top padding on the two
+            // containers that used to split here). `ring-inset` instead of
+            // the small button's `ring-offset-2`: at this footprint an
+            // offset ring would sit flush against the card's own edges,
+            // reading as a second border rather than focus -- the media
+            // card's full-body anchor already uses inset for the same
+            // reason.
+            <button
+              type="button"
+              onClick={onView}
+              className="flex flex-col gap-6 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+            >
+              {content}
+              {previewPanel}
+            </button>
+          ) : (
+            content
+          )}
+          {tagsBlock}
+        </div>
       )}
     </article>
   );
