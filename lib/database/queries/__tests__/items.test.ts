@@ -1,25 +1,40 @@
 ﻿import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { createClientMock, rpcMock } = vi.hoisted(() => {
-  const rpc = vi.fn();
-  // Every row built by makeItemRow() below is type "link", so
-  // getLibraryItems() always calls getPreviewsForItems() -- this mock
-  // just needs to answer "no previews found" without throwing.
-  const inFn = vi.fn().mockResolvedValue({ data: [], error: null });
-  const select = vi.fn().mockReturnValue({ in: inFn });
-  const from = vi.fn().mockReturnValue({ select });
-  return {
-    rpcMock: rpc,
-    createClientMock: vi.fn().mockResolvedValue({ rpc, from }),
-  };
-});
+const { createClientMock, rpcMock, tagsInMock, tagsOrderMock } = vi.hoisted(
+  () => {
+    const rpc = vi.fn();
+    // Every row built by makeItemRow() below is type "link", so
+    // getLibraryItems() always calls getPreviewsForItems() -- this mock
+    // just needs to answer "no previews found" without throwing.
+    const previewsIn = vi.fn().mockResolvedValue({ data: [], error: null });
+    const previewsSelect = vi.fn().mockReturnValue({ in: previewsIn });
+
+    // getTagsByIds() only reaches `from("tags")` when a page row carries
+    // tag_ids -- most fixtures below have none, so this chain answers
+    // "no tags found" without throwing when it is touched.
+    const tagsOrder = vi.fn().mockResolvedValue({ data: [], error: null });
+    const tagsIn = vi.fn().mockReturnValue({ order: tagsOrder });
+    const tagsSelect = vi.fn().mockReturnValue({ in: tagsIn });
+
+    const from = vi.fn((table: string) =>
+      table === "tags" ? { select: tagsSelect } : { select: previewsSelect },
+    );
+
+    return {
+      rpcMock: rpc,
+      tagsInMock: tagsIn,
+      tagsOrderMock: tagsOrder,
+      createClientMock: vi.fn().mockResolvedValue({ rpc, from }),
+    };
+  },
+);
 
 vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
 
 import { getLibraryItems } from "@/lib/database/queries/items";
 import { encodeSearchCursor, parseSearchCursor } from "@/lib/validation/search";
 
-function makeItemRow(index: number) {
+function makeItemRow(index: number, tagIds: string[] = []) {
   const num = String(index).padStart(2, "0");
   return {
     id: `11111111-1111-4111-8111-1111111111${num}`,
@@ -28,7 +43,7 @@ function makeItemRow(index: number) {
     description: null,
     url: `https://example.com/${num}`,
     content_preview: null,
-    tag_ids: [],
+    tag_ids: tagIds,
     created_at: `2026-08-16T12:00:${num}.000Z`,
     updated_at: `2026-08-16T12:00:${num}.000Z`,
   };
@@ -157,5 +172,78 @@ describe("getLibraryItems bidirectional pagination", () => {
 
     expect(result.prevCursor).toBeNull();
     expect(result.nextCursor).not.toBeNull();
+  });
+});
+
+describe("getLibraryItems tags aggregation", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns only the tags referenced by the page's items", async () => {
+    const rows = [
+      makeItemRow(1, ["tag-a", "tag-b"]),
+      makeItemRow(2, ["tag-b"]),
+    ];
+    rpcMock.mockResolvedValue({ data: rows, error: null });
+    tagsOrderMock.mockResolvedValue({
+      data: [
+        {
+          id: "tag-a",
+          parent_id: null,
+          name: "A",
+          description: null,
+          color_token: "lime",
+          created_at: "2026-08-16T00:00:00.000Z",
+          updated_at: "2026-08-16T00:00:00.000Z",
+        },
+        {
+          id: "tag-b",
+          parent_id: null,
+          name: "B",
+          description: null,
+          color_token: "lime",
+          created_at: "2026-08-16T00:00:00.000Z",
+          updated_at: "2026-08-16T00:00:00.000Z",
+        },
+      ],
+      error: null,
+    });
+
+    const result = await getLibraryItems();
+
+    // Union of tag_ids across the page, deduplicated -- not the caller's
+    // whole tag list.
+    expect(tagsInMock).toHaveBeenCalledWith("id", ["tag-a", "tag-b"]);
+    expect(result.tags).toEqual([
+      {
+        id: "tag-a",
+        parentId: null,
+        name: "A",
+        description: null,
+        colorToken: "lime",
+        createdAt: "2026-08-16T00:00:00.000Z",
+        updatedAt: "2026-08-16T00:00:00.000Z",
+      },
+      {
+        id: "tag-b",
+        parentId: null,
+        name: "B",
+        description: null,
+        colorToken: "lime",
+        createdAt: "2026-08-16T00:00:00.000Z",
+        updatedAt: "2026-08-16T00:00:00.000Z",
+      },
+    ]);
+  });
+
+  it("does not query tags when no item on the page has tag_ids", async () => {
+    const rows = [makeItemRow(1), makeItemRow(2)];
+    rpcMock.mockResolvedValue({ data: rows, error: null });
+
+    const result = await getLibraryItems();
+
+    expect(result.tags).toEqual([]);
+    expect(tagsInMock).not.toHaveBeenCalled();
   });
 });

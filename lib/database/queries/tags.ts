@@ -59,6 +59,37 @@ export async function getTagList(): Promise<Tag[]> {
   return (data ?? []).map(toTag);
 }
 
+/**
+ * Tags by id, deduplicated -- used to resolve only the tags a page of items
+ * actually references, instead of the caller's whole tag list. RLS scopes
+ * this to the caller automatically (0007_rls.sql); no explicit `user_id`
+ * filter is needed or added, matching every other query in this codebase.
+ */
+export async function getTagsByIds(tagIds: string[]): Promise<Tag[]> {
+  if (tagIds.length === 0) return [];
+
+  const ids = [...new Set(tagIds)];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("tags")
+    .select(
+      "id, parent_id, name, description, color_token, created_at, updated_at",
+    )
+    .in("id", ids)
+    .order("name_normalized", { ascending: true });
+
+  if (error) {
+    logEvent({
+      event: "tags.list_by_ids_failed",
+      status: "failure",
+      errorClass: error.code ?? error.name,
+    });
+    throw error;
+  }
+
+  return (data ?? []).map(toTag);
+}
+
 /** A single tag by id, or `null` if it doesn't exist or isn't owned by the caller (RLS). */
 export async function getTagById(tagId: string): Promise<Tag | null> {
   const supabase = await createClient();
