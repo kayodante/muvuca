@@ -330,6 +330,12 @@ describe("ItemEditorDialog", () => {
 
       expect(tagTrigger()?.disabled).toBe(true);
       expect(document.body.textContent).toContain("Carregando tags...");
+      // A empty tags=[] passed to TagSelectField while loading must not
+      // be read as "user has no tags" — the trigger label must say so.
+      expect(tagTrigger()?.textContent).toContain("Carregando tags...");
+      expect(tagTrigger()?.textContent).not.toContain(
+        "Nenhuma tag cadastrada ainda",
+      );
 
       await act(async () => {
         resolveTags({ ok: true, data: mockTags });
@@ -374,6 +380,12 @@ describe("ItemEditorDialog", () => {
       expect(tagTrigger()?.disabled).toBe(true);
       expect(tagTrigger()?.getAttribute("aria-describedby")).toBe(
         "item-tags-load-error",
+      );
+      // tags=[] here means "load failed", not "no tags exist" — the trigger
+      // must not claim the empty-tags-cadastradas state while an alert
+      // right below it says the load failed.
+      expect(tagTrigger()?.textContent).not.toContain(
+        "Nenhuma tag cadastrada ainda",
       );
 
       const retryButton = Array.from(

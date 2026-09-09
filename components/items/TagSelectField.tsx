@@ -26,6 +26,13 @@ export interface TagSelectFieldProps {
   ariaDescribedBy?: string;
   placeholder?: string;
   className?: string;
+  /**
+   * Trigger label shown when `tags` is empty. `tags=[]` is ambiguous on its
+   * own (no tags exist yet vs. still loading vs. load failed) — callers that
+   * pass an empty array for a reason other than "no tags exist" must supply
+   * an accurate label here.
+   */
+  emptyLabel?: string;
 }
 
 export function TagSelectField({
@@ -40,6 +47,7 @@ export function TagSelectField({
   ariaDescribedBy,
   placeholder = "Selecionar tags...",
   className,
+  emptyLabel = "Nenhuma tag cadastrada ainda",
 }: TagSelectFieldProps) {
   const generatedId = useId();
   const id = explicitId ?? generatedId;
@@ -249,7 +257,7 @@ export function TagSelectField({
           }
         >
           {tags.length === 0
-            ? "Nenhuma tag cadastrada ainda"
+            ? emptyLabel
             : selectedIds.length === 0
               ? placeholder
               : `${selectedIds.length} tag${

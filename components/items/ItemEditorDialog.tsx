@@ -310,6 +310,13 @@ export function ItemEditorDialog({
               defaultValue={editing?.tagIds ?? []}
               disabled={tagsFieldDisabled}
               error={fieldError("tagIds")}
+              emptyLabel={
+                tagsLoading
+                  ? "Carregando tags..."
+                  : tagsErrorMessage !== null
+                    ? "Não foi possível carregar as tags"
+                    : undefined
+              }
               ariaDescribedBy={[
                 tagsErrorMessage !== null
                   ? "item-tags-load-error"
