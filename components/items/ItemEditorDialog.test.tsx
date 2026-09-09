@@ -1,12 +1,13 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ItemEditorDialog, type EditorTarget } from "./ItemEditorDialog";
 import type { LibraryItem } from "@/lib/database/queries/items";
 import type { Tag } from "@/lib/database/queries/tags";
 
-const { toast } = vi.hoisted(() => ({
+const { toast, listTagsForSelectMock } = vi.hoisted(() => ({
   toast: { success: vi.fn(), error: vi.fn() },
+  listTagsForSelectMock: vi.fn(),
 }));
 
 vi.mock("sonner", () => ({ toast }));
@@ -16,16 +17,9 @@ vi.mock("@/lib/actions/items", () => ({
   updateItem: vi.fn(),
 }));
 
-let root: Root | null = null;
-let container: HTMLDivElement | null = null;
-
-afterEach(async () => {
-  await act(async () => root?.unmount());
-  container?.remove();
-  root = null;
-  container = null;
-  vi.clearAllMocks();
-});
+vi.mock("@/lib/actions/tags", () => ({
+  listTagsForSelect: listTagsForSelectMock,
+}));
 
 const mockTags: Tag[] = [
   {
@@ -38,6 +32,21 @@ const mockTags: Tag[] = [
     updatedAt: "2026-01-01",
   },
 ];
+
+let root: Root | null = null;
+let container: HTMLDivElement | null = null;
+
+beforeEach(() => {
+  listTagsForSelectMock.mockResolvedValue({ ok: true, data: mockTags });
+});
+
+afterEach(async () => {
+  await act(async () => root?.unmount());
+  container?.remove();
+  root = null;
+  container = null;
+  vi.clearAllMocks();
+});
 
 const mockEditLinkItem: LibraryItem = {
   id: "item-edit-1",
@@ -79,26 +88,24 @@ const mockEditPromptItem: LibraryItem = {
   tagIds: [],
 };
 
-async function renderEditor(
-  target: EditorTarget,
-  tags = mockTags,
-  onOpenChange = vi.fn(),
-) {
+async function renderEditor(target: EditorTarget, onOpenChange = vi.fn()) {
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
 
   await act(async () => {
     root?.render(
-      <ItemEditorDialog
-        target={target}
-        tags={tags}
-        onOpenChange={onOpenChange}
-      />,
+      <ItemEditorDialog target={target} onOpenChange={onOpenChange} />,
     );
   });
 
   return container;
+}
+
+function tagTrigger() {
+  return document.body.querySelector(
+    'button[aria-haspopup="listbox"]',
+  ) as HTMLButtonElement;
 }
 
 describe("ItemEditorDialog", () => {
@@ -135,9 +142,7 @@ describe("ItemEditorDialog", () => {
     ) as HTMLInputElement;
     expect(urlInput).not.toBeNull();
     expect(urlInput.required).toBe(true);
-    expect(
-      document.body.querySelector('button[aria-haspopup="listbox"]'),
-    ).not.toBeNull();
+    expect(tagTrigger()).not.toBeNull();
   });
 
   it("alterna para prompt e exibe textarea de conteúdo", async () => {
@@ -301,12 +306,105 @@ describe("ItemEditorDialog", () => {
     expect(document.body.querySelector('input[name="url"]')).toBeNull();
   });
 
-  it("renderiza campo de tags desabilitado quando tags está vazio", async () => {
-    await renderEditor({ mode: "create" }, []);
-    const tagTrigger = document.body.querySelector(
-      'button[aria-haspopup="listbox"]',
-    ) as HTMLButtonElement;
-    expect(tagTrigger?.disabled).toBe(true);
-    expect(document.body.textContent).toContain("Nenhuma tag cadastrada ainda");
+  describe("carregamento sob demanda da árvore de tags", () => {
+    it("desabilita o campo e informa que as tags estão carregando enquanto a action está pendente", async () => {
+      let resolveTags!: (result: { ok: true; data: Tag[] }) => void;
+      listTagsForSelectMock.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveTags = resolve;
+        }),
+      );
+
+      container = document.createElement("div");
+      document.body.append(container);
+      root = createRoot(container);
+
+      await act(async () => {
+        root?.render(
+          <ItemEditorDialog
+            target={{ mode: "create" }}
+            onOpenChange={vi.fn()}
+          />,
+        );
+      });
+
+      expect(tagTrigger()?.disabled).toBe(true);
+      expect(document.body.textContent).toContain("Carregando tags...");
+
+      await act(async () => {
+        resolveTags({ ok: true, data: mockTags });
+      });
+
+      expect(tagTrigger()?.disabled).toBe(false);
+      expect(document.body.textContent).toContain(
+        "Selecione uma ou mais tags para organizar o item.",
+      );
+    });
+
+    it("renderiza as tags carregadas pela action no sucesso, habilitando o combobox", async () => {
+      await renderEditor({ mode: "create" });
+
+      expect(listTagsForSelectMock).toHaveBeenCalledTimes(1);
+      expect(tagTrigger()?.disabled).toBe(false);
+
+      await act(async () => {
+        tagTrigger().click();
+      });
+
+      const listbox = document.body.querySelector('[role="listbox"]');
+      expect(listbox?.textContent).toContain("Tech");
+      expect(document.body.textContent).toContain(
+        "Selecione uma ou mais tags para organizar o item.",
+      );
+    });
+
+    it("exibe alerta com botão de recarga quando a action falha, e refaz a chamada ao clicar", async () => {
+      listTagsForSelectMock.mockResolvedValueOnce({
+        ok: false,
+        code: "UNKNOWN",
+        message: "Não foi possível carregar as tags.",
+      });
+
+      await renderEditor({ mode: "create" });
+
+      const alert = document.body.querySelector("#item-tags-load-error");
+      expect(alert).not.toBeNull();
+      expect(alert?.getAttribute("role")).toBe("alert");
+      expect(alert?.textContent).toBe("Não foi possível carregar as tags.");
+      expect(tagTrigger()?.disabled).toBe(true);
+      expect(tagTrigger()?.getAttribute("aria-describedby")).toBe(
+        "item-tags-load-error",
+      );
+
+      const retryButton = Array.from(
+        document.body.querySelectorAll("button"),
+      ).find((button) => button.textContent === "Tentar novamente");
+      expect(retryButton).not.toBeUndefined();
+
+      await act(async () => {
+        (retryButton as HTMLButtonElement).click();
+      });
+
+      expect(listTagsForSelectMock).toHaveBeenCalledTimes(2);
+      expect(document.body.querySelector("#item-tags-load-error")).toBeNull();
+      expect(tagTrigger()?.disabled).toBe(false);
+      expect(document.body.textContent).toContain(
+        "Selecione uma ou mais tags para organizar o item.",
+      );
+    });
+
+    it("renderiza campo de tags desabilitado com o texto de vazio quando a lista volta vazia", async () => {
+      listTagsForSelectMock.mockResolvedValueOnce({ ok: true, data: [] });
+
+      await renderEditor({ mode: "create" });
+
+      expect(tagTrigger()?.disabled).toBe(true);
+      expect(document.body.textContent).toContain(
+        "Nenhuma tag cadastrada ainda",
+      );
+      expect(document.body.textContent).toContain(
+        "Crie tags na seção Tags para organizar seus itens.",
+      );
+    });
   });
 });

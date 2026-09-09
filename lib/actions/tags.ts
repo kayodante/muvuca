@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/auth/require-user";
+import { getTagList, type Tag } from "@/lib/database/queries/tags";
 import {
   createTagSchema,
   deleteTagSchema,
@@ -59,6 +60,23 @@ function parseTagFormData(formData: FormData) {
     colorToken: formData.get("colorToken"),
     parentId: formData.get("parentId"),
   };
+}
+
+/** Reads the full tag tree only when the item editor's tag picker opens. */
+export async function listTagsForSelect(): Promise<ActionResult<Tag[]>> {
+  const user = await requireUser();
+  try {
+    const tags = await getTagList();
+    return ok(tags);
+  } catch (error) {
+    logEvent({
+      event: "tags.select_list_failed",
+      status: "failure",
+      errorClass: error instanceof Error ? error.name : "UnknownError",
+      userId: user.id,
+    });
+    return fail("UNKNOWN", "Não foi possível carregar as tags.");
+  }
 }
 
 /** Creates a tag, optionally as a child of `parentId`. */
