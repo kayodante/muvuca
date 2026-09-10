@@ -14,6 +14,8 @@ vi.mock("next/navigation", () => ({
   notFound: notFoundMock,
 }));
 
+// `getTagList` stays mocked only so a stray import wouldn't crash the test;
+// LibraryPage must never call it (that's the whole point of this page).
 vi.mock("@/lib/database/queries/tags", () => ({
   getTagList: getTagListMock,
 }));
@@ -33,9 +35,9 @@ import LibraryPage from "./page";
 describe("LibraryPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getTagListMock.mockResolvedValue([]);
     getLibraryItemsMock.mockResolvedValue({
       items: [],
+      tags: [],
       nextCursor: null,
       prevCursor: null,
     });
@@ -44,9 +46,9 @@ describe("LibraryPage", () => {
   it("renderiza a biblioteca com search params válidos", async () => {
     const mockItems = [{ id: "item-1" }];
     const mockTags = [{ id: "tag-1" }];
-    getTagListMock.mockResolvedValue(mockTags);
     getLibraryItemsMock.mockResolvedValue({
       items: mockItems,
+      tags: mockTags,
       nextCursor: "next-cursor-token",
       prevCursor: "prev-cursor-token",
     });
@@ -60,7 +62,7 @@ describe("LibraryPage", () => {
       q: "nextjs",
       sort: "title_asc",
     });
-    expect(getTagListMock).toHaveBeenCalled();
+    expect(getTagListMock).not.toHaveBeenCalled();
     expect(element.props).toEqual({
       items: mockItems,
       tags: mockTags,
@@ -82,7 +84,7 @@ describe("LibraryPage", () => {
 
     expect(notFoundMock).not.toHaveBeenCalled();
     expect(getLibraryItemsMock).toHaveBeenCalledWith({});
-    expect(getTagListMock).toHaveBeenCalled();
+    expect(getTagListMock).not.toHaveBeenCalled();
     expect(element).toBeDefined();
   });
 });

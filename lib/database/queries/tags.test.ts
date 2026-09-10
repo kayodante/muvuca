@@ -8,7 +8,11 @@ const { createClientMock, logEventMock } = vi.hoisted(() => ({
 vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
 vi.mock("@/lib/security/logging", () => ({ logEvent: logEventMock }));
 
-import { getTagList, getTagsByIds } from "@/lib/database/queries/tags";
+import {
+  getChildTagCount,
+  getTagList,
+  getTagsByIds,
+} from "@/lib/database/queries/tags";
 
 describe("getTagList", () => {
   beforeEach(() => {
@@ -87,6 +91,50 @@ describe("getTagsByIds", () => {
       event: "tags.list_by_ids_failed",
       status: "failure",
       errorClass: "42501",
+    });
+  });
+});
+
+describe("getChildTagCount", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("resolves to the exact count of direct children", async () => {
+    const eq = vi.fn().mockResolvedValue({ count: 3, error: null });
+    const select = vi.fn().mockReturnValue({ eq });
+    const from = vi.fn().mockReturnValue({ select });
+    createClientMock.mockResolvedValue({ from });
+
+    await expect(getChildTagCount("tag-a")).resolves.toBe(3);
+
+    expect(select).toHaveBeenCalledWith("id", {
+      count: "exact",
+      head: true,
+    });
+    expect(eq).toHaveBeenCalledWith("parent_id", "tag-a");
+  });
+
+  it("resolves to 0 when count is null", async () => {
+    const eq = vi.fn().mockResolvedValue({ count: null, error: null });
+    const select = vi.fn().mockReturnValue({ eq });
+    const from = vi.fn().mockReturnValue({ select });
+    createClientMock.mockResolvedValue({ from });
+
+    await expect(getChildTagCount("tag-a")).resolves.toBe(0);
+  });
+
+  it("throws when the query errors", async () => {
+    const eq = vi.fn().mockResolvedValue({
+      count: null,
+      error: { code: "42501", name: "PostgrestError", message: "denied" },
+    });
+    const select = vi.fn().mockReturnValue({ eq });
+    const from = vi.fn().mockReturnValue({ select });
+    createClientMock.mockResolvedValue({ from });
+
+    await expect(getChildTagCount("tag-a")).rejects.toMatchObject({
+      code: "42501",
     });
   });
 });

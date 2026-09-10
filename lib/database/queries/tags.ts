@@ -108,6 +108,27 @@ export async function getTagById(tagId: string): Promise<Tag | null> {
   return data ? toTag(data) : null;
 }
 
+/**
+ * Number of direct children of a tag, without fetching the whole tree.
+ * Covered by the `tags_user_id_parent_id_idx` index (migration 0006). RLS
+ * scopes this to the caller automatically (0007_rls.sql); no explicit
+ * `user_id` filter is needed or added, matching every other query in this
+ * codebase.
+ */
+export async function getChildTagCount(tagId: string): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("tags")
+    .select("id", { count: "exact", head: true })
+    .eq("parent_id", tagId);
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
+}
+
 /** Root-to-parent ancestor chain of a tag, via `tag_ancestors`. */
 export async function getTagAncestors(tagId: string): Promise<TagAncestor[]> {
   const supabase = await createClient();

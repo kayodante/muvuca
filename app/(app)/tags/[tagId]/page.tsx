@@ -7,9 +7,9 @@ import {
   getLibraryItemsCountForTag,
 } from "@/lib/database/queries/items";
 import {
+  getChildTagCount,
   getTagAncestors,
   getTagById,
-  getTagList,
 } from "@/lib/database/queries/tags";
 import { parseLibrarySearchParams } from "@/lib/validation/search";
 
@@ -38,8 +38,8 @@ export default async function TagDetailPage({
 
   const parsed = parseLibrarySearchParams(rawSearchParams);
 
-  const [flatTags, ancestors, results, itemsCount] = await Promise.all([
-    getTagList(),
+  const [childCount, ancestors, results, itemsCount] = await Promise.all([
+    getChildTagCount(tagId),
     getTagAncestors(tagId),
     getLibraryItems({ ...parsed, tag: tagId }),
     getLibraryItemsCountForTag(tagId),
@@ -48,7 +48,8 @@ export default async function TagDetailPage({
   return (
     <TagDetailView
       tag={tag}
-      flatTags={flatTags}
+      childCount={childCount}
+      tags={results.tags}
       ancestors={ancestors}
       items={results.items}
       itemsCount={itemsCount}

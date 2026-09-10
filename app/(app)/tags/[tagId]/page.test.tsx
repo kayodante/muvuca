@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const {
   getTagByIdMock,
   getTagListMock,
+  getChildTagCountMock,
   getTagAncestorsMock,
   getLibraryItemsMock,
   getLibraryItemsCountForTagMock,
@@ -10,6 +11,7 @@ const {
 } = vi.hoisted(() => ({
   getTagByIdMock: vi.fn(),
   getTagListMock: vi.fn(),
+  getChildTagCountMock: vi.fn(),
   getTagAncestorsMock: vi.fn(),
   getLibraryItemsMock: vi.fn(),
   getLibraryItemsCountForTagMock: vi.fn(),
@@ -22,9 +24,12 @@ vi.mock("next/navigation", () => ({
   notFound: notFoundMock,
 }));
 
+// `getTagList` stays mocked only so a stray import wouldn't crash the test;
+// TagDetailPage must never call it -- it uses `getChildTagCount` instead.
 vi.mock("@/lib/database/queries/tags", () => ({
   getTagById: getTagByIdMock,
   getTagList: getTagListMock,
+  getChildTagCount: getChildTagCountMock,
   getTagAncestors: getTagAncestorsMock,
 }));
 
@@ -84,16 +89,16 @@ describe("TagDetailPage", () => {
       createdAt: "2026-01-01T00:00:00Z",
       updatedAt: "2026-01-01T00:00:00Z",
     };
-    const mockFlatTags = [mockTag];
     const mockAncestors = [{ id: validTagId, name: "Tecnologia", depth: 0 }];
     const mockItemsResult = {
       items: [],
+      tags: [mockTag],
       nextCursor: null,
       prevCursor: null,
     };
 
     getTagByIdMock.mockResolvedValue(mockTag);
-    getTagListMock.mockResolvedValue(mockFlatTags);
+    getChildTagCountMock.mockResolvedValue(0);
     getTagAncestorsMock.mockResolvedValue(mockAncestors);
     getLibraryItemsMock.mockResolvedValue(mockItemsResult);
     getLibraryItemsCountForTagMock.mockResolvedValue(0);
@@ -111,10 +116,11 @@ describe("TagDetailPage", () => {
     expect(getLibraryItemsMock).toHaveBeenCalledWith({
       tag: validTagId,
     });
+    expect(getTagListMock).not.toHaveBeenCalled();
     expect(element).toBeDefined();
   });
 
-  it("busca tag, ancestrais, lista de tags e itens com rollup e repassa para TagDetailView", async () => {
+  it("busca tag, contagem de subtags, ancestrais e itens com rollup e repassa para TagDetailView", async () => {
     const mockTag = {
       id: validTagId,
       name: "Tecnologia",
@@ -124,16 +130,17 @@ describe("TagDetailPage", () => {
       createdAt: "2026-01-01T00:00:00Z",
       updatedAt: "2026-01-01T00:00:00Z",
     };
-    const mockFlatTags = [mockTag];
+    const mockPageTags = [mockTag];
     const mockAncestors = [{ id: validTagId, name: "Tecnologia", depth: 0 }];
     const mockItemsResult = {
       items: [],
+      tags: mockPageTags,
       nextCursor: "next-cursor-token",
       prevCursor: "prev-cursor-token",
     };
 
     getTagByIdMock.mockResolvedValue(mockTag);
-    getTagListMock.mockResolvedValue(mockFlatTags);
+    getChildTagCountMock.mockResolvedValue(3);
     getTagAncestorsMock.mockResolvedValue(mockAncestors);
     getLibraryItemsMock.mockResolvedValue(mockItemsResult);
     getLibraryItemsCountForTagMock.mockResolvedValue(7);
@@ -144,7 +151,8 @@ describe("TagDetailPage", () => {
     });
 
     expect(getTagByIdMock).toHaveBeenCalledWith(validTagId);
-    expect(getTagListMock).toHaveBeenCalled();
+    expect(getTagListMock).not.toHaveBeenCalled();
+    expect(getChildTagCountMock).toHaveBeenCalledWith(validTagId);
     expect(getTagAncestorsMock).toHaveBeenCalledWith(validTagId);
     expect(getLibraryItemsMock).toHaveBeenCalledWith({
       q: "react",
@@ -155,7 +163,8 @@ describe("TagDetailPage", () => {
 
     expect(element.props).toEqual({
       tag: mockTag,
-      flatTags: mockFlatTags,
+      childCount: 3,
+      tags: mockPageTags,
       ancestors: mockAncestors,
       items: mockItemsResult.items,
       itemsCount: 7,
