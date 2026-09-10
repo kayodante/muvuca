@@ -121,6 +121,15 @@ async function fetchDrainPreviewQueue(
  * just enqueued for (or near) the visible page. `visibilitychange`
  * resumes a session that stopped only because the tab went hidden, picking
  * up whichever phase -- scoped or global -- was active when it stopped.
+ *
+ * `isDraining` covers only work the user can see happening: the reschedule
+ * round-trip and the scoped phase. The global phase is background work
+ * nobody asked for and can legitimately run for dozens of rounds of remote
+ * fetches, so keeping the flag up through it pinned the toolbar's
+ * "Atualizar pré-visualizações" button to "Atualizando" essentially
+ * forever. For the same reason the global loop yields as soon as a wake is
+ * queued (`pendingWake`): a user-requested scoped drain preempts the
+ * backlog sweep instead of waiting it out.
  */
 export function usePreviewDrain(linkItemIds: string[]): {
   refreshVisible: () => void;
@@ -177,7 +186,12 @@ export function usePreviewDrain(linkItemIds: string[]): {
     /** Phase 2 -- see the hook's header comment for the guards and why
      * this can safely run in the background now. */
     async function drainGlobalBacklog(): Promise<void> {
-      while (globalRound < GLOBAL_DRAIN_ROUND_CAP && !cancelled && visible()) {
+      while (
+        globalRound < GLOBAL_DRAIN_ROUND_CAP &&
+        !cancelled &&
+        !pendingWake &&
+        visible()
+      ) {
         globalRound++;
         const result = await fetchDrainPreviewQueue();
         if (cancelled) return;
@@ -202,6 +216,12 @@ export function usePreviewDrain(linkItemIds: string[]): {
     }
 
     async function runSession(freshBudget = false) {
+      // A fresh wake always means new scoped work, so the flag goes up
+      // right here -- even on the path that only queues the wake behind
+      // the running session. Otherwise a click landing mid-global-sweep
+      // would leave the toolbar idle until that sweep's current round
+      // resolved.
+      if (freshBudget) setIsSessionRunning(true);
       if (running) {
         // A wake arrived mid-session -- coalesce it into one follow-up
         // session once the current one finishes, rather than running two
@@ -219,10 +239,17 @@ export function usePreviewDrain(linkItemIds: string[]): {
         previousGlobalRemaining = undefined;
       }
       running = true;
-      setIsSessionRunning(true);
       try {
         if (!scopedEmptied) {
+          setIsSessionRunning(true);
           scopedEmptied = await drainScoped();
+          // Guarded on `cancelled`: once this effect is cancelled the flag
+          // belongs to the session the next effect started, and a
+          // late-resolving round from this one must not clear it (the
+          // cleanup below owns the reset for the cancelled session).
+          // Guarded on `pendingWake`: a queued wake is scoped work that
+          // hasn't run yet, so the flag stays up until it does.
+          if (!cancelled && !pendingWake) setIsSessionRunning(false);
         }
         if (scopedEmptied && !cancelled && visible()) {
           await drainGlobalBacklog();
@@ -232,12 +259,6 @@ export function usePreviewDrain(linkItemIds: string[]): {
         if (pendingWake && !cancelled) {
           pendingWake = false;
           void runSession(true);
-        } else if (!cancelled) {
-          // Guarded: once this effect is cancelled the flag belongs to the
-          // session the next effect started, and a late-resolving round
-          // from this one must not clear it. The cleanup below owns the
-          // reset for the cancelled session.
-          setIsSessionRunning(false);
         }
       }
     }

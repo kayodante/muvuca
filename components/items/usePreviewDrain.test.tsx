@@ -303,6 +303,54 @@ describe("usePreviewDrain — sessão automática (fase escopada)", () => {
 });
 
 describe("usePreviewDrain — fase global (backlog)", () => {
+  it("libera isDraining ao entrar na fase global", async () => {
+    const globalRound = deferred<Response>();
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(okResult(drainResult(0)))) // escopada -> zera
+      .mockReturnValueOnce(globalRound.promise);
+
+    await mount(ONE_LINK);
+
+    // A varredura global ainda está em voo: é trabalho de fundo, e o botão
+    // da toolbar não pode ficar preso em "Atualizando" por causa dela.
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(hostButton()?.textContent).toBe("idle");
+
+    await act(async () => {
+      globalRound.resolve(jsonResponse(okResult(drainResult(0))));
+    });
+  });
+
+  it("interrompe a varredura global quando um wake pede a fase escopada", async () => {
+    const globalRound = deferred<Response>();
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(okResult(drainResult(0)))) // escopada -> zera
+      .mockReturnValueOnce(globalRound.promise) // global rodada 1 (em voo)
+      .mockResolvedValue(jsonResponse(okResult(drainResult(0))));
+
+    await mount(ONE_LINK);
+    expect(hostButton()?.textContent).toBe("idle");
+
+    await act(async () => {
+      notifyPreviewQueueChanged();
+    });
+    // O wake já marca a sessão como ocupada, mesmo antes de a rodada
+    // global em voo terminar.
+    expect(hostButton()?.textContent).toBe("draining");
+
+    await act(async () => {
+      globalRound.resolve(jsonResponse(okResult(drainResult(5))));
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // Rodada 2 da varredura global nunca acontece: a sessão nova recomeça
+    // pela fase escopada.
+    expect(bodyOf(fetchMock.mock.calls[2]!)).toEqual({ itemIds: ONE_LINK });
+  });
+
   it("não chama router.refresh() na fase global", async () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse(okResult(drainResult(0)))) // escopada -> zera
