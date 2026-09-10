@@ -83,7 +83,8 @@ describe("TagDetailView", () => {
       root?.render(
         <TagDetailView
           tag={currentTag}
-          flatTags={[currentTag]}
+          childCount={0}
+          tags={[currentTag]}
           ancestors={[]}
           items={[]}
           itemsCount={7}
@@ -104,12 +105,13 @@ describe("TagDetailView", () => {
     expect(container?.textContent).not.toContain("Tags filhas");
   });
 
-  it("conta as tags filhas diretas no card de subtags", async () => {
+  it("renderiza a contagem de subtags recebida via prop", async () => {
     await act(async () => {
       root?.render(
         <TagDetailView
           tag={currentTag}
-          flatTags={[currentTag, childTag]}
+          childCount={1}
+          tags={[currentTag, childTag]}
           ancestors={[]}
           items={[]}
           itemsCount={0}
@@ -130,7 +132,8 @@ describe("TagDetailView", () => {
       root?.render(
         <TagDetailView
           tag={currentTag}
-          flatTags={[currentTag]}
+          childCount={0}
+          tags={[currentTag]}
           ancestors={[]}
           items={[]}
           itemsCount={0}

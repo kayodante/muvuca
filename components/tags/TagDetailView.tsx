@@ -1,5 +1,4 @@
-﻿import { buildTagTree, findTagNode } from "@/lib/tags/tree";
-import { swatchClassFor } from "@/lib/tags/colors";
+﻿import { swatchClassFor } from "@/lib/tags/colors";
 import { cn } from "@/lib/utils";
 import type { Tag, TagAncestor } from "@/lib/database/queries/tags";
 import type { LibraryItemSummary } from "@/lib/database/queries/items";
@@ -15,7 +14,8 @@ import { ItemsPage } from "@/components/items/ItemsPage";
  */
 export function TagDetailView({
   tag,
-  flatTags,
+  childCount,
+  tags,
   ancestors,
   items,
   itemsCount,
@@ -23,17 +23,14 @@ export function TagDetailView({
   prevCursor = null,
 }: {
   tag: Tag;
-  flatTags: Tag[];
+  childCount: number;
+  tags: Tag[];
   ancestors: TagAncestor[];
   items: LibraryItemSummary[];
   itemsCount: number;
   nextCursor: string | null;
   prevCursor?: string | null;
 }) {
-  const treeNodes = buildTagTree(flatTags);
-  const currentNode = findTagNode(treeNodes, tag.id);
-  const children = currentNode?.children ?? [];
-
   return (
     // Figma 78:3675: breadcrumb, cabeçalho e barra da seção a 16px.
     <div className="flex flex-col gap-4">
@@ -63,7 +60,7 @@ export function TagDetailView({
             <span className="text-body-sm text-muted-foreground">itens</span>
           </div>
           <div className="flex min-w-[92px] flex-col items-center gap-1 rounded-lg bg-card p-4">
-            <span className="font-pixel text-3xl">{children.length}</span>
+            <span className="font-pixel text-3xl">{childCount}</span>
             <span className="text-body-sm text-muted-foreground">subtags</span>
           </div>
         </div>
@@ -80,7 +77,7 @@ export function TagDetailView({
 
       <ItemsPage
         items={items}
-        tags={flatTags}
+        tags={tags}
         nextCursor={nextCursor}
         prevCursor={prevCursor}
         headingLevel="h2"

@@ -1,6 +1,5 @@
 import { ItemsPage } from "@/components/items/ItemsPage";
 import { getLibraryItems } from "@/lib/database/queries/items";
-import { getTagList } from "@/lib/database/queries/tags";
 import { parseLibrarySearchParams } from "@/lib/validation/search";
 
 export default async function LibraryPage({
@@ -11,15 +10,12 @@ export default async function LibraryPage({
   const rawSearchParams = await searchParams;
   const parsed = parseLibrarySearchParams(rawSearchParams);
 
-  const [results, tags] = await Promise.all([
-    getLibraryItems(parsed),
-    getTagList(),
-  ]);
+  const results = await getLibraryItems(parsed);
 
   return (
     <ItemsPage
       items={results.items}
-      tags={tags}
+      tags={results.tags}
       nextCursor={results.nextCursor}
       prevCursor={results.prevCursor}
     />

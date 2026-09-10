@@ -9,6 +9,7 @@ const {
   searchParamsState,
   routerMock,
   getItemDetailsMock,
+  listTagsForSelectMock,
   reschedulePreviewsForItemsMock,
   refreshItemPreviewMock,
   notifyPreviewQueueChangedMock,
@@ -23,6 +24,9 @@ const {
     routerMock: { replace, push: vi.fn(), refresh },
     searchParamsState: { current: new URLSearchParams() },
     getItemDetailsMock: vi.fn(),
+    // ItemEditorDialog now loads its own tag tree on mount (see
+    // ItemsPage `?create=1` test, which mounts the dialog).
+    listTagsForSelectMock: vi.fn(),
     reschedulePreviewsForItemsMock: vi.fn(),
     refreshItemPreviewMock: vi.fn(),
     notifyPreviewQueueChangedMock: vi.fn(),
@@ -45,6 +49,10 @@ vi.mock("@/lib/actions/items", () => ({
   createItem: vi.fn(),
   updateItem: vi.fn(),
   deleteItem: vi.fn(),
+}));
+
+vi.mock("@/lib/actions/tags", () => ({
+  listTagsForSelect: listTagsForSelectMock,
 }));
 
 vi.mock("@/lib/actions/previews", () => ({
@@ -83,6 +91,7 @@ function stubEmptyDrainFetch() {
 
 beforeEach(() => {
   stubEmptyDrainFetch();
+  listTagsForSelectMock.mockResolvedValue({ ok: true, data: [] });
   reschedulePreviewsForItemsMock.mockResolvedValue({
     ok: true,
     data: { rescheduled: 1 },

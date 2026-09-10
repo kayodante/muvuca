@@ -3,6 +3,7 @@ import {
   getPreviewsForItems,
   type PreviewSummary,
 } from "@/lib/database/queries/previews";
+import { getTagsByIds, type Tag } from "@/lib/database/queries/tags";
 import { createClient } from "@/lib/supabase/server";
 import {
   parseSearchCursor,
@@ -53,6 +54,7 @@ export type LibraryItemSummary =
 
 export type LibraryItemsPage = {
   items: LibraryItemSummary[];
+  tags: Tag[];
   nextCursor: string | null;
   prevCursor: string | null;
 };
@@ -116,10 +118,20 @@ export async function getLibraryItems(
   const linkIds = pageRows
     .filter((row) => row.type === "link")
     .map((row) => row.id);
-  const previews = await getPreviewsForItems(linkIds);
+
+  // Tags referenced by this page's items -- bounded by PAGE_SIZE, not by
+  // the caller's total tag count. Runs alongside getPreviewsForItems since
+  // both depend only on pageRows.
+  const tagIds = [...new Set(pageRows.flatMap((row) => row.tag_ids))];
+
+  const [previews, tags] = await Promise.all([
+    getPreviewsForItems(linkIds),
+    getTagsByIds(tagIds),
+  ]);
 
   return {
     items: pageRows.map((row) => toLibraryItemSummary(row, previews)),
+    tags,
     prevCursor:
       hasMorePrev && first
         ? searchCursorForItem(

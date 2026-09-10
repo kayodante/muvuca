@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { LibraryItem } from "@/lib/database/queries/items";
 import type { Tag } from "@/lib/database/queries/tags";
 import type { ItemType } from "@/lib/validation/item";
 import { createItem, updateItem } from "@/lib/actions/items";
+import { listTagsForSelect } from "@/lib/actions/tags";
 import { notifyPreviewQueueChanged } from "@/lib/events/preview-queue";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,13 +50,16 @@ function Field({
   );
 }
 
+type TagsLoadState =
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "success"; tags: Tag[] };
+
 export function ItemEditorDialog({
   target,
-  tags,
   onOpenChange,
 }: {
   target: EditorTarget;
-  tags: Tag[];
   onOpenChange: (open: boolean) => void;
 }) {
   const [createState, createAction, createPending] = useActionState(
@@ -67,6 +71,42 @@ export function ItemEditorDialog({
     null,
   );
   const editing = target.mode === "edit" ? target.item : null;
+
+  const [tagsState, setTagsState] = useState<TagsLoadState>({
+    status: "loading",
+  });
+  // Bumped by the retry button to re-run the effect below; the effect
+  // itself only ever calls setState from the resolved-promise callback; see
+  // https://react.dev/reference/react/useEffect#fetching-data-with-effects
+  const [tagsAttempt, setTagsAttempt] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    listTagsForSelect().then((result) => {
+      if (cancelled) return;
+      if (result.ok) {
+        setTagsState({ status: "success", tags: result.data });
+      } else {
+        setTagsState({ status: "error", message: result.message });
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [tagsAttempt]);
+
+  const retryLoadTags = useCallback(() => {
+    setTagsState({ status: "loading" });
+    setTagsAttempt((attempt) => attempt + 1);
+  }, []);
+
+  const tags = tagsState.status === "success" ? tagsState.tags : [];
+  const tagsLoading = tagsState.status === "loading";
+  const tagsErrorMessage =
+    tagsState.status === "error" ? tagsState.message : null;
+  const tagsEmpty = tagsState.status === "success" && tags.length === 0;
+  const tagsFieldDisabled =
+    tagsLoading || tagsErrorMessage !== null || tagsEmpty;
   const [type, setType] = useState<ItemType>(editing?.type ?? "link");
   const [content, setContent] = useState(
     editing?.type === "prompt" || editing?.type === "code_component"
@@ -268,22 +308,55 @@ export function ItemEditorDialog({
               id="item-tags"
               tags={tags}
               defaultValue={editing?.tagIds ?? []}
-              disabled={tags.length === 0}
+              disabled={tagsFieldDisabled}
               error={fieldError("tagIds")}
-              ariaDescribedBy={
-                fieldError("tagIds")
-                  ? "item-tags-hint item-tags-error"
-                  : "item-tags-hint"
+              emptyLabel={
+                tagsLoading
+                  ? "Carregando tags..."
+                  : tagsErrorMessage !== null
+                    ? "Não foi possível carregar as tags"
+                    : undefined
               }
+              ariaDescribedBy={[
+                tagsErrorMessage !== null
+                  ? "item-tags-load-error"
+                  : "item-tags-hint",
+                fieldError("tagIds") ? "item-tags-error" : null,
+              ]
+                .filter(Boolean)
+                .join(" ")}
             />
-            <p
-              id="item-tags-hint"
-              className="text-body-sm text-muted-foreground"
-            >
-              {tags.length === 0
-                ? "Crie tags na seção Tags para organizar seus itens."
-                : "Selecione uma ou mais tags para organizar o item."}
-            </p>
+            {tagsErrorMessage !== null ? (
+              <div className="flex flex-col gap-2">
+                <p
+                  id="item-tags-load-error"
+                  role="alert"
+                  className="text-sm text-destructive"
+                >
+                  {tagsErrorMessage}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="self-start"
+                  onClick={retryLoadTags}
+                >
+                  Tentar novamente
+                </Button>
+              </div>
+            ) : (
+              <p
+                id="item-tags-hint"
+                className="text-body-sm text-muted-foreground"
+              >
+                {tagsLoading
+                  ? "Carregando tags..."
+                  : tagsEmpty
+                    ? "Crie tags na seção Tags para organizar seus itens."
+                    : "Selecione uma ou mais tags para organizar o item."}
+              </p>
+            )}
           </Field>
 
           {state?.ok === false && !state.fieldErrors && (

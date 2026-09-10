@@ -7,6 +7,7 @@ const {
   logEventMock,
   rpcMock,
   fromMock,
+  getTagListMock,
 } = vi.hoisted(() => ({
   createClientMock: vi.fn(),
   requireUserMock: vi.fn(),
@@ -14,6 +15,7 @@ const {
   logEventMock: vi.fn(),
   rpcMock: vi.fn(),
   fromMock: vi.fn(),
+  getTagListMock: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -32,7 +34,16 @@ vi.mock("@/lib/security/logging", () => ({
   logEvent: logEventMock,
 }));
 
-import { createTag, deleteTag, updateTag } from "@/lib/actions/tags";
+vi.mock("@/lib/database/queries/tags", () => ({
+  getTagList: getTagListMock,
+}));
+
+import {
+  createTag,
+  deleteTag,
+  listTagsForSelect,
+  updateTag,
+} from "@/lib/actions/tags";
 
 describe("deleteTag", () => {
   const dummyUser = {
@@ -257,5 +268,55 @@ describe("updateTag", () => {
     if (!result.ok) {
       expect(result.code).toBe("NOT_FOUND");
     }
+  });
+});
+
+describe("listTagsForSelect", () => {
+  const dummyUser = {
+    id: "a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d",
+    email: "user@muvuca.test",
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    requireUserMock.mockResolvedValue(dummyUser);
+  });
+
+  it("returns the caller's full tag list on success", async () => {
+    const tags = [
+      {
+        id: "tag-1",
+        parentId: null,
+        name: "Tech",
+        description: null,
+        colorToken: "blue",
+        createdAt: "2026-01-01T00:00:00Z",
+        updatedAt: "2026-01-01T00:00:00Z",
+      },
+    ];
+    getTagListMock.mockResolvedValue(tags);
+
+    const result = await listTagsForSelect();
+
+    expect(result).toEqual({ ok: true, data: tags });
+    expect(logEventMock).not.toHaveBeenCalled();
+  });
+
+  it("logs a structured failure event and fails closed when the query throws", async () => {
+    getTagListMock.mockRejectedValue(new Error("boom"));
+
+    const result = await listTagsForSelect();
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe("UNKNOWN");
+      expect(result.message).toBe("Não foi possível carregar as tags.");
+    }
+    expect(logEventMock).toHaveBeenCalledWith({
+      event: "tags.select_list_failed",
+      status: "failure",
+      errorClass: "Error",
+      userId: dummyUser.id,
+    });
   });
 });

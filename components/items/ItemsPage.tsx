@@ -350,7 +350,6 @@ export function ItemsPage({
         <ItemEditorDialog
           key={editorTarget.mode === "edit" ? editorTarget.item.id : "create"}
           target={editorTarget}
-          tags={tags}
           onOpenChange={(open) => !open && setEditorTarget(null)}
         />
       )}

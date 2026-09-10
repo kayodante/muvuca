@@ -8,7 +8,11 @@ const { createClientMock, logEventMock } = vi.hoisted(() => ({
 vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
 vi.mock("@/lib/security/logging", () => ({ logEvent: logEventMock }));
 
-import { getTagList } from "@/lib/database/queries/tags";
+import {
+  getChildTagCount,
+  getTagList,
+  getTagsByIds,
+} from "@/lib/database/queries/tags";
 
 describe("getTagList", () => {
   beforeEach(() => {
@@ -42,5 +46,95 @@ describe("getTagList", () => {
     await expect(getTagList()).resolves.toEqual([]);
 
     expect(logEventMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("getTagsByIds", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("resolves to [] without touching the client when tagIds is empty", async () => {
+    await expect(getTagsByIds([])).resolves.toEqual([]);
+
+    expect(createClientMock).not.toHaveBeenCalled();
+  });
+
+  it("deduplicates ids into a single query", async () => {
+    const order = vi.fn().mockResolvedValue({ data: [], error: null });
+    const inFn = vi.fn().mockReturnValue({ order });
+    const select = vi.fn().mockReturnValue({ in: inFn });
+    const from = vi.fn().mockReturnValue({ select });
+    createClientMock.mockResolvedValue({ from });
+
+    await getTagsByIds(["tag-a", "tag-b", "tag-a"]);
+
+    expect(inFn).toHaveBeenCalledTimes(1);
+    expect(inFn).toHaveBeenCalledWith("id", ["tag-a", "tag-b"]);
+  });
+
+  it("logs a structured failure event before throwing when the query errors", async () => {
+    const order = vi.fn().mockResolvedValue({
+      data: null,
+      error: { code: "42501", name: "PostgrestError", message: "denied" },
+    });
+    const inFn = vi.fn().mockReturnValue({ order });
+    const select = vi.fn().mockReturnValue({ in: inFn });
+    const from = vi.fn().mockReturnValue({ select });
+    createClientMock.mockResolvedValue({ from });
+
+    await expect(getTagsByIds(["tag-a"])).rejects.toMatchObject({
+      code: "42501",
+    });
+
+    expect(logEventMock).toHaveBeenCalledWith({
+      event: "tags.list_by_ids_failed",
+      status: "failure",
+      errorClass: "42501",
+    });
+  });
+});
+
+describe("getChildTagCount", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("resolves to the exact count of direct children", async () => {
+    const eq = vi.fn().mockResolvedValue({ count: 3, error: null });
+    const select = vi.fn().mockReturnValue({ eq });
+    const from = vi.fn().mockReturnValue({ select });
+    createClientMock.mockResolvedValue({ from });
+
+    await expect(getChildTagCount("tag-a")).resolves.toBe(3);
+
+    expect(select).toHaveBeenCalledWith("id", {
+      count: "exact",
+      head: true,
+    });
+    expect(eq).toHaveBeenCalledWith("parent_id", "tag-a");
+  });
+
+  it("resolves to 0 when count is null", async () => {
+    const eq = vi.fn().mockResolvedValue({ count: null, error: null });
+    const select = vi.fn().mockReturnValue({ eq });
+    const from = vi.fn().mockReturnValue({ select });
+    createClientMock.mockResolvedValue({ from });
+
+    await expect(getChildTagCount("tag-a")).resolves.toBe(0);
+  });
+
+  it("throws when the query errors", async () => {
+    const eq = vi.fn().mockResolvedValue({
+      count: null,
+      error: { code: "42501", name: "PostgrestError", message: "denied" },
+    });
+    const select = vi.fn().mockReturnValue({ eq });
+    const from = vi.fn().mockReturnValue({ select });
+    createClientMock.mockResolvedValue({ from });
+
+    await expect(getChildTagCount("tag-a")).rejects.toMatchObject({
+      code: "42501",
+    });
   });
 });
