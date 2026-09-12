@@ -5,6 +5,12 @@ vi.mock("next/server", () => ({
   connection: vi.fn().mockResolvedValue(undefined),
 }));
 
+// The page redirects to /library when signed in; this suite asserts the
+// visitor-facing markup, so it always runs as anonymous.
+vi.mock("@/lib/auth/require-user", () => ({
+  getOptionalUser: vi.fn().mockResolvedValue(null),
+}));
+
 import HomePage from "@/app/page";
 
 describe("HomePage (Landing Page)", () => {

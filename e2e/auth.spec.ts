@@ -1,12 +1,28 @@
 import { test, expect } from "@playwright/test";
 
-import { SEEDED_EMAIL, signInThroughForm } from "./helpers";
+import { SEEDED_EMAIL, signIn, signInThroughForm } from "./helpers";
 
 test("unauthenticated access to a protected route redirects to /login", async ({
   page,
 }) => {
   await page.goto("/library");
   await expect(page).toHaveURL(/\/login/);
+});
+
+test("authenticated visit to / redirects to /library", async ({ page }) => {
+  const email = `e2e-home-redirect-${Date.now()}@muvuca.test`;
+  await signIn(page, email);
+
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/library/);
+});
+
+test("unauthenticated visit to / stays on the landing page", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
 test("prefetch headers cannot bypass protected-route authentication", async ({
