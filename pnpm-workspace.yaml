@@ -48,6 +48,9 @@ allowBuilds:
   # binary for the current platform — same standard pattern, widely used,
   # reviewed. Allowed.
   esbuild: true
+  # core-js's postinstall only prints a funding/donation banner -- no
+  # build output the app depends on. Explicitly disallowed.
+  core-js: false
   # `sharp` (link-preview thumbnail/favicon pipeline, lib/metadata/image.ts)
   # does NOT need an entry here: since v0.32 it ships its native binary as
   # a per-platform `optionalDependency` (`@img/sharp-*`) resolved directly
