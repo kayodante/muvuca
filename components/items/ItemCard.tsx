@@ -518,16 +518,20 @@ export function ItemCard({
               />
               {/* Scrim, not decoration: the badge and the action icons sit
                 on whatever the thumbnail happens to show there, and without
-                it their contrast is whatever the remote page decided. Fixed
-                height, not inset-0: the header (badge top 16.8px/13px tall,
-                action buttons top 16.8px/32px tall, base at 48.8px) needs
-                protection only up to ~49px, so the scrim is 96px tall,
-                opaque until 40% (~38px, clearing the header with margin)
-                and fading to transparent by 96px — leaving the rest of the
-                preview uncovered instead of veiling the whole thumbnail. */}
+                it their contrast is whatever the remote page decided -- a
+                light thumbnail erased the icons entirely (AAA-180).
+                Spec: Figma "OG:IMAGE" (163:928) -- a full-height gradient
+                from the surface token (`--card` === `--surface`) at the top
+                to transparent at the bottom, visible in the Hover state
+                only, 300ms ease-out. Here the state gate is the same media
+                query as ACTION_CLASS: hidden at rest only for fine-pointer
+                devices (which fade it in on group-hover/focus-within with
+                --motion-slow ≈ the Figma 300ms), while touch keeps it
+                always on -- its actions never hide, so its scrim never
+                hides either. */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-card from-40% to-transparent"
+                className="pointer-events-none absolute inset-0 bg-gradient-to-b from-card to-transparent opacity-100 transition-opacity duration-(--motion-slow) ease-out-muvuca motion-reduce:transition-none [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100"
               />
             </div>
             <div className="flex flex-1 flex-col gap-4 p-4">
