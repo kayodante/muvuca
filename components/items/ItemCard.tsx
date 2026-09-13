@@ -528,10 +528,18 @@ export function ItemCard({
                 devices (which fade it in on group-hover/focus-within with
                 --motion-slow ≈ the Figma 300ms), while touch keeps it
                 always on -- its actions never hide, so its scrim never
-                hides either. */}
+                hides either.
+                `z-[3]` is load-bearing, not tidying: LinkPreviewMedia paints
+                the thumbnail in `.t-skel-content` at z-index 2, and a
+                positioned element at `z-index: auto` is painted *before* any
+                positioned sibling with a positive z-index -- DOM order
+                doesn't break that tie. Without it the gradient renders under
+                the image and the scrim is invisible, which is what made the
+                old scrim look like it worked only on dark thumbs. Stays
+                below the header's `z-10` so badge and actions keep winning. */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 bg-gradient-to-b from-card to-transparent opacity-100 transition-opacity duration-(--motion-slow) ease-out-muvuca motion-reduce:transition-none [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100"
+                className="pointer-events-none absolute inset-0 z-[3] bg-gradient-to-b from-card to-transparent opacity-100 transition-opacity duration-(--motion-slow) ease-out-muvuca motion-reduce:transition-none [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100"
               />
             </div>
             <div className="flex flex-1 flex-col gap-4 p-4">
