@@ -46,6 +46,7 @@ const mockCodeComponent: Extract<LibraryItem, { type: "code_component" }> = {
   url: "https://ui.shadcn.com/docs/components/card",
   content:
     "export function Card({ children }: CardProps) { return <div className='card'>{children}</div>; }",
+  language: null,
   tagIds: ["tag-1"],
 };
 

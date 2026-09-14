@@ -101,6 +101,7 @@ describe("items actions", () => {
         p_content: null,
         p_description: "A helpful doc",
         p_tag_ids: [validTagId],
+        p_language: null,
       });
       expect(revalidatePathMock).toHaveBeenCalledWith("/library");
       expect(revalidatePathMock).toHaveBeenCalledWith("/tags", "layout");
@@ -126,6 +127,7 @@ describe("items actions", () => {
         p_content: "Review this code for vulnerabilities.",
         p_description: "Prompt for LLMs",
         p_tag_ids: [],
+        p_language: null,
       });
     });
 
@@ -154,6 +156,7 @@ describe("items actions", () => {
         p_content: "export function Button() { return <button />; }",
         p_description: "Shadcn button",
         p_tag_ids: [validTagId],
+        p_language: null,
       });
       expect(revalidatePathMock).toHaveBeenCalledWith("/library");
       expect(revalidatePathMock).toHaveBeenCalledWith("/tags", "layout");
@@ -180,6 +183,7 @@ describe("items actions", () => {
         p_content: "export function useCounter() { return 0; }",
         p_description: null,
         p_tag_ids: [],
+        p_language: null,
       });
     });
 
@@ -197,6 +201,79 @@ describe("items actions", () => {
         expect(result.code).toBe("VALIDATION_FAILED");
       }
       expect(rpcMock).not.toHaveBeenCalled();
+    });
+
+    it("passes a validated code_component language through to the RPC", async () => {
+      rpcMock.mockResolvedValue({ data: validItemId, error: null });
+
+      const formData = new FormData();
+      formData.set("type", "code_component");
+      formData.set("title", "Button Component");
+      formData.set("content", "export function Button() {}");
+      formData.set("language", "typescript");
+
+      const result = await createItem(null, formData);
+
+      expect(result).toEqual({ ok: true, data: { id: validItemId } });
+      expect(rpcMock).toHaveBeenCalledWith(
+        "create_library_item",
+        expect.objectContaining({
+          p_type: "code_component",
+          p_language: "typescript",
+        }),
+      );
+    });
+
+    it("treats an empty language field as no language", async () => {
+      rpcMock.mockResolvedValue({ data: validItemId, error: null });
+
+      const formData = new FormData();
+      formData.set("type", "code_component");
+      formData.set("title", "Button Component");
+      formData.set("content", "export function Button() {}");
+      formData.set("language", "");
+
+      const result = await createItem(null, formData);
+
+      expect(result).toEqual({ ok: true, data: { id: validItemId } });
+      expect(rpcMock).toHaveBeenCalledWith(
+        "create_library_item",
+        expect.objectContaining({ p_language: null }),
+      );
+    });
+
+    it("rejects an unsupported code_component language before touching the database", async () => {
+      const formData = new FormData();
+      formData.set("type", "code_component");
+      formData.set("title", "Button Component");
+      formData.set("content", "export function Button() {}");
+      formData.set("language", "cobol");
+
+      const result = await createItem(null, formData);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.code).toBe("VALIDATION_FAILED");
+      }
+      expect(rpcMock).not.toHaveBeenCalled();
+    });
+
+    it("never carries a language for link items, even if the form sends one", async () => {
+      rpcMock.mockResolvedValue({ data: validItemId, error: null });
+
+      const formData = new FormData();
+      formData.set("type", "link");
+      formData.set("title", "My Link");
+      formData.set("url", "https://example.com/docs");
+      formData.set("language", "python");
+
+      const result = await createItem(null, formData);
+
+      expect(result).toEqual({ ok: true, data: { id: validItemId } });
+      expect(rpcMock).toHaveBeenCalledWith(
+        "create_library_item",
+        expect.objectContaining({ p_type: "link", p_language: null }),
+      );
     });
 
     it("rejects code_component without content", async () => {
@@ -328,6 +405,7 @@ describe("items actions", () => {
           "export function Button() { return <button className='btn' />; }",
         p_description: "Updated description",
         p_tag_ids: [validTagId],
+        p_language: null,
       });
       expect(revalidatePathMock).toHaveBeenCalledWith("/library");
       expect(revalidatePathMock).toHaveBeenCalledWith("/tags", "layout");
@@ -356,7 +434,47 @@ describe("items actions", () => {
         p_content: "export function useHook() {}",
         p_description: null,
         p_tag_ids: [],
+        p_language: null,
       });
+    });
+
+    it("passes a validated language through on code_component updates", async () => {
+      rpcMock.mockResolvedValue({ error: null });
+
+      const formData = new FormData();
+      formData.set("id", validItemId);
+      formData.set("type", "code_component");
+      formData.set("title", "Updated Hook");
+      formData.set("content", "export function useHook() {}");
+      formData.set("language", "python");
+
+      const result = await updateItem(null, formData);
+
+      expect(result).toEqual({ ok: true, data: null });
+      expect(rpcMock).toHaveBeenCalledWith(
+        "update_library_item",
+        expect.objectContaining({
+          p_item_id: validItemId,
+          p_language: "python",
+        }),
+      );
+    });
+
+    it("rejects an unsupported language on code_component updates", async () => {
+      const formData = new FormData();
+      formData.set("id", validItemId);
+      formData.set("type", "code_component");
+      formData.set("title", "Updated Hook");
+      formData.set("content", "export function useHook() {}");
+      formData.set("language", "cobol");
+
+      const result = await updateItem(null, formData);
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.code).toBe("VALIDATION_FAILED");
+      }
+      expect(rpcMock).not.toHaveBeenCalled();
     });
 
     it("rejects update with invalid URL for code_component", async () => {

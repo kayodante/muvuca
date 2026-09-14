@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { CODE_LANGUAGE_LABELS, CODE_LANGUAGES } from "./languages";
+import {
+  CODE_LANGUAGE_LABELS,
+  CODE_LANGUAGES,
+  isCodeLanguage,
+} from "./languages";
 
 describe("CODE_LANGUAGES", () => {
   it("contains exactly the 13 supported languages in canonical order", () => {
@@ -19,6 +23,23 @@ describe("CODE_LANGUAGES", () => {
       "markdown",
       "yaml",
     ]);
+  });
+});
+
+describe("isCodeLanguage", () => {
+  it("accepts every supported language", () => {
+    for (const language of CODE_LANGUAGES) {
+      expect(isCodeLanguage(language)).toBe(true);
+    }
+  });
+
+  it("rejects unsupported strings, non-strings and null-ish values", () => {
+    expect(isCodeLanguage("cobol")).toBe(false);
+    expect(isCodeLanguage("TypeScript")).toBe(false);
+    expect(isCodeLanguage("")).toBe(false);
+    expect(isCodeLanguage(null)).toBe(false);
+    expect(isCodeLanguage(undefined)).toBe(false);
+    expect(isCodeLanguage(42)).toBe(false);
   });
 });
 

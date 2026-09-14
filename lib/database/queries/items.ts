@@ -1,3 +1,4 @@
+import { isCodeLanguage, type CodeLanguage } from "@/lib/code/languages";
 import type { Database } from "@/lib/database/generated.types";
 import {
   getPreviewsForItems,
@@ -38,6 +39,7 @@ export type LibraryItem =
       description: string | null;
       url: string | null;
       content: string;
+      language: CodeLanguage | null;
       tagIds: string[];
     };
 
@@ -183,7 +185,7 @@ export async function getLibraryItemById(
   const [itemResult, tagsResult] = await Promise.all([
     supabase
       .from("library_items")
-      .select("id, type, title, description, url, content")
+      .select("id, type, title, description, url, content, language")
       .eq("id", id)
       .maybeSingle(),
     supabase.from("item_tags").select("item_id, tag_id").eq("item_id", id),
@@ -207,6 +209,10 @@ function toLibraryItemSummary(
     description: string | null;
     url: string | null;
     content_preview: string | null;
+    // generated.types.ts tipa `language` como `string` (não-nulo) nos
+    // RETURNS de search_library; o Postgres pode devolver null. O mapper
+    // trata o campo como desconhecido até passar no isCodeLanguage.
+    language: string | null;
     tag_ids: string[];
   },
   previews: Map<string, PreviewSummary>,
@@ -243,6 +249,7 @@ function toLibraryItemSummary(
       description: item.description,
       url: item.url ?? null,
       contentPreview: item.content_preview ?? "",
+      language: isCodeLanguage(item.language) ? item.language : null,
       tagIds: item.tag_ids,
     };
   }
@@ -258,16 +265,21 @@ function toLibraryItem(
     description: string | null;
     url: string | null;
     content: string | null;
+    language: string | null;
   },
   tagIds: string[],
 ): LibraryItem {
+  // language existe somente no variant code_component: separá-la aqui
+  // impede que o spread `...rest` a carregue para link/prompt.
+  const { language, ...rest } = item;
+
   if (item.type === "link" && item.url) {
-    return { ...item, type: "link", url: item.url, content: null, tagIds };
+    return { ...rest, type: "link", url: item.url, content: null, tagIds };
   }
 
   if (item.type === "prompt" && item.content) {
     return {
-      ...item,
+      ...rest,
       type: "prompt",
       url: null,
       content: item.content,
@@ -277,10 +289,11 @@ function toLibraryItem(
 
   if (item.type === "code_component" && item.content) {
     return {
-      ...item,
+      ...rest,
       type: "code_component",
       url: item.url ?? null,
       content: item.content,
+      language: isCodeLanguage(language) ? language : null,
       tagIds,
     };
   }

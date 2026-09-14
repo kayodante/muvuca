@@ -1,11 +1,16 @@
 import { z } from "zod";
 
+import { CODE_LANGUAGES } from "@/lib/code/languages";
+
 export const ITEM_TYPES = ["link", "prompt", "code_component"] as const;
 
 export type ItemType = (typeof ITEM_TYPES)[number];
 
 export const itemTypeSchema = z.enum(ITEM_TYPES);
 export const itemIdSchema = z.uuid();
+/** Espelha a constraint `library_items_language_allowed` (migration 0028):
+ * language só existe para code_component e deve estar na allowlist. */
+export const codeLanguageSchema = z.enum(CODE_LANGUAGES);
 /** Teto do escopo de uma drenagem: uma página da biblioteca cabe folgada
  * aqui. Rejeitar cedo evita que um cliente adulterado peça uma lista
  * arbitrariamente grande. */
@@ -85,6 +90,7 @@ export const createItemSchema = z.discriminatedUnion("type", [
     type: z.literal("code_component"),
     content: itemContentSchema,
     url: itemUrlSchema.nullable().optional(),
+    language: codeLanguageSchema.nullable().optional(),
   }),
 ]);
 
@@ -104,5 +110,6 @@ export const updateItemSchema = z.discriminatedUnion("type", [
     type: z.literal("code_component"),
     content: itemContentSchema,
     url: itemUrlSchema.nullable().optional(),
+    language: codeLanguageSchema.nullable().optional(),
   }),
 ]);

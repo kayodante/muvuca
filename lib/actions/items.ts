@@ -30,6 +30,7 @@ type PostgrestErrorLike = { code?: string };
 
 function itemFormData(formData: FormData) {
   const rawUrl = formData.get("url");
+  const rawLanguage = formData.get("language");
   return {
     id: formData.get("id"),
     type: formData.get("type"),
@@ -38,6 +39,13 @@ function itemFormData(formData: FormData) {
     content: formData.get("content"),
     description: formData.get("description"),
     tagIds: formData.getAll("tagIds"),
+    // HTML selects sempre enviam string; um campo vazio significa
+    // "sem linguagem" (mesma convenção de `url` acima). O valor bruto nunca
+    // é confiável: só chega ao RPC o que o schema validar.
+    language:
+      typeof rawLanguage === "string" && rawLanguage.trim() === ""
+        ? null
+        : rawLanguage,
   };
 }
 
@@ -133,6 +141,13 @@ export async function createItem(
         : null,
     p_description: parsed.data.description,
     p_tag_ids: parsed.data.tagIds,
+    // Só code_component porta linguagem; o valor vem exclusivamente do
+    // schema validado (a constraint `library_items_language_allowed`
+    // rejeitaria qualquer outra coisa).
+    p_language:
+      parsed.data.type === "code_component"
+        ? (parsed.data.language ?? null)
+        : null,
     // PostgreSQL routine parameters accept null; generated RPC args lose that metadata.
   } as unknown as Database["public"]["Functions"]["create_library_item"]["Args"]);
 
@@ -220,6 +235,13 @@ export async function updateItem(
         : null,
     p_description: parsed.data.description,
     p_tag_ids: parsed.data.tagIds,
+    // update_library_item é full-row: p_language precisa ir sempre (o valor
+    // validado para code_component, null nos demais) para não zerar — nem
+    // inventar — a linguagem.
+    p_language:
+      parsed.data.type === "code_component"
+        ? (parsed.data.language ?? null)
+        : null,
     // PostgreSQL routine parameters accept null; generated RPC args lose that metadata.
   } as unknown as Database["public"]["Functions"]["update_library_item"]["Args"]);
 

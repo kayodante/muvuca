@@ -62,6 +62,7 @@ const mockCodeComponent: LibraryItemSummary = {
   url: "https://ui.shadcn.com/docs/components/button",
   contentPreview:
     "export function Button({ children }: ButtonProps) {\n  return <button>{children}</button>;\n}",
+  language: null,
   tagIds: ["tag-1"],
 };
 

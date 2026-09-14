@@ -65,6 +65,7 @@ const mockEditCodeComponentItemWithUrl: LibraryItem = {
   description: "A reusable button",
   url: "https://example.com/button",
   content: "export function Button() { return <button />; }",
+  language: null,
   tagIds: ["tag-1"],
 };
 
@@ -75,6 +76,7 @@ const mockEditCodeComponentItemWithoutUrl: LibraryItem = {
   description: null,
   url: null,
   content: "export function Card() { return <div />; }",
+  language: null,
   tagIds: [],
 };
 
