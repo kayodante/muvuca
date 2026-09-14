@@ -174,6 +174,24 @@ body {
   --type-prompt: #047857;
   --type-code: #c2410c;
 
+  /* Syntax highlight de snippets: paleta GitHub alinhada ao DESIGN. Estes
+     tokens são consumidos pelo tema `muvuca-code` do Shiki
+     (`createCssVariablesTheme` com `variablePrefix: "--code-"` em
+     `lib/code/highlight.ts`); o `--code-background` fica `transparent`
+     porque o painel de preview já traz o fundo — mesmo critério dos
+     `--type-*`, que vivem na superfície do card sem fundo próprio. */
+  --code-foreground: #1f2328;
+  --code-background: transparent;
+  --code-token-constant: #0550ae;
+  --code-token-string: #0a3069;
+  --code-token-comment: #57606a;
+  --code-token-keyword: #cf222e;
+  --code-token-parameter: #953800;
+  --code-token-function: #8250df;
+  --code-token-string-expression: #0a3069;
+  --code-token-punctuation: #1f2328;
+  --code-token-link: #3378c4;
+
   --background: var(--canvas);
   --foreground: var(--ink);
   --card: var(--surface);
@@ -249,6 +267,18 @@ body {
     --type-prompt: #10b981;
     --type-code: #f97316;
     --brand-accent: var(--primary);
+
+    --code-foreground: #e6edf3;
+    --code-background: transparent;
+    --code-token-constant: #79c0ff;
+    --code-token-string: #a5d6ff;
+    --code-token-comment: #9198a1;
+    --code-token-keyword: #ff7b72;
+    --code-token-parameter: #ffa657;
+    --code-token-function: #d2a8ff;
+    --code-token-string-expression: #a5d6ff;
+    --code-token-punctuation: #c9d1d9;
+    --code-token-link: #66a3ff;
   }
 }
 
@@ -272,6 +302,18 @@ body {
   --type-prompt: #10b981;
   --type-code: #f97316;
   --brand-accent: var(--primary);
+
+  --code-foreground: #e6edf3;
+  --code-background: transparent;
+  --code-token-constant: #79c0ff;
+  --code-token-string: #a5d6ff;
+  --code-token-comment: #9198a1;
+  --code-token-keyword: #ff7b72;
+  --code-token-parameter: #ffa657;
+  --code-token-function: #d2a8ff;
+  --code-token-string-expression: #a5d6ff;
+  --code-token-punctuation: #c9d1d9;
+  --code-token-link: #66a3ff;
 }
 
 @layer base {
