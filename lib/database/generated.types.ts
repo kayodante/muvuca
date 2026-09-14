@@ -76,6 +76,7 @@ export type Database = {
           created_at: string;
           description: string | null;
           id: string;
+          language: string | null;
           normalized_url: string | null;
           search_vector: unknown;
           title: string;
@@ -89,6 +90,7 @@ export type Database = {
           created_at?: string;
           description?: string | null;
           id?: string;
+          language?: string | null;
           normalized_url?: string | null;
           search_vector?: unknown;
           title: string;
@@ -102,6 +104,7 @@ export type Database = {
           created_at?: string;
           description?: string | null;
           id?: string;
+          language?: string | null;
           normalized_url?: string | null;
           search_vector?: unknown;
           title?: string;
@@ -289,6 +292,7 @@ export type Database = {
         Args: {
           p_content: string;
           p_description: string;
+          p_language?: string;
           p_normalized_url: string;
           p_tag_ids: string[];
           p_title: string;
@@ -361,6 +365,7 @@ export type Database = {
           created_at: string;
           description: string;
           id: string;
+          language: string;
           tag_ids: string[];
           title: string;
           type: Database["public"]["Enums"]["item_type"];
@@ -386,6 +391,7 @@ export type Database = {
           p_content: string;
           p_description: string;
           p_item_id: string;
+          p_language?: string;
           p_normalized_url: string;
           p_tag_ids: string[];
           p_title: string;
