@@ -1,7 +1,17 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { highlightCode, type CodeLine } from "@/lib/code/highlight";
+import type { CodeLanguage } from "@/lib/code/languages";
 import { PromptContentPanel } from "./PromptContentPanel";
+
+// Highlight real (Shiki) por padrão — os testes da branch code passam pela
+// pipeline de verdade (mesmo padrão de integração do CodeSnippetEmbed.test).
+// O wrapper vi.fn() existe para provar que a linguagem chega ao highlight.
+vi.mock("@/lib/code/highlight", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/code/highlight")>();
+  return { ...actual, highlightCode: vi.fn(actual.highlightCode) };
+});
 
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
@@ -11,18 +21,26 @@ afterEach(async () => {
   container?.remove();
   root = null;
   container = null;
+  vi.clearAllMocks();
 });
 
 async function renderPanel(
   content: string,
   variant: "prompt" | "code_component" = "prompt",
+  language: CodeLanguage | null = null,
 ) {
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
 
   await act(async () => {
-    root?.render(<PromptContentPanel content={content} variant={variant} />);
+    root?.render(
+      <PromptContentPanel
+        content={content}
+        variant={variant}
+        language={language}
+      />,
+    );
   });
 
   return container;
@@ -59,13 +77,72 @@ describe("PromptContentPanel", () => {
     expect(el.textContent).toContain("1 caractere");
   });
 
-  it("rotula code_component como code e usa <pre><code> monoespaçado", async () => {
-    const el = await renderPanel("const a = 1;", "code_component");
+  it("delega code_component ao CodeSnippetEmbed: badge, linguagem e régua", async () => {
+    const el = await renderPanel(
+      "const x = 1;",
+      "code_component",
+      "typescript",
+    );
 
+    // O embed traz o próprio header: badge do tipo + nome da linguagem.
     expect(el.textContent).toContain("code");
-    const code = el.querySelector("pre code");
-    expect(code).not.toBeNull();
-    expect(code?.textContent).toBe("const a = 1;");
+    expect(el.textContent).toContain("TypeScript");
+
+    // A régua é uma coluna irmã fora da árvore acessível, numerada 1..N.
+    const gutter = el.querySelector('div[aria-hidden="true"]');
+    expect(gutter?.textContent).toBe("1");
+
+    // O embed não usa <pre><code>: cada linha é uma div de tokens.
+    expect(el.querySelector("pre code")).toBeNull();
+
+    // A linguagem chega ao highlight — o painel não a consome diretamente.
+    expect(highlightCode).toHaveBeenCalledWith("const x = 1;", "typescript");
+  });
+
+  it("mostra o código em plaintext no primeiro paint e colore após o highlight", async () => {
+    // O init do highlighter é uma cadeia de microtasks que o act drena na
+    // renderização, então "ainda sem cor" só é observável de forma
+    // determinística com o highlight pendente. O flush real do Shiki fica a
+    // cargo do CodeSnippetEmbed.test.
+    let resolveHighlight: ((lines: CodeLine[]) => void) | null = null;
+    vi.mocked(highlightCode).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveHighlight = resolve;
+        }),
+    );
+
+    const el = await renderPanel(
+      "const a = 1;\nconst b = 2;",
+      "code_component",
+      "typescript",
+    );
+
+    // Primeiro paint: fallback plaintext, gutter 1..N, nenhum token colorido.
+    const gutter = el.querySelector('div[aria-hidden="true"]');
+    expect(gutter?.textContent).toBe("12");
+    expect(el.textContent).toContain("const a = 1;");
+    expect(el.textContent).toContain("const b = 2;");
+    expect(el.querySelector('span[style*="--code-"]')).toBeNull();
+
+    await act(async () => {
+      resolveHighlight?.([
+        [
+          { content: "const", color: "var(--code-token-keyword)" },
+          { content: " a = 1;" },
+        ],
+        [
+          { content: "const", color: "var(--code-token-keyword)" },
+          { content: " b = 2;" },
+        ],
+      ]);
+    });
+
+    const colored = Array.from(
+      el.querySelectorAll<HTMLElement>('span[style*="--code-"]'),
+    );
+    expect(colored.length).toBe(2);
+    expect(colored.map((span) => span.textContent)).toEqual(["const", "const"]);
   });
 
   it("preserva o conteúdo do prompt na íntegra", async () => {
@@ -104,14 +181,5 @@ describe("PromptContentPanel", () => {
     const el = await renderPanel(content);
 
     expect(el.querySelector("p")?.textContent).toBe(content);
-  });
-
-  it("não realça nada dentro de code_component", async () => {
-    const el = await renderPanel(
-      "const url = 'https://exemplo.com/x';",
-      "code_component",
-    );
-
-    expect(el.querySelector("[data-token-kind]")).toBeNull();
   });
 });

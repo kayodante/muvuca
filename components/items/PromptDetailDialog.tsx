@@ -91,7 +91,11 @@ export function PromptDetailDialog({
             </a>
           </div>
         )}
-        <PromptContentPanel content={item.content} variant={item.type} />
+        <PromptContentPanel
+          content={item.content}
+          variant={item.type}
+          language={item.type === "code_component" ? item.language : null}
+        />
         <DialogFooter>
           <Button
             type="button"
