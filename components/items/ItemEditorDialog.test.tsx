@@ -80,6 +80,17 @@ const mockEditCodeComponentItemWithoutUrl: LibraryItem = {
   tagIds: [],
 };
 
+const mockEditCodeComponentItemWithLanguage: LibraryItem = {
+  id: "item-edit-5",
+  type: "code_component",
+  title: "Script Python",
+  description: null,
+  url: null,
+  content: "print('hello')",
+  language: "python",
+  tagIds: [],
+};
+
 const mockEditPromptItem: LibraryItem = {
   id: "item-edit-4",
   type: "prompt",
@@ -196,6 +207,80 @@ describe("ItemEditorDialog", () => {
     expect(urlInput).not.toBeNull();
     expect(urlInput.required).toBe(false);
     expect(urlInput.placeholder).toBe("https://exemplo.com/componente");
+  });
+
+  describe("campo Linguagem", () => {
+    function languageTrigger() {
+      return document.body.querySelector("#item-language");
+    }
+
+    function languageHiddenInput() {
+      // O input de formulário do Select do Base UI não tem `type="hidden"`:
+      // ele é um <input> comum escondido por estilo (visuallyHiddenInput),
+      // tabIndex -1 e aria-hidden, com `name` apontando para o FormData.
+      return document.body.querySelector(
+        'input[name="language"]',
+      ) as HTMLInputElement | null;
+    }
+
+    async function checkRadio(value: string) {
+      const radio = document.body.querySelector(
+        `input[type="radio"][value="${value}"]`,
+      ) as HTMLInputElement;
+      await act(async () => {
+        radio.click();
+      });
+    }
+
+    it("exibe o combobox acessível quando o tipo é código", async () => {
+      await renderEditor({ mode: "create" });
+
+      // Tipo padrão é link: nenhum campo de linguagem.
+      expect(languageTrigger()).toBeNull();
+      expect(languageHiddenInput()).toBeNull();
+
+      await checkRadio("code_component");
+
+      const trigger = languageTrigger() as HTMLElement;
+      expect(trigger).not.toBeNull();
+      expect(trigger.getAttribute("aria-haspopup")).toBe("listbox");
+
+      const label = document.body.querySelector('label[for="item-language"]');
+      expect(label?.textContent).toBe("Linguagem (opcional)");
+
+      // O Select do Base UI emite o hidden input mesmo fechado: é isso que
+      // leva `language` no FormData ("" até o usuário escolher algo).
+      expect(languageHiddenInput()?.value).toBe("");
+    });
+
+    it("esconde o combobox quando o tipo volta a ser prompt", async () => {
+      await renderEditor({ mode: "create" });
+
+      await checkRadio("code_component");
+      expect(languageTrigger()).not.toBeNull();
+
+      await checkRadio("prompt");
+      expect(languageTrigger()).toBeNull();
+      expect(languageHiddenInput()).toBeNull();
+    });
+
+    it("mostra 'Texto puro' como valor padrão na criação", async () => {
+      await renderEditor({ mode: "create" });
+
+      await checkRadio("code_component");
+
+      expect(languageTrigger()?.textContent).toContain("Texto puro");
+    });
+
+    it("mostra o rótulo da linguagem salva na edição (python -> Python)", async () => {
+      await renderEditor({
+        mode: "edit",
+        item: mockEditCodeComponentItemWithLanguage,
+      });
+
+      expect(languageTrigger()?.textContent).toContain("Python");
+      expect(languageHiddenInput()?.value).toBe("python");
+    });
   });
 
   it("renderiza em modo de edição para link com valores pré-preenchidos e tags selecionadas", async () => {
