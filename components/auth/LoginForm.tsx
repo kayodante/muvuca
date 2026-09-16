@@ -57,7 +57,9 @@ export function LoginForm({ next }: { next: string }) {
               Usar outro email
             </Button>
             <p className="text-metadata text-muted-foreground">
-              Não recebeu? Verifique a pasta de spam.
+              Não recebeu? Verifique a pasta de spam. O Muvuca ainda não está
+              aceitando novas contas, então emails sem cadastro não recebem
+              link.
             </p>
           </>
         ) : (
@@ -118,7 +120,8 @@ export function LoginForm({ next }: { next: string }) {
               </Button>
             </form>
             <p className="text-metadata text-muted-foreground">
-              Sem senha — enviamos um link de acesso por email.
+              Sem senha — enviamos um link de acesso por email. O Muvuca ainda
+              não está aceitando novas contas.
             </p>
           </>
         )}
