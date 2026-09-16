@@ -158,3 +158,94 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  # Os jobs acima só aplicam migrations a um banco local efêmero, que é
+  # destruído junto com o runner -- nada neles toca o projeto de produção.
+  # Sem este job, uma migration mergeada fica só no repo e o schema remoto
+  # diverge em silêncio até alguém abrir a feature que depende dela: foi
+  # assim que 0026, 0027 e 0028 ficaram semanas para trás e a coluna
+  # `library_items.language` da 0028 quebrou os itens de código em produção
+  # com o código novo já no ar.
+  #
+  # O deploy do app é da integração Git do Vercel e roda em paralelo com o
+  # CI, não depois dele: entre o app subir e este job aplicar as migrations
+  # há uma janela de alguns minutos com código novo sobre schema velho.
+  # Tolerável porque as migrations do repo são aditivas por padrão e
+  # `__tests__/migrations-destructive.test.ts` falha o CI quando deixam de
+  # ser -- o problema que este job resolve é a migration que nunca chega,
+  # não a que chega tarde.
+  migrate:
+    name: Apply migrations (production)
+    # Nunca aplica um schema que o CI não validou.
+    needs: [quality, integration]
+    # `push` + `main` mantém o job fora dos PRs. A checagem de repositório
+    # deixa o fork de um terceiro herdar o workflow sem nunca disparar um
+    # deploy: quem forkar aponta esta linha para o próprio repo (e o
+    # processo manual equivalente está em docs/DEPLOY.md).
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository == 'kayodante/muvuca'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Exige aprovação manual antes de qualquer step rodar. `supabase db
+    # push` é irreversível na prática e o Free Tier não tem PITR nem backup
+    # automático (docs/DEPLOY.md): a única volta é o JSON exportado antes.
+    # Os três secrets abaixo pertencem a este environment, não ao
+    # repositório, então nenhum outro job do workflow os enxerga.
+    environment: Production
+    # O grupo de concurrency do topo cancela o run anterior a cada push
+    # novo. Um `db push` interrompido no meio de uma migration é exatamente
+    # o que não pode acontecer, então este job usa um grupo próprio, que
+    # enfileira em vez de cancelar.
+    concurrency:
+      group: migrate-production
+      cancel-in-progress: false
+    # Os secrets são declarados step a step, nunca no nível do job: um
+    # `env:` aqui os colocaria também no ambiente de `pnpm install`, que
+    # executa build scripts de dependências -- um postinstall
+    # comprometido leria a senha do Postgres de produção. Só os três
+    # últimos steps precisam deles.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - name: Enable Corepack
+        run: corepack enable
+      - name: Prepare pnpm
+        run: corepack prepare pnpm@11.20.0 --activate
+      - name: Resolve pnpm store path
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+      - name: Cache pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: ${{ runner.os }}-pnpm-store-
+      # Instala o repo inteiro só para usar o CLI do Supabase, em vez de
+      # baixá-lo por uma action separada: assim a versão que aplica o schema
+      # de produção é exatamente a que `pnpm-lock.yaml` trava e o job
+      # `integration` acima já exercitou. Com o store em cache o custo é
+      # pequeno, e uma versão de CLI divergindo da testada não é.
+      - name: Install dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+      - name: Link Supabase project
+        run: pnpm exec supabase link --project-ref "$SUPABASE_PROJECT_REF"
+        env:
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      # Registra no log exatamente o que falta aplicar, imediatamente antes
+      # de aplicar. Não substitui a aprovação (o environment já barrou o job
+      # antes deste ponto), mas deixa o run auditável depois.
+      - name: Pending migrations (dry run)
+        run: pnpm exec supabase db push --dry-run
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      - name: Apply migrations
+        run: pnpm exec supabase db push --yes
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}

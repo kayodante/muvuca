@@ -47,6 +47,23 @@ As migrations deste repo são aditivas por padrão, e
 `__tests__/migrations-destructive.test.ts` falha o CI se alguma passar a
 apagar dados sem que o autor declare a intenção no próprio arquivo.
 
+### Automatizando o passo (opcional)
+
+O passo acima é manual de propósito — este documento vale para qualquer
+hospedagem. No repositório canônico ele é feito pelo job `migrate` do
+`.github/workflows/ci.yml`: num push para `main`, depois de `quality` e
+`integration` passarem, ele roda `supabase db push` contra o projeto de
+produção. O job exige aprovação manual pelo environment `Production` do
+GitHub, justamente pelo motivo da seção anterior, e depende de três secrets
+nesse environment: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD` e
+`SUPABASE_PROJECT_REF`.
+
+Um fork não dispara esse job (ele checa o nome do repositório); para
+adotá-lo, aponte essa checagem para o seu repositório e crie os secrets.
+O deploy do app é independente desse job, então a ordem entre os dois não é
+garantida: prefira migrations aditivas, que toleram uma janela curta de
+código novo sobre o schema anterior.
+
 ## 2. Build + start com pnpm
 
 ```bash
