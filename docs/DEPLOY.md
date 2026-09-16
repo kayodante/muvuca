@@ -13,13 +13,39 @@ Docker a partir do output `standalone` do Next.js.
 
 ## 1. Aplicar as migrations no projeto Supabase de destino
 
+### Antes: exportar um backup
+
+Numa atualização de uma instância que já tem dados, exporte antes de aplicar
+qualquer migration: **Configurações → Exportar dados → Exportar JSON
+(Completo)**. Guarde o arquivo até confirmar que a versão nova subiu
+funcionando.
+
+O passo não é cerimônia. `supabase db push` é irreversível na prática, e o
+Supabase Free Tier não tem PITR nem backup automático — se uma migration
+destruir dados, o JSON exportado é a única volta. Ele restaura pela própria
+tela de importação, e `lib/backup/validation.ts` aceita todos os formatos já
+emitidos (1.0, 1.1 e 1.2), inclusive um arquivo mais antigo que a versão
+instalada.
+
+### Aplicar
+
 ```bash
 supabase link --project-ref <seu-project-ref>
 supabase db push
 ```
 
-Isso aplica, em ordem, todas as migrations versionadas em
-`supabase/migrations/`. Não há passo manual de schema fora disso.
+Isso aplica, em ordem, **apenas as migrations ainda não aplicadas** no projeto
+remoto, comparando `supabase/migrations/` com o histórico já registrado lá.
+Não há passo manual de schema fora disso.
+
+> **Nunca rode `supabase db reset` contra um projeto com dados reais.** Esse
+> comando recria o banco do zero e reaplica migrations mais o seed; ele existe
+> para a máquina de desenvolvimento e para o stack efêmero do CI, onde os
+> dados são descartáveis. Atualizar uma instância em uso é sempre `db push`.
+
+As migrations deste repo são aditivas por padrão, e
+`__tests__/migrations-destructive.test.ts` falha o CI se alguma passar a
+apagar dados sem que o autor declare a intenção no próprio arquivo.
 
 ## 2. Build + start com pnpm
 
