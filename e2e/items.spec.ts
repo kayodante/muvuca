@@ -227,6 +227,15 @@ test("cria, visualiza, edita e exclui um componente de código", async ({
     .fill(
       'export function ButtonGlow() { return <button className="glow">Click me</button>; }',
     );
+
+  // O Select (Base UI) renderiza o trigger como combobox acessível e o
+  // popup via portal, então a opção é buscada na página, não no diálogo.
+  const languageSelect = createDialog.getByRole("combobox", {
+    name: "Linguagem",
+  });
+  await languageSelect.click();
+  await page.getByRole("option", { name: "TypeScript" }).click();
+
   await createDialog
     .getByLabel("Link da fonte (opcional)")
     .fill("https://exemplo.com/componente");
@@ -254,6 +263,12 @@ test("cria, visualiza, edita e exclui um componente de código", async ({
     card.getByRole("button", { name: "Ver código completo" }),
   ).toBeVisible();
 
+  // A linguagem não vira badge no card; o sinal visível é o highlight: o
+  // painel usa a variável --code-foreground e, quando o Shiki resolve, os
+  // tokens viram spans coloridos (plaintext renderiza spans sem `style`).
+  await expect(card.locator('[style*="--code-"]')).not.toHaveCount(0);
+  await expect(card.locator("span[style*='color']").first()).toBeVisible();
+
   // Abre visualização detalhada
   await card.getByRole("button", { name: "Ver código completo" }).click();
   const detailDialog = page.getByRole("dialog");
@@ -261,12 +276,31 @@ test("cria, visualiza, edita e exclui um componente de código", async ({
   await expect(
     detailDialog.getByRole("heading", { name: "Button com Glow" }),
   ).toBeVisible();
+  await expect(detailDialog.getByText("TypeScript")).toBeVisible();
+  // A régua de números é aria-hidden mas visível na tela. É o único div
+  // aria-hidden do diálogo cujo texto é só dígitos (o contador "1 linha · N
+  // caracteres" não é aria-hidden e não é só dígitos) — mesma técnica de
+  // PromptDetailDialog.test.
+  const gutter = detailDialog
+    .locator('div[aria-hidden="true"]')
+    .filter({ hasText: /^\d+$/ });
+  await expect(gutter).toHaveCount(1);
+  await expect(gutter).toHaveText("1");
   await expect(
     detailDialog.getByText("export function ButtonGlow()"),
   ).toBeVisible();
   await expect(
     detailDialog.getByRole("link", { name: "Abrir fonte original" }),
   ).toHaveAttribute("href", "https://exemplo.com/componente");
+
+  // Copiar pelo header do embed: o dialog tem dois botões com esse nome —
+  // o icon-button do embed (aria-label) e o PromptCopyButton do footer
+  // (texto visível). `getByLabel` resolve só o primeiro (o footer usa texto,
+  // não aria-label nem <label>).
+  await detailDialog.getByLabel("Copiar código").click();
+  await expect(
+    page.getByText("Código copiado para a área de transferência."),
+  ).toBeVisible();
 
   // Edita o componente a partir do modal de detalhes
   await detailDialog.getByRole("button", { name: "Editar componente" }).click();

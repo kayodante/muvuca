@@ -296,6 +296,7 @@ describe("ItemsPage code_component view detail", () => {
       description: "Hero with call to action",
       url: "https://example.com/hero",
       contentPreview: "export function Hero() { ... }",
+      language: null,
       tagIds: [],
     };
 
@@ -308,6 +309,7 @@ describe("ItemsPage code_component view detail", () => {
         description: "Hero with call to action",
         url: "https://example.com/hero",
         content: "export function Hero() { return <header>Hero</header>; }",
+        language: null,
         tagIds: [],
       },
     });

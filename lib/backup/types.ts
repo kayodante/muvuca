@@ -28,6 +28,12 @@ export type BackupItemPayload = {
   title: string;
   url: string | null;
   content: string | null;
+  /**
+   * Só tem significado em code_component (formato 1.2). Não faz parte da
+   * chave de dedupe de itens -- duplicatas continuam sendo detectadas por
+   * (title, content, normalized_url).
+   */
+  language?: string | null;
   description: string | null;
   createdAt: string;
   tagKeys: string[];

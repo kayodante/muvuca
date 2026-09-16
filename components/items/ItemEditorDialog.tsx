@@ -2,6 +2,11 @@
 
 import { useActionState, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import {
+  CODE_LANGUAGE_LABELS,
+  CODE_LANGUAGES,
+  isCodeLanguage,
+} from "@/lib/code/languages";
 import type { LibraryItem } from "@/lib/database/queries/items";
 import type { Tag } from "@/lib/database/queries/tags";
 import type { ItemType } from "@/lib/validation/item";
@@ -18,6 +23,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { TagSelectField } from "./TagSelectField";
 
@@ -253,6 +265,58 @@ export function ItemEditorDialog({
                 <p className="text-body-sm text-right text-muted-foreground tabular-nums">
                   {content.length.toLocaleString("pt-BR")} / 100.000 caracteres
                 </p>
+              </Field>
+
+              {/* Invariante: o Select vive dentro do branch de
+                  `code_component`, então trocar o tipo para link/prompt o
+                  desmonta junto do input oculto `name="language"` — a chave
+                  simplesmente não vai no FormData, e os schemas Zod de
+                  link/prompt a descartariam de qualquer forma (o mapeamento
+                  "" -> null fica em `itemFormData`). Nenhum reset manual. */}
+              <Field
+                id="item-language"
+                label="Linguagem (opcional)"
+                error={fieldError("language")}
+              >
+                <Select
+                  name="language"
+                  defaultValue={
+                    editing?.type === "code_component"
+                      ? (editing.language ?? "")
+                      : ""
+                  }
+                >
+                  <SelectTrigger
+                    id="item-language"
+                    className="w-full"
+                    aria-describedby={
+                      fieldError("language") ? "item-language-error" : undefined
+                    }
+                    aria-invalid={!!fieldError("language") || undefined}
+                  >
+                    {/* Vale o mesmo do Select de tag pai em TagEditor: Value
+                        resolve o rótulo pelo mapeamento local, não pelo
+                        registro dos items, que só montam quando o popup abre
+                        (e no primeiro paint o popup está fechado). */}
+                    <SelectValue placeholder="Texto puro">
+                      {(value: string) =>
+                        value === ""
+                          ? "Texto puro"
+                          : isCodeLanguage(value)
+                            ? CODE_LANGUAGE_LABELS[value]
+                            : value
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Texto puro</SelectItem>
+                    {CODE_LANGUAGES.map((lang) => (
+                      <SelectItem key={lang} value={lang}>
+                        {CODE_LANGUAGE_LABELS[lang]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </Field>
 
               <Field

@@ -161,5 +161,90 @@ describe("item validation", () => {
         }).success,
       ).toBe(false);
     });
+
+    describe("language", () => {
+      const baseCodeComponent = {
+        type: "code_component" as const,
+        title: "Button Component",
+        content: "export function Button() { return <button />; }",
+        description: "",
+        tagIds: [],
+      };
+
+      it("accepts a supported language on create", () => {
+        const parsed = createItemSchema.safeParse({
+          ...baseCodeComponent,
+          language: "typescript",
+        });
+        expect(parsed.success).toBe(true);
+        if (parsed.success && parsed.data.type === "code_component") {
+          expect(parsed.data.language).toBe("typescript");
+        }
+      });
+
+      it("accepts an omitted language (stays undefined)", () => {
+        const parsed = createItemSchema.safeParse(baseCodeComponent);
+        expect(parsed.success).toBe(true);
+        if (parsed.success && parsed.data.type === "code_component") {
+          expect(parsed.data.language).toBeUndefined();
+        }
+      });
+
+      it("accepts a null language", () => {
+        const parsed = createItemSchema.safeParse({
+          ...baseCodeComponent,
+          language: null,
+        });
+        expect(parsed.success).toBe(true);
+        if (parsed.success && parsed.data.type === "code_component") {
+          expect(parsed.data.language).toBeNull();
+        }
+      });
+
+      it("rejects an unsupported language", () => {
+        expect(
+          createItemSchema.safeParse({
+            ...baseCodeComponent,
+            language: "cobol",
+          }).success,
+        ).toBe(false);
+      });
+
+      it("accepts a language on update", () => {
+        const parsed = updateItemSchema.safeParse({
+          id: "22222222-2222-4222-8222-222222222222",
+          ...baseCodeComponent,
+          language: "rust",
+        });
+        expect(parsed.success).toBe(true);
+        if (parsed.success && parsed.data.type === "code_component") {
+          expect(parsed.data.language).toBe("rust");
+        }
+      });
+
+      it("does not carry language on the link or prompt variants", () => {
+        const link = createItemSchema.safeParse({
+          type: "link",
+          title: "Example",
+          url: "https://example.com",
+          description: "",
+          tagIds: [],
+          language: "python",
+        });
+        expect(link.success).toBe(true);
+        if (link.success) expect("language" in link.data).toBe(false);
+
+        const prompt = createItemSchema.safeParse({
+          type: "prompt",
+          title: "Prompt",
+          content: "Use this prompt",
+          description: "",
+          tagIds: [],
+          language: "python",
+        });
+        expect(prompt.success).toBe(true);
+        if (prompt.success) expect("language" in prompt.data).toBe(false);
+      });
+    });
   });
 });

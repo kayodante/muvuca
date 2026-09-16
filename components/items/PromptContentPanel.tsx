@@ -1,24 +1,30 @@
 import { tokenizePromptContext } from "@/lib/prompt/context-tokens";
+import type { CodeLanguage } from "@/lib/code/languages";
+import { CodeSnippetEmbed } from "@/components/items/CodeSnippetEmbed";
 
 /**
  * Moldura de conteúdo do dialog de detalhe.
  *
- * O conteúdo salvo é tratado como um bloco com identidade própria, não
- * como mais um parágrafo do dialog. O header repete o tipo em Geist Pixel e
- * acrescenta os contadores porque um prompt aceita até 100.000 caracteres e,
- * sem isso, o usuário só descobre o tamanho rolando.
+ * A variante `prompt` emoldura o conteúdo com header próprio (rótulo do tipo
+ * em Geist Pixel + contadores de linha/caractere — um prompt aceita até
+ * 100.000 caracteres e, sem isso, o usuário só descobre o tamanho rolando) e
+ * o corpo em prosa com os tokens de contexto realçados.
+ *
+ * A variante `code_component` é delegada inteira ao CodeSnippetEmbed: ele já
+ * traz o próprio header (badge "code" + linguagem, contadores e atalho de
+ * cópia) e o corpo com régua de linhas e highlight. Um header do painel por
+ * cima disso seria moldura dupla com contadores repetidos — por isso o
+ * header antigo do painel passou a existir só para prompt.
  *
  * Sem "use client": o componente não tem estado, efeito nem handler. Ele já
- * chega ao bundle do cliente por ser importado de PromptDetailDialog.
+ * chega ao bundle do cliente por ser importado de PromptDetailDialog (e o
+ * embed, por sua vez, é client component).
  *
  * Não tem rodapé com "copiar": PromptDetailDialog já oferece a ação no
- * DialogFooter logo abaixo, e um segundo botão idêntico seria um tab stop
- * duplicado para a mesma ação.
+ * DialogFooter logo abaixo e, na variante de código, o embed tem um atalho
+ * em ícone no próprio header — um botão de texto aqui seria um terceiro
+ * tab stop para a mesma ação.
  */
-const VARIANT_META = {
-  prompt: { label: "prompt", hue: "text-type-prompt" },
-  code_component: { label: "code", hue: "text-type-code" },
-} as const;
 
 function pluralize(count: number, singular: string, plural: string) {
   return `${count.toLocaleString("pt-BR")} ${count === 1 ? singular : plural}`;
@@ -68,13 +74,19 @@ function PromptBody({ content }: { content: string }) {
 export function PromptContentPanel({
   content,
   variant,
+  language,
 }: {
   content: string;
   variant: "prompt" | "code_component";
+  language?: CodeLanguage | null;
 }) {
-  const meta = VARIANT_META[variant];
-  // Um `\n` final (comum em conteúdo colado, e o schema não faz trim -- ver
-  // lib/validation/item.ts) não é uma linha a mais: é o fim da última linha.
+  if (variant === "code_component") {
+    return <CodeSnippetEmbed content={content} language={language ?? null} />;
+  }
+
+  // Daqui em diante só há prompt. Um `\n` final (comum em conteúdo colado, e
+  // o schema não faz trim -- ver lib/validation/item.ts) não é uma linha a
+  // mais: é o fim da última linha.
   const lineCount = content.replace(/\n$/, "").split("\n").length;
   // Code points, não unidades UTF-16: é assim que o `char_length` do Postgres
   // conta na constraint library_items_type_payload, e um emoji contaria 2 em
@@ -84,25 +96,17 @@ export function PromptContentPanel({
   return (
     <div className="overflow-hidden rounded-lg border border-border">
       <div className="flex items-center justify-between gap-3 border-b border-border bg-secondary/60 px-4 py-2">
-        {/* Concatenação literal, não `cn()`: twMerge trata qualquer par
-            `text-*` como o mesmo grupo "cor de texto" e descartaria
-            text-brand-pixel (fonte) em favor de meta.hue (cor). */}
-        <span className={`text-brand-pixel ${meta.hue}`}>{meta.label}</span>
+        {/* Concat literal, não cn(): twMerge trata qualquer par text-* como
+            o mesmo grupo "cor de texto" e descartaria text-brand-pixel
+            (fonte) em favor da cor. */}
+        <span className="text-brand-pixel text-type-prompt">prompt</span>
         <span className="text-metadata text-muted-foreground">
           {pluralize(lineCount, "linha", "linhas")} ·{" "}
           {pluralize(charCount, "caractere", "caracteres")}
         </span>
       </div>
       <div className="max-h-[min(65dvh,44rem)] overflow-auto bg-secondary/30 p-4">
-        {variant === "code_component" ? (
-          <pre>
-            <code className="text-body-sm font-mono leading-6 break-words whitespace-pre-wrap">
-              {content}
-            </code>
-          </pre>
-        ) : (
-          <PromptBody content={content} />
-        )}
+        <PromptBody content={content} />
       </div>
     </div>
   );

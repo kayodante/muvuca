@@ -46,6 +46,7 @@ const mockCodeComponent: Extract<LibraryItem, { type: "code_component" }> = {
   url: "https://ui.shadcn.com/docs/components/card",
   content:
     "export function Card({ children }: CardProps) { return <div className='card'>{children}</div>; }",
+  language: null,
   tagIds: ["tag-1"],
 };
 
@@ -104,7 +105,7 @@ describe("PromptDetailDialog", () => {
     expect(handleEdit).toHaveBeenCalledWith(mockPrompt);
   });
 
-  it("renderiza os detalhes do code_component com bloco de código, link da fonte e botão de edição", async () => {
+  it("renderiza os detalhes do code_component com embed de código, link da fonte e botão de edição", async () => {
     const handleEdit = vi.fn();
     await renderDialog(mockCodeComponent, mockTags, vi.fn(), handleEdit);
 
@@ -123,19 +124,34 @@ describe("PromptDetailDialog", () => {
     expect(sourceLink?.getAttribute("rel")).toBe("noopener noreferrer");
     expect(sourceLink?.textContent).toContain("Abrir fonte original");
 
-    const codeElement = document.body.querySelector("pre code");
-    expect(codeElement).not.toBeNull();
-    expect(codeElement?.textContent).toContain("export function Card");
+    // O corpo do painel de código agora é o CodeSnippetEmbed: o conteúdo
+    // aparece em linhas com régua própria. O shell do Dialog renderiza
+    // outros divs aria-hidden (focus guards), então a régua é identificada
+    // pelo conteúdo numérico — 1..N (o mockCodeComponent tem uma única
+    // linha).
+    const gutters = Array.from(
+      document.body.querySelectorAll('div[aria-hidden="true"]'),
+    ).filter((el) => /^\d+$/.test(el.textContent ?? ""));
+    expect(gutters.map((el) => el.textContent)).toEqual(["1"]);
 
     const editButton = Array.from(
       document.body.querySelectorAll("button"),
     ).find((btn) => btn.textContent?.includes("Editar componente"));
     expect(editButton).not.toBeUndefined();
 
-    const copyButton = Array.from(
+    // Dois atalhos de cópia com o mesmo nome acessível coexistem: o ícone
+    // no header do embed e o botão primário do footer. Ambos disparam o
+    // mesmo fluxo (clipboard + toast); a assertiva deixa de ser única por
+    // design, por isso cada um é encontrado pelo seu formato.
+    const footerCopy = Array.from(
       document.body.querySelectorAll("button"),
     ).find((btn) => btn.textContent?.includes("Copiar código"));
-    expect(copyButton).not.toBeUndefined();
+    const embedCopy = document.body.querySelector(
+      'button[aria-label="Copiar código"]',
+    );
+    expect(footerCopy).not.toBeUndefined();
+    expect(embedCopy).not.toBeNull();
+    expect(footerCopy).not.toBe(embedCopy);
 
     await act(async () => {
       editButton?.click();
@@ -172,5 +188,11 @@ describe("PromptDetailDialog", () => {
       document.body.querySelectorAll(".text-brand-pixel"),
     ).map((el) => el.textContent);
     expect(pixelLabels).toContain("code");
+  });
+
+  it("propaga a language do code_component para o embed do dialog", async () => {
+    await renderDialog({ ...mockCodeComponent, language: "typescript" });
+
+    expect(document.body.textContent).toContain("TypeScript");
   });
 });

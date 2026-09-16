@@ -89,8 +89,38 @@ describe("toBackupPayload", () => {
       url: "https://example.com/btn",
       content: "export const Button = () => null;",
       description: "Button",
+      // Arquivo pré-1.2 não traz a chave: o payload manda null explícito e a
+      // RPC usa o default null (language não faz parte da chave de dedupe).
+      language: null,
       createdAt: "2026-08-15T00:00:00+00:00",
       tagKeys: [ROOT],
+    });
+  });
+
+  it("propaga a language de um code_component do arquivo 1.2 para o payload", () => {
+    const file = parse({
+      version: "1.2",
+      exportedAt: "2026-08-16T12:00:00+00:00",
+      tags: [{ id: ROOT, name: "Dev", colorToken: "lime", parentId: null }],
+      items: [
+        {
+          id: "33333333-3333-4333-8333-333333333333",
+          type: "code_component",
+          title: "Snippet Python",
+          url: null,
+          content: "print('oi')",
+          description: null,
+          language: "python",
+          tagIds: [ROOT],
+          createdAt: "2026-08-15T00:00:00+00:00",
+        },
+      ],
+    });
+
+    const { items } = toBackupPayload(file);
+    expect(items[0]).toMatchObject({
+      type: "code_component",
+      language: "python",
     });
   });
 });

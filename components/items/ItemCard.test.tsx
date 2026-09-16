@@ -62,6 +62,7 @@ const mockCodeComponent: LibraryItemSummary = {
   url: "https://ui.shadcn.com/docs/components/button",
   contentPreview:
     "export function Button({ children }: ButtonProps) {\n  return <button>{children}</button>;\n}",
+  language: null,
   tagIds: ["tag-1"],
 };
 
@@ -93,6 +94,19 @@ async function renderCard(
   });
 
   return container;
+}
+
+/** Drena a promise do highlight do CodeSnippetPreview (efeito async)
+ * aplicando cada setState dentro de act, em passos de macrotask — cobre o
+ * init lazy do highlighter na primeira chamada real da suíte. Mesma técnica
+ * do CodeSnippetEmbed.test. */
+async function flushHighlight(el: HTMLElement) {
+  for (let i = 0; i < 40; i++) {
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    });
+    if (el.querySelector('[style*="--code-"]')) return;
+  }
 }
 
 describe("ItemCard", () => {
@@ -176,9 +190,14 @@ describe("ItemCard", () => {
         handleView,
       );
 
-      const previewNode = Array.from(dom.querySelectorAll("p")).find((p) =>
-        p.textContent?.includes(previewText),
-      );
+      // Prompt é um <p> whitespace-pre-line; code é uma linha
+      // whitespace-pre do CodeSnippetPreview — ambos dentro do mesmo button
+      // pai, então o clique em qualquer um aciona onView por bubbling.
+      const previewNode = Array.from(
+        dom.querySelectorAll<HTMLElement>(
+          ".whitespace-pre-line, .whitespace-pre",
+        ),
+      ).find((el) => el.textContent?.includes(previewText));
       expect(previewNode).not.toBeUndefined();
 
       await act(async () => {
@@ -289,10 +308,14 @@ describe("ItemCard", () => {
     expect(tagLink?.textContent).toContain("React");
   });
 
-  it("renderiza card de code_component com badge code, preview monoespaçado e ação de visualização completa", async () => {
+  it("renderiza card de code_component com badge code e preview via CodeSnippetPreview (tokens coloridos)", async () => {
     const handleView = vi.fn();
+    const codeWithLanguage: LibraryItemSummary = {
+      ...mockCodeComponent,
+      language: "tsx",
+    };
     const dom = await renderCard(
-      mockCodeComponent,
+      codeWithLanguage,
       mockTags,
       false,
       vi.fn(),
@@ -304,6 +327,15 @@ describe("ItemCard", () => {
     expect(dom.textContent).toContain("code");
     expect(dom.textContent).toContain("export function Button");
 
+    // O preview de code sai do CodeSnippetPreview: linhas whitespace-pre com
+    // tokens coloridos por var(--code-*) depois do highlight assíncrono.
+    expect(dom.querySelectorAll(".whitespace-pre").length).toBeGreaterThan(0);
+    await flushHighlight(dom);
+    const colored = Array.from(
+      dom.querySelectorAll<HTMLElement>('span[style*="--code-"]'),
+    );
+    expect(colored.length).toBeGreaterThan(0);
+
     const viewButton = dom.querySelector(
       'button[aria-label="Ver código completo"]',
     ) as HTMLButtonElement | null;
@@ -314,7 +346,7 @@ describe("ItemCard", () => {
     });
 
     expect(handleView).toHaveBeenCalledOnce();
-  });
+  }, 15000);
 
   it("copia o código com toast de confirmação ao clicar na ação rápida", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);

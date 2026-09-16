@@ -88,6 +88,9 @@ export function toBackupPayload(file: BackupFile): {
         title: item.title,
         url: item.url ?? null,
         content: item.content,
+        // Arquivos pré-1.2 não trazem a chave: o payload manda null
+        // explícito, que é o default da RPC.
+        language: item.language ?? null,
         description: item.description,
         createdAt: item.createdAt,
         tagKeys: item.tagIds,

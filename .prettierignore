@@ -10,3 +10,10 @@ next-env.d.ts
 supabase/.temp/
 lib/bookmarks/__fixtures__/*.html
 lib/metadata/__fixtures__/*.html
+
+# Diretórios de tooling locais, não rastreados pelo git (verificado com
+# `git ls-files`): caches e estado dessas ferramentas não devem ser
+# reformatados pelo `pnpm format`.
+.agents/
+.claude/
+.repowise/
