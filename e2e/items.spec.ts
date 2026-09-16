@@ -293,9 +293,11 @@ test("cria, visualiza, edita e exclui um componente de código", async ({
     detailDialog.getByRole("link", { name: "Abrir fonte original" }),
   ).toHaveAttribute("href", "https://exemplo.com/componente");
 
-  // Copiar pelo header do embed: clipboard usa execCommand como fallback
-  // headless, e o sucesso é confirmado por toast.
-  await detailDialog.getByRole("button", { name: "Copiar código" }).click();
+  // Copiar pelo header do embed: o dialog tem dois botões com esse nome —
+  // o icon-button do embed (aria-label) e o PromptCopyButton do footer
+  // (texto visível). `getByLabel` resolve só o primeiro (o footer usa texto,
+  // não aria-label nem <label>).
+  await detailDialog.getByLabel("Copiar código").click();
   await expect(
     page.getByText("Código copiado para a área de transferência."),
   ).toBeVisible();
