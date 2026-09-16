@@ -7,6 +7,7 @@ const {
   tagsOrderMock,
   libItemsSelectMock,
   libItemsMaybeSingleMock,
+  libItemsCountMock,
   itemTagsEqMock,
 } = vi.hoisted(() => {
   const rpc = vi.fn();
@@ -29,7 +30,14 @@ const {
   const libItemsEq = vi
     .fn()
     .mockReturnValue({ maybeSingle: libItemsMaybeSingle });
-  const libItemsSelect = vi.fn().mockReturnValue({ eq: libItemsEq });
+  // `getLibraryItemById` encadeia `.eq(...)`; `getLibraryItemsCount` aguarda o
+  // retorno de `.select()` direto. O segundo argumento (`{ head: true }`)
+  // distingue os dois no mesmo mock de `select`.
+  const libItemsCount = vi.fn();
+  const libItemsSelect = vi.fn(
+    (_columns: string, options?: { count?: string; head?: boolean }) =>
+      options?.head ? libItemsCount() : { eq: libItemsEq },
+  );
   const itemTagsEq = vi.fn().mockResolvedValue({ data: [], error: null });
   const itemTagsSelect = vi.fn().mockReturnValue({ eq: itemTagsEq });
 
@@ -46,6 +54,7 @@ const {
     tagsOrderMock: tagsOrder,
     libItemsSelectMock: libItemsSelect,
     libItemsMaybeSingleMock: libItemsMaybeSingle,
+    libItemsCountMock: libItemsCount,
     itemTagsEqMock: itemTagsEq,
     createClientMock: vi.fn().mockResolvedValue({ rpc, from }),
   };
@@ -56,6 +65,7 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
 import {
   getLibraryItemById,
   getLibraryItems,
+  getLibraryItemsCount,
 } from "@/lib/database/queries/items";
 import { encodeSearchCursor, parseSearchCursor } from "@/lib/validation/search";
 
@@ -407,5 +417,30 @@ describe("getLibraryItemById", () => {
 
     expect(item).toMatchObject({ type: "link" });
     expect(item && "language" in item).toBe(false);
+  });
+});
+
+describe("getLibraryItemsCount", () => {
+  it("devolve a contagem total do usuário", async () => {
+    libItemsCountMock.mockResolvedValue({ count: 1040, error: null });
+
+    await expect(getLibraryItemsCount()).resolves.toBe(1040);
+    expect(libItemsSelectMock).toHaveBeenCalledWith("id", {
+      count: "exact",
+      head: true,
+    });
+  });
+
+  it("trata count nulo como zero", async () => {
+    libItemsCountMock.mockResolvedValue({ count: null, error: null });
+
+    await expect(getLibraryItemsCount()).resolves.toBe(0);
+  });
+
+  it("propaga o erro em vez de devolver zero", async () => {
+    const error = new Error("rls denied");
+    libItemsCountMock.mockResolvedValue({ count: null, error });
+
+    await expect(getLibraryItemsCount()).rejects.toBe(error);
   });
 });
