@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LinkPreviewMedia, previewImageSrc } from "./LinkPreviewMedia";
 import { CodeSnippetPreview } from "./CodeSnippetPreview";
+import { PromptMarkdownPreview } from "./PromptMarkdownPreview";
 import { SiteIdentity } from "./SiteIdentity";
 
 /**
@@ -435,11 +436,12 @@ export function ItemCard({
   // Prompt/code preview is a filled panel now, not a rule-separated
   // paragraph: at the same size and color as the description it used to
   // read as one continuous block, and the panel says "this is the stored
-  // content" without spending a second type size on it. The code branch is
-  // a CodeSnippetPreview: same filled chrome, but with the snippet's first
-  // 6 lines syntax-highlighted and a fade when there's more.
+  // content" without spending a second type size on it. Both branches are
+  // components of their own sharing that chrome: CodeSnippetPreview (the
+  // snippet's first 6 lines, with a fade when there's more) and
+  // PromptMarkdownPreview (the prompt as prose, tokenized as markdown).
   //
-  // The panel hugs its content instead of stretching (`flex-1` removed):
+  // The panels hug their content instead of stretching (`flex-1` removed):
   // the height cap already comes from the clamp on the lines +
   // overflow-hidden, so `flex-1` had no job left except soaking up the
   // grid row's `align-items: stretch` leftover as blank padding -- measured
@@ -449,14 +451,7 @@ export function ItemCard({
   // the card's own bottom, same as the link layout.
   const previewPanel =
     item.type === "prompt" ? (
-      <div className="overflow-hidden rounded-md bg-secondary p-3">
-        <p
-          dir="auto"
-          className="text-body-sm line-clamp-6 [overflow-wrap:anywhere] whitespace-pre-line text-muted-foreground"
-        >
-          {item.contentPreview}
-        </p>
-      </div>
+      <PromptMarkdownPreview contentPreview={item.contentPreview} />
     ) : item.type === "code_component" ? (
       <CodeSnippetPreview
         contentPreview={item.contentPreview}

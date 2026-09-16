@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-import { highlightCode, type CodeLine } from "@/lib/code/highlight";
 import type { CodeLanguage } from "@/lib/code/languages";
+
+import { useHighlightedLines } from "./useHighlightedLines";
 
 /**
  * Preview do card de `code_component`: as primeiras linhas do snippet com os
@@ -25,16 +24,6 @@ import type { CodeLanguage } from "@/lib/code/languages";
  */
 const MAX_LINES = 6;
 
-function toPlainLines(source: string): CodeLine[] {
-  // Um `\n` final é o fim da última linha, não uma linha a mais — mesma
-  // normalização do highlightCode e do CodeSnippetEmbed, senão o estado
-  // plaintext teria uma linha vazia a mais que o estado colorido.
-  return source
-    .replace(/\n$/, "")
-    .split("\n")
-    .map((line) => [{ content: line }]);
-}
-
 export function CodeSnippetPreview({
   contentPreview,
   language,
@@ -45,26 +34,7 @@ export function CodeSnippetPreview({
   const source = contentPreview.replace(/\n$/, "");
   const truncated = source.split("\n").length > MAX_LINES;
   const visibleSource = source.split("\n").slice(0, MAX_LINES).join("\n");
-  const [lines, setLines] = useState<CodeLine[]>(() =>
-    toPlainLines(visibleSource),
-  );
-
-  useEffect(() => {
-    let cancelled = false;
-    highlightCode(visibleSource, language)
-      .then((result) => {
-        if (!cancelled) setLines(result);
-      })
-      .catch(() => {
-        // highlightCode já tem fallback plaintext interno; esta catch é o
-        // segundo cinto — uma rejeição aqui nunca pode virar unhandled
-        // rejection no card. As linhas do estado inicial já são o código
-        // correto, só que sem cor.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [visibleSource, language]);
+  const lines = useHighlightedLines(visibleSource, language);
 
   return (
     <div className="relative overflow-hidden rounded-md bg-secondary p-3">

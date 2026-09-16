@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import { highlightCode, type CodeLine } from "@/lib/code/highlight";
 import { CODE_LANGUAGE_LABELS, type CodeLanguage } from "@/lib/code/languages";
 import { copyToClipboard } from "@/lib/clipboard";
 import { Button } from "@/components/ui/button";
+
+import { useHighlightedLines } from "./useHighlightedLines";
 
 /**
  * Bloco de código completo do dialog de detalhe: header com a identidade do
@@ -27,15 +28,6 @@ import { Button } from "@/components/ui/button";
  */
 function pluralize(count: number, singular: string, plural: string) {
   return `${count.toLocaleString("pt-BR")} ${count === 1 ? singular : plural}`;
-}
-
-function toPlainLines(source: string): CodeLine[] {
-  // Um `\n` final é o fim da última linha, não uma linha a mais — mesma
-  // normalização do PromptContentPanel e do próprio highlightCode.
-  return source
-    .replace(/\n$/, "")
-    .split("\n")
-    .map((line) => [{ content: line }]);
 }
 
 /**
@@ -70,25 +62,8 @@ export function CodeSnippetEmbed({
   content: string;
   language: CodeLanguage | null;
 }) {
-  const [lines, setLines] = useState<CodeLine[]>(() => toPlainLines(content));
+  const lines = useHighlightedLines(content, language);
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    highlightCode(content, language)
-      .then((result) => {
-        if (!cancelled) setLines(result);
-      })
-      .catch(() => {
-        // highlightCode já tem fallback plaintext interno; esta catch é o
-        // segundo cinto — uma rejeição aqui nunca pode virar unhandled
-        // rejection no dialog. As linhas do estado inicial já são o código
-        // correto, só que sem cor.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [content, language]);
 
   const lineCount = content.replace(/\n$/, "").split("\n").length;
   // Code points, não unidades UTF-16 — a mesma contagem do char_length do
