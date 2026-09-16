@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Fails if any tracked (or about-to-be-tracked) file contains a pattern
 // that should never reach a public repo: a real secret value, or a path
-// leaking the author's private machine layout.
+// leaking the author's private machine layout. It also fails on files
+// whose *path* marks them as development-only, whatever they contain.
 //
 // Deliberately pattern-based, not just substring-based, for anything that
 // is also a legitimate security term (service_role, sb_secret_): this
@@ -103,6 +104,45 @@ const RULES = [
   },
 ];
 
+// Paths that are development-only: agent/tooling state, package-manager
+// caches, and internal planning docs. The public repo exists for people who
+// want to *use* Muvuca — none of this helps them, and some of it leaks how
+// the author works.
+//
+// `.git/info/exclude` keeps these out on one machine only, and an ignore
+// rule of any kind stops applying the moment a file is tracked (which is
+// how `opencode.jsonc` and `.pnpm-store/` reached the remote). These rules
+// match the path itself, so a file already in the index still fails.
+//
+// Matched against repo-relative, forward-slash paths as `git ls-files`
+// prints them.
+/** @type {{name: string, pattern: RegExp, hint: string}[]} */
+const PATH_RULES = [
+  {
+    name: "tooling-directory",
+    pattern:
+      /^\.(agent|agents|claude|codex|cursor|gemini|impeccable|playwright-mcp|private|repowise|superpowers|worktrees)\//,
+    hint: "is agent/tooling state, not part of the application",
+  },
+  {
+    name: "local-cache",
+    pattern: /^\.pnpm-store\//,
+    hint: "is a local package-manager cache",
+  },
+  {
+    name: "internal-doc",
+    pattern:
+      /^(AGENTS|ARCHITECTURE|CASOS_DE_USO|CLAUDE|DESIGN|GEMINI|HANDOFF|PRD|PRODUCT|ROADMAP)\.md$|^docs\/(handoff|plans|superpowers)\/|^docs\/IMPLEMENTATION_PLAN\.md$/,
+    hint: "is an internal planning document, not user-facing",
+  },
+  {
+    name: "agent-config",
+    pattern:
+      /^(\.cursorrules|\.mcp\.json|opencode\.jsonc|skills-lock\.json)$|^repomix-output.*\.xml$/,
+    hint: "is local agent/editor configuration",
+  },
+];
+
 function listCandidateFiles() {
   try {
     const tracked = execFileSync(
@@ -134,7 +174,21 @@ function walk(dir, acc = []) {
   return acc;
 }
 
-function scan(files) {
+function scanPaths(files) {
+  const violations = [];
+
+  for (const file of files) {
+    for (const rule of PATH_RULES) {
+      if (rule.pattern.test(file)) {
+        violations.push({ file, rule: rule.name, hint: rule.hint });
+      }
+    }
+  }
+
+  return violations;
+}
+
+function scanContent(files) {
   const violations = [];
 
   for (const file of files) {
@@ -169,15 +223,17 @@ function scan(files) {
 }
 
 const files = listCandidateFiles();
-const violations = scan(files);
+const violations = [...scanPaths(files), ...scanContent(files)];
 
 if (violations.length > 0) {
   console.error("Repository hygiene check failed:\n");
   for (const v of violations) {
-    console.error(`  ${v.file}:${v.line}  [${v.rule}]  ${v.hint}`);
+    const where = v.line === undefined ? v.file : `${v.file}:${v.line}`;
+    console.error(`  ${where}  [${v.rule}]  ${v.hint}`);
   }
   console.error(
-    `\n${violations.length} issue(s) found. Remove the leaked value/path before committing.`,
+    `\n${violations.length} issue(s) found. Remove the leaked value, or untrack` +
+      " the file with `git rm --cached <path>`, before committing.",
   );
   process.exit(1);
 }
