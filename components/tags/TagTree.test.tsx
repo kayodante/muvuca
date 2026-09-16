@@ -35,25 +35,31 @@ const nodes: TagNode[] = [
   },
 ];
 
+async function renderTagTree(filtering = false) {
+  container = document.createElement("div");
+  document.body.append(container);
+  root = createRoot(container);
+  await act(async () => {
+    root?.render(
+      <TagTree
+        nodes={nodes}
+        filtering={filtering}
+        actions={{
+          onCreateChild: vi.fn(),
+          onEdit: vi.fn(),
+          onDelete: vi.fn(),
+        }}
+      />,
+    );
+  });
+  return container;
+}
+
 describe("TagTree", () => {
   it("usa os hooks de acordeão sem remover a árvore recolhida da navegação", async () => {
-    container = document.createElement("div");
-    document.body.append(container);
-    root = createRoot(container);
-    await act(async () => {
-      root?.render(
-        <TagTree
-          nodes={nodes}
-          actions={{
-            onCreateChild: vi.fn(),
-            onEdit: vi.fn(),
-            onDelete: vi.fn(),
-          }}
-        />,
-      );
-    });
+    const dom = await renderTagTree();
 
-    const toggle = container.querySelector(
+    const toggle = dom.querySelector(
       'button[aria-label="Recolher Dev"]',
     ) as HTMLButtonElement;
     const accordion = toggle.closest("li");
@@ -66,5 +72,69 @@ describe("TagTree", () => {
 
     expect(accordion?.getAttribute("data-open")).toBe("false");
     expect(accordion?.querySelector("ul")?.hasAttribute("inert")).toBe(true);
+  });
+
+  it("filtrar com um ramo recolhido mantém o descendente que combina alcançável", async () => {
+    const dom = await renderTagTree();
+    const subtreeOf = (node: ParentNode) =>
+      node.querySelector('a[href="/tags/frontend"]')?.closest("ul");
+
+    const toggle = dom.querySelector(
+      'button[aria-label="Recolher Dev"]',
+    ) as HTMLButtonElement;
+    await act(async () => {
+      toggle.click();
+    });
+    expect(subtreeOf(dom)?.hasAttribute("inert")).toBe(true);
+
+    await act(async () => {
+      root?.render(
+        <TagTree
+          nodes={nodes}
+          filtering
+          actions={{
+            onCreateChild: vi.fn(),
+            onEdit: vi.fn(),
+            onDelete: vi.fn(),
+          }}
+        />,
+      );
+    });
+
+    expect(subtreeOf(dom)?.hasAttribute("inert")).toBe(false);
+    // O botão não pode se anunciar como "Expandir" enquanto aria-expanded="true".
+    const reopened = dom.querySelector('button[aria-label="Recolher Dev"]');
+    expect(reopened?.getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("limpar a busca devolve o ramo ao estado recolhido pelo usuário", async () => {
+    const dom = await renderTagTree(true);
+    const subtreeOf = (node: ParentNode) =>
+      node.querySelector('a[href="/tags/frontend"]')?.closest("ul");
+
+    const toggle = dom.querySelector(
+      'button[aria-label="Recolher Dev"]',
+    ) as HTMLButtonElement;
+    await act(async () => {
+      toggle.click();
+    });
+    // Enquanto a busca está ativa o ramo segue aberto, apesar do clique.
+    expect(subtreeOf(dom)?.hasAttribute("inert")).toBe(false);
+
+    await act(async () => {
+      root?.render(
+        <TagTree
+          nodes={nodes}
+          filtering={false}
+          actions={{
+            onCreateChild: vi.fn(),
+            onEdit: vi.fn(),
+            onDelete: vi.fn(),
+          }}
+        />,
+      );
+    });
+
+    expect(subtreeOf(dom)?.hasAttribute("inert")).toBe(true);
   });
 });

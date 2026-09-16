@@ -178,6 +178,20 @@ export function ItemsPage({
     });
   }
 
+  /**
+   * The card's copy action needs the body the list never loaded: summaries
+   * carry `contentPreview`, truncated at 2000 characters by the search RPC.
+   * Rejecting (instead of returning null) keeps the pending value a plain
+   * `Promise<string>`, which is what `copyToClipboard` hands to ClipboardItem
+   * to survive the round trip on WebKit.
+   */
+  async function loadItemContent(itemId: string): Promise<string> {
+    const result = await getItemDetails(itemId);
+    if (!result.ok) throw new Error(result.code);
+    if (result.data.type === "link") throw new Error("NOT_COPYABLE");
+    return result.data.content;
+  }
+
   /** "Atualizar prévia" in the overflow menu. Owned here (not inside
    * ItemCard, a presentational component) so the "use server" import --
    * and the server-only enrich/ssrf chain it pulls in -- never reaches a
@@ -295,6 +309,7 @@ export function ItemsPage({
                 onEdit={() => loadItem(item, "edit")}
                 onDelete={() => setDeletingItem(item)}
                 onView={() => loadItem(item, "view")}
+                onCopyContent={() => loadItemContent(item.id)}
                 onRefreshPreview={() => handleRefreshPreview(item.id)}
               />
             ))}

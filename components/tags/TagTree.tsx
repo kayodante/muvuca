@@ -33,10 +33,13 @@ export type TagTreeActions = {
 export function TagTree({
   nodes,
   activeTagId,
+  filtering,
   actions,
 }: {
   nodes: TagNode[];
   activeTagId?: string;
+  /** True while a tag filter is active, so no match hides inside a collapsed branch. */
+  filtering: boolean;
   actions: TagTreeActions;
 }) {
   if (nodes.length === 0) {
@@ -51,6 +54,7 @@ export function TagTree({
           node={node}
           depth={0}
           activeTagId={activeTagId}
+          filtering={filtering}
           actions={actions}
         />
       ))}
@@ -62,19 +66,25 @@ function TagTreeRow({
   node,
   depth,
   activeTagId,
+  filtering,
   actions,
 }: {
   node: TagNode;
   depth: number;
   activeTagId?: string;
+  filtering: boolean;
   actions: TagTreeActions;
 }) {
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
   const isActive = node.id === activeTagId;
+  // Same rule as TagNavigation: a non-empty query forces every subtree open so
+  // a deep match stays visible and tabbable, without discarding the user's own
+  // collapse state -- clearing the query restores whatever `expanded` held.
+  const open = filtering || expanded;
 
   return (
-    <li className="t-acc" data-open={expanded}>
+    <li className="t-acc" data-open={open}>
       <div
         className={cn(
           "group flex items-center gap-1 rounded-md py-1 pr-1 transition-colors duration-(--motion-fast) ease-out-muvuca focus-within:bg-secondary/60 hover:bg-secondary/60",
@@ -86,9 +96,12 @@ function TagTreeRow({
           <button
             type="button"
             onClick={() => setExpanded((value) => !value)}
-            aria-expanded={expanded}
+            aria-expanded={open}
+            // Named after `open`, not `expanded`: while a query forces a
+            // collapsed branch open, a button labelled "Expandir" alongside
+            // `aria-expanded="true"` contradicts itself.
             aria-label={
-              expanded ? `Recolher ${node.name}` : `Expandir ${node.name}`
+              open ? `Recolher ${node.name}` : `Expandir ${node.name}`
             }
             className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
@@ -157,16 +170,14 @@ function TagTreeRow({
         // See TagNavigation: 0fr -> 1fr is what makes a content-driven height
         // animatable, and `inert` keeps the collapsed rows unreachable.
         <div className="t-acc-panel">
-          <ul
-            className="t-acc-panel-inner flex flex-col gap-0.5"
-            inert={!expanded}
-          >
+          <ul className="t-acc-panel-inner flex flex-col gap-0.5" inert={!open}>
             {node.children.map((child) => (
               <TagTreeRow
                 key={child.id}
                 node={child}
                 depth={depth + 1}
                 activeTagId={activeTagId}
+                filtering={filtering}
                 actions={actions}
               />
             ))}
