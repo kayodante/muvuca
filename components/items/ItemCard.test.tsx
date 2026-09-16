@@ -44,6 +44,10 @@ const mockLink: LibraryItemSummary = {
   preview: null,
 };
 
+/** O que está salvo no item; o `contentPreview` dos mocks é o recorte que o
+ * RPC de busca devolve. Copiar o recorte era o bug AAA-95. */
+const FULL_STORED_BODY = "corpo completo do item, muito além da prévia";
+
 const mockPrompt: LibraryItemSummary = {
   id: "item-prompt-1",
   type: "prompt",
@@ -74,6 +78,8 @@ async function renderCard(
   onDelete = vi.fn(),
   onView = vi.fn(),
   onRefreshPreview = vi.fn(),
+  onCopyContent: () => Promise<string> = () =>
+    Promise.resolve(FULL_STORED_BODY),
 ) {
   container = document.createElement("div");
   document.body.append(container);
@@ -88,6 +94,7 @@ async function renderCard(
         onEdit={onEdit}
         onDelete={onDelete}
         onView={onView}
+        onCopyContent={onCopyContent}
         onRefreshPreview={onRefreshPreview}
       />,
     );
@@ -226,9 +233,8 @@ describe("ItemCard", () => {
     });
 
     expect(iconSwap?.getAttribute("data-state")).toBe("b");
-    expect(writeText).toHaveBeenCalledWith(
-      "You are a senior TypeScript engineer...",
-    );
+    expect(writeText).toHaveBeenCalledWith(FULL_STORED_BODY);
+    expect(writeText).not.toHaveBeenCalledWith(mockPrompt.contentPreview);
     expect(toast.success).toHaveBeenCalledWith(
       "Prompt copiado para a área de transferência.",
     );
@@ -363,10 +369,41 @@ describe("ItemCard", () => {
       (copyButton as HTMLButtonElement).click();
     });
 
-    expect(writeText).toHaveBeenCalledWith(mockCodeComponent.contentPreview);
+    expect(writeText).toHaveBeenCalledWith(FULL_STORED_BODY);
+    expect(writeText).not.toHaveBeenCalledWith(
+      mockCodeComponent.contentPreview,
+    );
     expect(toast.success).toHaveBeenCalledWith(
       "Código copiado para a área de transferência.",
     );
+  });
+
+  it("exibe toast de erro se não conseguir carregar o código completo", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    });
+
+    const dom = await renderCard(
+      mockCodeComponent,
+      mockTags,
+      false,
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+      vi.fn(),
+      () => Promise.reject(new Error("NOT_FOUND")),
+    );
+    const copyButton = dom.querySelector('button[aria-label="Copiar código"]');
+
+    await act(async () => {
+      (copyButton as HTMLButtonElement).click();
+    });
+
+    expect(toast.error).toHaveBeenCalledWith(
+      "Não foi possível copiar o código.",
+    );
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
   it("exibe toast de erro se falhar ao copiar o código", async () => {

@@ -115,6 +115,7 @@ export function ItemCard({
   onEdit,
   onDelete,
   onView,
+  onCopyContent,
   onRefreshPreview,
 }: {
   item: LibraryItemSummary;
@@ -126,6 +127,15 @@ export function ItemCard({
   onDelete: () => void;
   onView: () => void;
   /**
+   * Resolves the item's full stored body, for prompt and code_component
+   * cards. The summary only carries `contentPreview`, which the search RPC
+   * truncates at 2000 characters, so copying it silently dropped the tail of
+   * anything longer (AAA-95). Injected for the same reason as
+   * `onRefreshPreview`: the read is a server action, and this component must
+   * stay free of that import chain. Rejects when the read fails.
+   */
+  onCopyContent: () => Promise<string>;
+  /**
    * Injected instead of ItemCard calling the `refreshItemPreview` server
    * action itself: this is a presentational component, and a direct import
    * of a "use server" action here drags its whole server-only dependency
@@ -135,8 +145,8 @@ export function ItemCard({
    */
   onRefreshPreview: () => void;
 }) {
-  const [copiedPrompt, setCopiedPrompt] = useState(false);
-  const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedContent, setCopiedContent] = useState(false);
+  const [copyingContent, setCopyingContent] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const associatedTags = item.tagIds.flatMap((tagId) => {
     const tag = tags.find((candidate) => candidate.id === tagId);
@@ -161,27 +171,28 @@ export function ItemCard({
   const clickableMedia = item.type === "link" && Boolean(safeHref);
   const typeMeta = TYPE_META[item.type];
 
-  async function handleCopyPrompt() {
-    if (item.type !== "prompt") return;
-    const success = await copyToClipboard(item.contentPreview);
+  /**
+   * One handler for both bodies: prompt and code_component differ only in
+   * the words of the feedback, and the truncated-preview bug was in both.
+   * The pending read goes into the clipboard call unawaited on purpose --
+   * see `copyToClipboard`.
+   */
+  async function handleCopyContent() {
+    if (item.type !== "prompt" && item.type !== "code_component") return;
+    const noun = item.type === "prompt" ? "Prompt" : "Código";
+    setCopyingContent(true);
+    const success = await copyToClipboard(onCopyContent());
+    setCopyingContent(false);
     if (success) {
-      setCopiedPrompt(true);
-      setTimeout(() => setCopiedPrompt(false), 1500);
-      toast.success("Prompt copiado para a área de transferência.");
+      setCopiedContent(true);
+      setTimeout(() => setCopiedContent(false), 1500);
+      toast.success(`${noun} copiado para a área de transferência.`);
     } else {
-      toast.error("Não foi possível copiar o prompt.");
-    }
-  }
-
-  async function handleCopyCode() {
-    if (item.type !== "code_component") return;
-    const success = await copyToClipboard(item.contentPreview);
-    if (success) {
-      setCopiedCode(true);
-      setTimeout(() => setCopiedCode(false), 1500);
-      toast.success("Código copiado para a área de transferência.");
-    } else {
-      toast.error("Não foi possível copiar o código.");
+      toast.error(
+        item.type === "prompt"
+          ? "Não foi possível copiar o prompt."
+          : "Não foi possível copiar o código.",
+      );
     }
   }
 
@@ -302,15 +313,16 @@ export function ItemCard({
                 variant="ghost"
                 size="icon-sm"
                 aria-label="Copiar prompt"
-                onClick={handleCopyPrompt}
+                pending={copyingContent}
+                onClick={handleCopyContent}
                 className={ACTION_CLASS}
               />
             }
           >
-            <CopyStateIcon copied={copiedPrompt} Icon={CopyIcon} />
+            <CopyStateIcon copied={copiedContent} Icon={CopyIcon} />
           </TooltipTrigger>
           <TooltipContent>
-            {copiedPrompt ? "Copiado!" : "Copiar prompt"}
+            {copiedContent ? "Copiado!" : "Copiar prompt"}
           </TooltipContent>
         </Tooltip>
       )}
@@ -323,15 +335,16 @@ export function ItemCard({
                 variant="ghost"
                 size="icon-sm"
                 aria-label="Copiar código"
-                onClick={handleCopyCode}
+                pending={copyingContent}
+                onClick={handleCopyContent}
                 className={ACTION_CLASS}
               />
             }
           >
-            <CopyStateIcon copied={copiedCode} Icon={CopyIcon} />
+            <CopyStateIcon copied={copiedContent} Icon={CopyIcon} />
           </TooltipTrigger>
           <TooltipContent>
-            {copiedCode ? "Copiado!" : "Copiar código"}
+            {copiedContent ? "Copiado!" : "Copiar código"}
           </TooltipContent>
         </Tooltip>
       )}
