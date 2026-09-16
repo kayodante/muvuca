@@ -43,7 +43,10 @@ describe("NavLink", () => {
   });
 
   it("marca a rota atual com aria-current", async () => {
-    const view = await renderNavLink({ label: "Todos os itens", href: "/library" });
+    const view = await renderNavLink({
+      label: "Todos os itens",
+      href: "/library",
+    });
 
     expect(view.querySelector("a")?.getAttribute("aria-current")).toBe("page");
   });
@@ -55,13 +58,19 @@ describe("NavLink", () => {
   });
 
   it("renderiza sem ícone quando nenhum é passado", async () => {
-    const view = await renderNavLink({ label: "Todos os itens", href: "/library" });
+    const view = await renderNavLink({
+      label: "Todos os itens",
+      href: "/library",
+    });
 
     expect(view.querySelector("svg")).toBeNull();
   });
 
   it("esconde o contador quando count é undefined", async () => {
-    const view = await renderNavLink({ label: "Todos os itens", href: "/library" });
+    const view = await renderNavLink({
+      label: "Todos os itens",
+      href: "/library",
+    });
 
     expect(view.querySelector("[data-slot='nav-count']")).toBeNull();
   });
@@ -73,6 +82,8 @@ describe("NavLink", () => {
       count: 0,
     });
 
-    expect(view.querySelector("[data-slot='nav-count']")?.textContent).toBe("0");
+    expect(view.querySelector("[data-slot='nav-count']")?.textContent).toBe(
+      "0",
+    );
   });
 });
