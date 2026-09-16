@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   BACKUP_FORMAT_VERSION,
   formatAsNetscapeBookmarks,
+  SUPPORTED_BACKUP_VERSIONS,
   type ExportData,
 } from "../formatter";
 
 const mockExportData: ExportData = {
-  version: "1.1",
+  version: "1.2",
   exportedAt: "2026-08-15T12:00:00Z",
   tags: [
     {
@@ -63,7 +64,7 @@ describe("formatAsNetscapeBookmarks", () => {
 
   it('escapa caracteres especiais HTML (&, <, >, ") em nomes de tags, títulos e URLs', () => {
     const dataWithSpecialChars: ExportData = {
-      version: "1.1",
+      version: "1.2",
       exportedAt: "2026-08-15T12:00:00Z",
       tags: [
         {
@@ -99,7 +100,7 @@ describe("formatAsNetscapeBookmarks", () => {
 
   it("renderiza links sem tags na raiz do documento", () => {
     const dataWithUntagged: ExportData = {
-      version: "1.1",
+      version: "1.2",
       exportedAt: "2026-08-15T12:00:00Z",
       tags: [],
       items: [
@@ -123,7 +124,7 @@ describe("formatAsNetscapeBookmarks", () => {
 
   it("ignora itens do tipo prompt no HTML Netscape mas mantém links", () => {
     const dataWithPrompts: ExportData = {
-      version: "1.1",
+      version: "1.2",
       exportedAt: "2026-08-15T12:00:00Z",
       tags: [],
       items: [
@@ -147,7 +148,7 @@ describe("formatAsNetscapeBookmarks", () => {
 
   it("ignora itens do tipo code_component no HTML Netscape mas mantém links", () => {
     const dataWithCodeComponent: ExportData = {
-      version: "1.1",
+      version: "1.2",
       exportedAt: "2026-08-15T12:00:00Z",
       tags: [],
       items: [
@@ -171,8 +172,38 @@ describe("formatAsNetscapeBookmarks", () => {
   });
 });
 
-describe("BACKUP_FORMAT_VERSION", () => {
-  it("é a versão que o exportador grava no arquivo", () => {
-    expect(BACKUP_FORMAT_VERSION).toBe("1.1");
+describe("versões do formato de backup", () => {
+  it("grava a 1.2 como a versão atual do exportador", () => {
+    expect(BACKUP_FORMAT_VERSION).toBe("1.2");
+  });
+
+  it("continua aceitando arquivos das versões 1.0 e 1.1 na importação", () => {
+    expect(SUPPORTED_BACKUP_VERSIONS).toEqual(["1.0", "1.1", "1.2"]);
+  });
+});
+
+describe("language no formato 1.2", () => {
+  it("serializa a chave language de um code_component no JSON de backup", () => {
+    const data: ExportData = {
+      version: "1.2",
+      exportedAt: "2026-08-15T12:00:00Z",
+      tags: [],
+      items: [
+        {
+          id: "item-code",
+          type: "code_component",
+          title: "Snippet Python",
+          url: null,
+          description: null,
+          content: "print('oi')",
+          language: "python",
+          tagIds: [],
+          createdAt: "2026-08-14T00:00:00Z",
+        },
+      ],
+    };
+
+    const wire = JSON.parse(JSON.stringify(data)) as ExportData;
+    expect(wire.items[0]!.language).toBe("python");
   });
 });

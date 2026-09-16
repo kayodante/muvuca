@@ -55,6 +55,7 @@ describe("exportUserLibrary", () => {
         url: "https://nextjs.org",
         description: "Framework React",
         content: null,
+        language: null,
         created_at: "2026-08-15T00:00:00Z",
       },
       {
@@ -64,7 +65,18 @@ describe("exportUserLibrary", () => {
         url: null,
         description: null,
         content: "Refactor to clean code",
+        language: null,
         created_at: "2026-08-14T00:00:00Z",
+      },
+      {
+        id: "item-3",
+        type: "code_component",
+        title: "Snippet Python",
+        url: null,
+        description: null,
+        content: "print('oi')",
+        language: "python",
+        created_at: "2026-08-13T00:00:00Z",
       },
     ];
     const mockItemTags = [
@@ -72,21 +84,30 @@ describe("exportUserLibrary", () => {
       { item_id: "item-2", tag_id: "tag-1" },
     ];
 
+    const selectCalls: Record<string, string> = {};
     const supabaseMock = {
       from: vi.fn((table: string) => {
         if (table === "tags") {
           return {
-            select: vi.fn().mockReturnValue({
-              order: vi.fn().mockResolvedValue({ data: mockTags, error: null }),
+            select: vi.fn((columns: string) => {
+              selectCalls.tags = columns;
+              return {
+                order: vi
+                  .fn()
+                  .mockResolvedValue({ data: mockTags, error: null }),
+              };
             }),
           };
         }
         if (table === "library_items") {
           return {
-            select: vi.fn().mockReturnValue({
-              order: vi
-                .fn()
-                .mockResolvedValue({ data: mockItems, error: null }),
+            select: vi.fn((columns: string) => {
+              selectCalls.library_items = columns;
+              return {
+                order: vi
+                  .fn()
+                  .mockResolvedValue({ data: mockItems, error: null }),
+              };
             }),
           };
         }
@@ -105,9 +126,13 @@ describe("exportUserLibrary", () => {
 
     const result = await exportUserLibrary();
 
+    // Sem a coluna no select, a language do code_component se perde no
+    // round-trip export→import -- data bug do formato 1.2.
+    expect(selectCalls.library_items).toContain("language");
+
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.data.version).toBe("1.1");
+      expect(result.data.version).toBe("1.2");
       expect(result.data.tags).toEqual([
         {
           id: "tag-1",
@@ -147,7 +172,69 @@ describe("exportUserLibrary", () => {
           tagIds: ["tag-1"],
           createdAt: "2026-08-14T00:00:00Z",
         },
+        {
+          id: "item-3",
+          type: "code_component",
+          title: "Snippet Python",
+          url: null,
+          description: null,
+          content: "print('oi')",
+          language: "python",
+          tagIds: [],
+          createdAt: "2026-08-13T00:00:00Z",
+        },
       ]);
+    }
+  });
+
+  it("não inclui a chave language em itens que não são code_component", async () => {
+    const mockItems = [
+      {
+        id: "item-1",
+        type: "link",
+        title: "Next.js",
+        url: "https://nextjs.org",
+        description: null,
+        content: null,
+        language: null,
+        created_at: "2026-08-15T00:00:00Z",
+      },
+    ];
+
+    const supabaseMock = {
+      from: vi.fn((table: string) => {
+        if (table === "tags") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          };
+        }
+        if (table === "library_items") {
+          return {
+            select: vi.fn().mockReturnValue({
+              order: vi
+                .fn()
+                .mockResolvedValue({ data: mockItems, error: null }),
+            }),
+          };
+        }
+        if (table === "item_tags") {
+          return {
+            select: vi.fn().mockResolvedValue({ data: [], error: null }),
+          };
+        }
+        return { select: vi.fn() };
+      }),
+    };
+
+    createClientMock.mockResolvedValue(supabaseMock);
+
+    const result = await exportUserLibrary();
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data.items[0]).not.toHaveProperty("language");
     }
   });
 

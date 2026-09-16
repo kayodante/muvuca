@@ -16,6 +16,12 @@ export interface ExportItem {
   url: string | null;
   description: string | null;
   content: string | null;
+  /**
+   * Adicionado na versão 1.2 do formato; presente só em code_component.
+   * Ausente em arquivos 1.0/1.1 e em code_components sem linguagem -- cai
+   * no default null da RPC na restauração.
+   */
+  language?: string | null;
   tagIds: string[];
   createdAt: string;
 }
@@ -28,11 +34,16 @@ export interface ExportItem {
  * round-trip de export→import perdia a descrição autoral da tag. O
  * significado de "1.0" não muda -- arquivos 1.0 continuam válidos para
  * importação, só não carregam esses dois campos.
+ *
+ * 1.2 acrescenta `language` nos itens code_component: sem a chave, o
+ * round-trip export→import perdia a linguagem que alimenta o highlight.
+ * Arquivos 1.0/1.1 continuam válidos -- `language` é opcional e restaura
+ * como null (a chave não entra na dedupe de itens).
  */
-export const BACKUP_FORMAT_VERSION = "1.1" as const;
+export const BACKUP_FORMAT_VERSION = "1.2" as const;
 
 /** Versões que o importador aceita ler, da mais antiga à mais nova. */
-export const SUPPORTED_BACKUP_VERSIONS = ["1.0", "1.1"] as const;
+export const SUPPORTED_BACKUP_VERSIONS = ["1.0", "1.1", "1.2"] as const;
 
 export interface ExportData {
   version: typeof BACKUP_FORMAT_VERSION;

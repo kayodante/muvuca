@@ -3,6 +3,7 @@ import { z } from "zod";
 import { MAX_BACKUP_ITEMS, MAX_BACKUP_TAGS } from "./types";
 import { SUPPORTED_BACKUP_VERSIONS } from "@/lib/export/formatter";
 import {
+  codeLanguageSchema,
   itemContentSchema,
   itemDescriptionSchema,
   itemTitleSchema,
@@ -59,13 +60,17 @@ const backupFileItemSchema = z.discriminatedUnion("type", [
     type: z.literal("code_component"),
     url: itemUrlSchema.nullable().optional(),
     content: itemContentSchema,
+    // Formato 1.2: opcional e nulável -- ausente em arquivos 1.0/1.1 e em
+    // code_components sem linguagem definida.
+    language: codeLanguageSchema.nullable().optional(),
   }),
 ]);
 
 /**
  * Valida o arquivo inteiro no navegador antes de qualquer envio. Aceita
- * qualquer versão em SUPPORTED_BACKUP_VERSIONS (1.0 e 1.1) -- um arquivo
- * antigo continua restaurável, só sem description/createdAt de tag.
+ * qualquer versão em SUPPORTED_BACKUP_VERSIONS (1.0, 1.1 e 1.2) -- um
+ * arquivo antigo continua restaurável, só sem description/createdAt de tag
+ * e sem language de code_component.
  */
 export const backupFileSchema = z
   .object({
@@ -134,6 +139,9 @@ const backupItemPayloadSchema = z.discriminatedUnion("type", [
     type: z.literal("code_component"),
     url: itemUrlSchema.nullable().optional(),
     content: itemContentSchema,
+    // Mesma regra do arquivo: opcional e nulável; a RPC usa null como
+    // default e language não entra na chave de dedupe.
+    language: codeLanguageSchema.nullable().optional(),
   }),
 ]);
 

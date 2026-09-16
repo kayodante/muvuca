@@ -129,6 +129,8 @@ describe("importLibraryBackup", () => {
           url: "https://ui.shadcn.com/docs/components/button",
           content: "export function Button() { return <button />; }",
           description: "Shadcn button",
+          // Formato 1.2: a language precisa chegar à RPC junto com o item.
+          language: "python",
           createdAt: "2026-08-15T00:00:00+00:00",
           tagKeys: [TAG_KEY],
         },

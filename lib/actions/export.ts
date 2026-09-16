@@ -17,7 +17,9 @@ export async function exportUserLibrary(): Promise<ActionResult<ExportData>> {
       .order("created_at", { ascending: true }),
     supabase
       .from("library_items")
-      .select("id, type, title, url, description, content, created_at")
+      .select(
+        "id, type, title, url, description, content, language, created_at",
+      )
       .order("created_at", { ascending: false }),
     supabase.from("item_tags").select("item_id, tag_id"),
   ]);
@@ -55,11 +57,16 @@ export async function exportUserLibrary(): Promise<ActionResult<ExportData>> {
     })),
     items: (itemsResult.data ?? []).map((item) => ({
       id: item.id,
-      type: item.type as "link" | "prompt",
+      type: item.type as "link" | "prompt" | "code_component",
       title: item.title,
       url: item.url,
       description: item.description,
       content: item.content,
+      // Formato 1.2: language só existe como chave em code_component --
+      // link/prompt não a carregam nem como null.
+      ...(item.type === "code_component"
+        ? { language: item.language ?? null }
+        : {}),
       tagIds: tagMap.get(item.id) ?? [],
       createdAt: item.created_at,
     })),

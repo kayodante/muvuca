@@ -8,7 +8,7 @@ import type { ExportData } from "@/lib/export/formatter";
 // do import" divergir silenciosamente.
 function validFile(): ExportData {
   return {
-    version: "1.1",
+    version: "1.2",
     exportedAt: "2026-08-16T12:00:00+00:00",
     tags: [
       {
@@ -206,6 +206,64 @@ describe("backupFileSchema", () => {
     ];
     expect(backupFileSchema.safeParse(file).success).toBe(false);
   });
+
+  it("aceita arquivo 1.2 com language em code_component e preserva o valor", () => {
+    const file = validFile();
+    file.items = [
+      {
+        id: "55555555-5555-4555-8555-555555555555",
+        type: "code_component",
+        title: "Snippet Python",
+        url: null,
+        description: null,
+        content: "print('oi')",
+        language: "python",
+        tagIds: [],
+        createdAt: "2026-08-15T00:00:00+00:00",
+      },
+    ];
+
+    const parsed = backupFileSchema.safeParse(file);
+    expect(parsed.success).toBe(true);
+    if (parsed.success && parsed.data.items[0]?.type === "code_component") {
+      expect(parsed.data.items[0].language).toBe("python");
+    }
+  });
+
+  it("aceita arquivo 1.2 com code_component sem language (default null)", () => {
+    const file = validFile();
+    file.items = [
+      {
+        id: "55555555-5555-4555-8555-555555555555",
+        type: "code_component",
+        title: "Snippet sem linguagem",
+        url: null,
+        description: null,
+        content: "fn main() {}",
+        tagIds: [],
+        createdAt: "2026-08-15T00:00:00+00:00",
+      },
+    ];
+    expect(backupFileSchema.safeParse(file).success).toBe(true);
+  });
+
+  it("rejeita language fora da allowlist em code_component no arquivo", () => {
+    const file = validFile();
+    file.items = [
+      {
+        id: "55555555-5555-4555-8555-555555555555",
+        type: "code_component",
+        title: "Snippet Cobol",
+        url: null,
+        description: null,
+        content: "DISPLAY 'OI'.",
+        language: "cobol",
+        tagIds: [],
+        createdAt: "2026-08-15T00:00:00+00:00",
+      },
+    ];
+    expect(backupFileSchema.safeParse(file).success).toBe(false);
+  });
 });
 
 describe("backupPayloadSchema", () => {
@@ -308,6 +366,49 @@ describe("backupPayloadSchema", () => {
           url: "javascript:alert(1)",
           content: "export const Button = () => null;",
           description: null,
+          createdAt: "2026-08-15T00:00:00+00:00",
+          tagKeys: [],
+        },
+      ],
+    };
+    expect(backupPayloadSchema.safeParse(payload).success).toBe(false);
+  });
+
+  it("aceita language em code_component no payload e preserva o valor", () => {
+    const payload = {
+      ...validPayload(),
+      items: [
+        {
+          type: "code_component" as const,
+          title: "Snippet Python",
+          url: null,
+          content: "print('oi')",
+          description: null,
+          language: "python",
+          createdAt: "2026-08-15T00:00:00+00:00",
+          tagKeys: [],
+        },
+      ],
+    };
+
+    const parsed = backupPayloadSchema.safeParse(payload);
+    expect(parsed.success).toBe(true);
+    if (parsed.success && parsed.data.items[0]?.type === "code_component") {
+      expect(parsed.data.items[0].language).toBe("python");
+    }
+  });
+
+  it("rejeita language fora da allowlist em code_component no payload", () => {
+    const payload = {
+      ...validPayload(),
+      items: [
+        {
+          type: "code_component" as const,
+          title: "Snippet Cobol",
+          url: null,
+          content: "DISPLAY 'OI'.",
+          description: null,
+          language: "cobol",
           createdAt: "2026-08-15T00:00:00+00:00",
           tagKeys: [],
         },
