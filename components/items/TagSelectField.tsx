@@ -289,6 +289,12 @@ export function TagSelectField({
             <input
               id={searchInputId}
               type="text"
+              // Não é autofocus de carregamento de página (o caso que a regra
+              // protege): este input só existe depois que o usuário abriu o
+              // popup, e mover o foco para o filtro é o comportamento esperado
+              // de um combobox. Sem isso o foco fica no trigger e digitar não
+              // filtra nada.
+              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
               placeholder="Buscar tags..."
               value={searchQuery}

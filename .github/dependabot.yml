@@ -1,0 +1,58 @@
+version: 2
+
+updates:
+  # `npm` é o identificador do ecossistema JavaScript inteiro: pnpm não tem
+  # valor próprio, é lido a partir do `pnpm-lock.yaml` (lockfileVersion 9.0,
+  # que é o que pnpm 11.20 escreve e o que o Dependabot sabe ler).
+  #
+  # O Dependabot regenera o lockfile com a própria instalação de pnpm, que
+  # não é necessariamente a 11.20 travada em `packageManager`. Se uma
+  # resolução dele divergir do que `pnpm-workspace.yaml` exige
+  # (`minimumReleaseAge`, `blockExoticSubdeps`, `trustPolicy: no-downgrade`,
+  # e os `overrides` que seguram semver/hono/fast-uri/qs nas linhas
+  # corrigidas), quem reprova é o job `quality` do CI no próprio PR:
+  # `pnpm install --frozen-lockfile`, `pnpm audit --audit-level=high` e
+  # `pnpm audit signatures` rodam antes de qualquer merge. Nenhum PR deste
+  # arquivo entra sem passar por lá.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    # Espelha `minimumReleaseAge: 1440` (24h) de `pnpm-workspace.yaml`: uma
+    # versão recém-publicada não vira PR antes de a janela passar. Vale só
+    # para version updates -- security updates ignoram cooldown de
+    # propósito, que é o comportamento desejado para um CVE.
+    cooldown:
+      default-days: 1
+    # Minor e patch viajam em dois PRs por semana (um de produção, um de
+    # desenvolvimento) em vez de um por pacote. Major fica deliberadamente
+    # fora dos grupos: abre PR individual, para ser lido individualmente --
+    # ARCHITECTURE.md §16 proíbe auto-merge de major e de dependência
+    # sensível a segurança.
+    groups:
+      prod-minor-patch:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+      dev-minor-patch:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+
+  # As actions são pinadas por commit SHA (ARCHITECTURE.md §16), e é
+  # justamente esse pin que apodrece sem ninguém perceber: o Dependabot
+  # atualiza o SHA e o comentário de versão ao lado dele. Um PR agrupado
+  # para todas, porque são poucas e mudam juntas.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns:
+          - "*"

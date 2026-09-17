@@ -377,6 +377,7 @@ export function LandingProblem() {
                   ref={(el) => {
                     stepRefs.current[index] = el;
                   }}
+                  data-step-state={isActive ? "active" : "inactive"}
                   className={cn(
                     "flex flex-col justify-between transition-all duration-(--motion-base) ease-out-muvuca",
                     isActive

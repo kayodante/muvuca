@@ -264,6 +264,10 @@ export function ItemCard({
                 aria-label="Abrir link em nova aba"
                 className={ACTION_CLASS}
                 render={
+                  // O Base UI clona este anchor injetando children (o ícone) e
+                  // o aria-label do Button acima. A tag está vazia no fonte,
+                  // nunca em runtime -- o lint não enxerga a composição.
+                  // eslint-disable-next-line jsx-a11y/anchor-has-content
                   <a
                     href={safeHref}
                     target="_blank"

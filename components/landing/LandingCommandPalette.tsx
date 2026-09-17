@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useId, useState, useMemo, useRef } from "react";
 import {
   SearchIcon,
   LinkIcon,
@@ -37,6 +37,11 @@ export function LandingCommandPalette({
   const prevOpenRef = useRef(open);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  // Padrão APG combobox: o foco do DOM nunca sai do input; a opção ativa é
+  // anunciada por aria-activedescendant. Por isso as opções não são
+  // focáveis e não precisam de tabIndex.
+  const listboxId = useId();
+  const optionId = (index: number) => `${listboxId}-option-${index}`;
 
   if (open !== prevOpenRef.current) {
     prevOpenRef.current = open;
@@ -158,6 +163,16 @@ export function LandingCommandPalette({
   if (!mounted) return null;
 
   return (
+    // Backdrop puramente decorativo: clicar fora fecha, e o mesmo fechamento
+    // já tem caminho de teclado no listener global de Escape (useEffect no
+    // topo deste arquivo). Um handler de teclado aqui seria um segundo
+    // caminho para a mesma ação, não um caminho novo.
+    //
+    // O disable fica acima da tag, não acima do `onClick`: jsx-a11y reporta
+    // estas duas regras no JSXOpeningElement, então um
+    // `eslint-disable-next-line` na linha do atributo não suprime nada e
+    // ainda é relatado como diretiva não usada.
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
     <div
       className={cn(
         "fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 pt-[12vh] backdrop-blur-xs transition-opacity duration-(--motion-fast) motion-reduce:transition-none",
@@ -166,11 +181,11 @@ export function LandingCommandPalette({
       onClick={(e) => {
         if (e.target === e.currentTarget) onOpenChange(false);
       }}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Busca rápida na biblioteca de demonstração"
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Busca rápida na biblioteca de demonstração"
         className={cn(
           "t-modal relative flex w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-border bg-card text-foreground shadow-2xl",
           closing ? "is-closing" : entered ? "is-open" : undefined,
@@ -185,6 +200,13 @@ export function LandingCommandPalette({
           <input
             ref={inputRef}
             type="text"
+            role="combobox"
+            aria-expanded
+            aria-autocomplete="list"
+            aria-controls={listboxId}
+            aria-activedescendant={
+              filteredItems.length > 0 ? optionId(safeSelectedIndex) : undefined
+            }
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -264,6 +286,7 @@ export function LandingCommandPalette({
           ref={listRef}
           className="max-h-[60vh] overflow-y-auto p-2"
           role="listbox"
+          id={listboxId}
         >
           {filteredItems.length === 0 ? (
             <div className="text-body-sm py-12 text-center text-muted-foreground">
@@ -278,8 +301,18 @@ export function LandingCommandPalette({
                   : null;
 
               return (
+                // As opções são deliberadamente não-focáveis: no padrão
+                // combobox/activedescendant o foco fica no input, que trata
+                // ArrowUp/ArrowDown/Enter em handleInputKeyDown. Dar tabIndex
+                // aqui criaria uma segunda ordem de tabulação competindo com a
+                // navegação por setas.
+                //
+                // O disable fica acima da tag pelo mesmo motivo do backdrop:
+                // jsx-a11y reporta estas regras no JSXOpeningElement.
+                // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus
                 <div
                   key={item.id}
+                  id={optionId(idx)}
                   role="option"
                   aria-selected={isSelected}
                   onMouseEnter={() => setSelectedIndex(idx)}
