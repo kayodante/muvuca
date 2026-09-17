@@ -48,7 +48,7 @@ export async function resetAccount(): Promise<ActionResult<null>> {
 
   logEvent({ event: "account.reset", status: "success", userId: user.id });
 
-  revalidatePath("/library");
+  revalidatePath("/library", "layout");
   revalidatePath("/tags", "layout");
   revalidatePath("/settings");
 

@@ -85,7 +85,7 @@ export async function importLibraryBackup(
     return fail("UNKNOWN", "Não foi possível concluir a restauração.");
   }
 
-  revalidatePath("/library");
+  revalidatePath("/library", "layout");
   revalidatePath("/tags", "layout");
 
   return ok({

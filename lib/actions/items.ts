@@ -67,7 +67,7 @@ function mapItemError(error: PostgrestErrorLike): ActionResult<never> {
 }
 
 function revalidateLibrary() {
-  revalidatePath("/library");
+  revalidatePath("/library", "layout");
   revalidatePath("/tags", "layout");
 }
 
