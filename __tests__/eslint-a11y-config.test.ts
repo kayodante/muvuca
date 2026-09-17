@@ -12,7 +12,7 @@ import { describe, expect, it } from "vitest";
  * typecheck -- e a config resolvida é o que o linter de fato aplica ao
  * arquivo, que é a pergunta que importa.
  */
-async function enabledA11yRules(): Promise<string[]> {
+async function resolveA11yRules(): Promise<string[]> {
   const config: unknown = await new ESLint().calculateConfigForFile(
     "components/items/ItemCard.tsx",
   );
@@ -28,7 +28,24 @@ async function enabledA11yRules(): Promise<string[]> {
     .map(([rule]) => rule);
 }
 
-describe("configuração de a11y do ESLint", () => {
+/**
+ * Memoizado de propósito. `calculateConfigForFile` resolve a flat config
+ * inteira (eslint-config-next, typescript-eslint, os plugins) e leva ~3s a
+ * frio; chamar uma vez por caso dobrava isso e estourava o `testTimeout`
+ * padrão de 5s quando a suíte roda em paralelo -- vermelho por orçamento, não
+ * por defeito. Uma Promise no escopo do módulo faz os dois casos dividirem
+ * um único cálculo.
+ */
+let cachedRules: Promise<string[]> | null = null;
+
+function enabledA11yRules(): Promise<string[]> {
+  return (cachedRules ??= resolveA11yRules());
+}
+
+// Mesmo dividido, o cálculo único ainda é lento perto do resto da suíte. O
+// orçamento é do arquivo, não global: subir o `testTimeout` do projeto
+// esconderia lentidão de verdade em qualquer outro teste.
+describe("configuração de a11y do ESLint", { timeout: 30_000 }, () => {
   it("liga o ruleset recomendado do jsx-a11y", async () => {
     // O `recommended` do 6.10.2 traz 34 entradas, das quais 31 ficam
     // ligadas (3 vêm como "off" no próprio recommended). O core-web-vitals
