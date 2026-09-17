@@ -66,6 +66,34 @@ jobs:
         run: pnpm audit --audit-level=high
       - name: Audit package signatures
         run: pnpm audit signatures
+      # SBOM da árvore travada. Syft lê `pnpm-lock.yaml` diretamente em vez
+      # de `node_modules`: o lockfile é a fonte de verdade das versões
+      # resolvidas, e escanear o diretório faria o resultado depender do
+      # estado do install no runner.
+      #
+      # É uma Action, não um pacote: `pnpm` não tem comando nativo de SBOM e
+      # os geradores npm não leem lockfile do pnpm. Assim o SBOM não custa
+      # nenhuma dependência nova na árvore do produto.
+      - name: Generate SBOM (SPDX)
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+        with:
+          file: pnpm-lock.yaml
+          format: spdx-json
+          artifact-name: sbom-spdx.json
+          output-file: sbom-spdx.json
+          upload-artifact: true
+          upload-artifact-retention: 30
+      # Um SBOM sem pacotes é um JSON válido. Sem esta checagem o job ficaria
+      # verde publicando um arquivo vazio -- e o ROADMAP registraria a
+      # pendência como fechada por um artefato que não prova nada.
+      - name: Verify SBOM is not empty
+        run: |
+          count=$(node -e "const s=require('./sbom-spdx.json');console.log((s.packages||[]).length)")
+          echo "SBOM lista $count pacotes."
+          if [ "$count" -lt 50 ]; then
+            echo "::error::SBOM tem $count pacotes -- Syft provavelmente não entendeu pnpm-lock.yaml"
+            exit 1
+          fi
       - name: Repository hygiene
         run: pnpm check:hygiene
 
