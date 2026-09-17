@@ -271,26 +271,18 @@ export function LibraryToolbar({
         className="t-tabs"
       >
         <span ref={pillRef} className="t-tabs-pill" aria-hidden="true" />
-        {TYPE_TABS.map((tab) => {
-          const active = type === tab.value;
-          return (
-            <button
-              key={tab.label}
-              type="button"
-              aria-pressed={active}
-              onClick={() => onFilterChange({ type: tab.value })}
-              onClickCapture={(event) => movePill(event.currentTarget, true)}
-              className={cn(
-                "t-tab text-body-sm",
-                active
-                  ? "!text-foreground"
-                  : "!text-muted-foreground hover:!text-foreground",
-              )}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
+        {TYPE_TABS.map((tab) => (
+          <button
+            key={tab.label}
+            type="button"
+            aria-pressed={type === tab.value}
+            onClick={() => onFilterChange({ type: tab.value })}
+            onClickCapture={(event) => movePill(event.currentTarget, true)}
+            className="t-tab text-body-sm"
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       <DropdownMenu>

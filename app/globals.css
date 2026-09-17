@@ -594,10 +594,8 @@ body {
   --reveal-dur: 400ms;
   --reveal-blur: 2px;
   --reveal-ease: ease-in-out;
-  --tabs-dur: 250ms;
-  --tabs-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --tabs-text-muted: rgba(15, 15, 15, 0.8);
-  --tabs-text-active: #0f0f0f;
+  --tabs-text-muted: var(--muted-foreground);
+  --tabs-text-active: var(--foreground);
   --tabs-bar-bg: #f1f1f1;
   --tabs-pill-bg: #ffffff;
   --tt-in-dur: 150ms;
@@ -628,8 +626,6 @@ body {
   /* Same system-theme exception as the color block above: a user who never
      picked a theme still gets these on a dark OS, not the light defaults. */
   :root:not(.light) {
-    --tabs-text-muted: var(--muted-foreground);
-    --tabs-text-active: var(--foreground);
     --tabs-bar-bg: var(--card);
     --tabs-pill-bg: var(--secondary);
     --tt-bg: var(--foreground);
@@ -639,8 +635,6 @@ body {
 }
 
 .dark {
-  --tabs-text-muted: var(--muted-foreground);
-  --tabs-text-active: var(--foreground);
   --tabs-bar-bg: var(--card);
   --tabs-pill-bg: var(--secondary);
   --tt-bg: var(--foreground);
@@ -878,10 +872,10 @@ body {
   cursor: pointer;
   border-radius: 48px;
   z-index: 1;
-  transition: color var(--tabs-dur) var(--tabs-ease);
+  transition: color var(--motion-base) var(--ease-out-muvuca);
 }
-.t-tab:not([aria-selected="true"]):hover,
-.t-tab[aria-selected="true"] {
+.t-tab:not([aria-pressed="true"]):hover,
+.t-tab[aria-pressed="true"] {
   color: var(--tabs-text-active);
 }
 .t-tabs-pill {
@@ -893,9 +887,14 @@ body {
   background: var(--tabs-pill-bg);
   border-radius: 48px;
   transform: translateX(0);
+  /* Exceção documentada a "animar apenas transform e opacity" (DESIGN.md ->
+     Motion): a receita `scaleX` + `origin-left` vale para barra de progresso,
+     mas esta pill é um stadium (30px de altura, raio 48px) e escalar em X
+     achata as tampas redondas em elipses a cada quadro. São 4 alvos num
+     clique pontual, não um loop -- o custo de layout cabe. */
   transition:
-    transform var(--tabs-dur) var(--tabs-ease),
-    width var(--tabs-dur) var(--tabs-ease);
+    transform var(--motion-base) var(--ease-out-muvuca),
+    width var(--motion-base) var(--ease-out-muvuca);
   will-change: transform, width;
   z-index: 0;
   pointer-events: none;

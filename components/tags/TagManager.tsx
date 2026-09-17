@@ -70,6 +70,7 @@ export function TagManager({
     <TagTree
       nodes={visibleNodes}
       activeTagId={activeTagId}
+      filtering={search.trim().length > 0}
       actions={treeActions}
     />
   );
