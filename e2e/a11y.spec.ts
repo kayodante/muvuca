@@ -108,3 +108,203 @@ test("o tema escuro não tem violações de contraste", async ({ page }) => {
 
   await expectNoViolations(page, "/library no tema escuro");
 });
+
+/**
+ * A preferência é emulada por `page.emulateMedia`, e não pelo
+ * `test.use({ reducedMotion: "reduce" })` que a documentação sugere: no
+ * Playwright 1.62.1 essa opção de contexto **não chega ao navegador**
+ * (`matchMedia("(prefers-reduced-motion: reduce)").matches` continua `false`),
+ * enquanto `colorScheme` no mesmo `test.use` funciona. Como a falha é
+ * silenciosa, ela não quebra o teste -- apenas o esvazia, que é pior: a
+ * asserção passaria a medir a página sem a preferência ligada.
+ *
+ * Por isso `expectReducedMotion` confere a emulação antes de cada asserção.
+ * A guarda é o que impede este arquivo de voltar a aprovar nada.
+ */
+async function expectReducedMotion(page: Page) {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  expect(
+    await page.evaluate(
+      () => matchMedia("(prefers-reduced-motion: reduce)").matches,
+    ),
+    "emulação de prefers-reduced-motion não chegou à página",
+  ).toBe(true);
+}
+
+test.describe("movimento reduzido", () => {
+  test("zera as transições dos overlays quando o sistema pede menos movimento", async ({
+    page,
+  }) => {
+    await signIn(page, `e2e-a11y-motion-${Date.now()}@muvuca.test`);
+    await expectReducedMotion(page);
+    await page.goto("/tags");
+    await page.getByRole("button", { name: "Criar tag" }).first().click();
+
+    const dialog = page.getByRole("dialog", { name: "Nova tag" });
+    await expect(dialog).toBeVisible();
+
+    // O bloco @media (prefers-reduced-motion: reduce) de app/globals.css
+    // zera `.t-modal` com `transition: none !important`. Se alguém mover a
+    // animação do modal para uma classe fora daquele bloco, isto falha.
+    const motion = await dialog.evaluate((node) => {
+      const style = getComputedStyle(node);
+      return {
+        transitionDuration: style.transitionDuration,
+        animationDuration: style.animationDuration,
+      };
+    });
+
+    expect(motion.transitionDuration).toMatch(/^0s(, 0s)*$/);
+    expect(motion.animationDuration).toMatch(/^0s(, 0s)*$/);
+  });
+
+  test("a landing continua sem violações de a11y com movimento reduzido", async ({
+    page,
+  }) => {
+    await expectReducedMotion(page);
+    await page.goto("/");
+    await expectNoViolations(
+      page,
+      "/ com prefers-reduced-motion: reduce",
+      NARRATIVE_CONTRAST_DEBT,
+    );
+  });
+});
+
+test("o diálogo prende o foco e o Escape devolve para o gatilho", async ({
+  page,
+}) => {
+  await signIn(page, `e2e-a11y-focus-${Date.now()}@muvuca.test`);
+  await page.goto("/tags");
+
+  const trigger = page.getByRole("button", { name: "Criar tag" }).first();
+  await trigger.click();
+
+  const dialog = page.getByRole("dialog", { name: "Nova tag" });
+  await expect(dialog).toBeVisible();
+
+  // O foco tem de entrar no diálogo, não ficar no gatilho atrás do overlay.
+  await expect
+    .poll(
+      () =>
+        page.evaluate(() => {
+          const active = document.activeElement;
+          return active ? active.closest("[role='dialog']") !== null : false;
+        }),
+      { message: "foco deveria estar dentro do diálogo" },
+    )
+    .toBe(true);
+
+  // Tab não pode escapar do diálogo enquanto ele é modal.
+  //
+  // A asserção espera o foco assentar em vez de ler `activeElement` logo
+  // depois da tecla, e isso é essencial: ao passar do último elemento o foco
+  // cai por um instante num "focus guard" do Base UI (um `<span tabindex=0>`
+  // com `data-base-ui-focus-guard`, renderizado FORA do popup), que só então
+  // devolve o foco para o primeiro campo. A devolução é assíncrona. Ler na
+  // hora pega o guard e acusa vazamento onde a prisão está funcionando --
+  // pior, tabular de novo a partir do guard, antes da devolução, faz o foco
+  // escapar de verdade e o teste passa a medir a corrida que ele mesmo criou.
+  for (let i = 0; i < 10; i += 1) {
+    await page.keyboard.press("Tab");
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const active = document.activeElement;
+            return active ? active.closest("[role='dialog']") !== null : false;
+          }),
+        { message: `Tab #${i + 1} escapou do diálogo` },
+      )
+      .toBe(true);
+  }
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+});
+
+test("o alternador de tema é alcançável por teclado e mostra o foco", async ({
+  page,
+}) => {
+  await signIn(page, `e2e-a11y-keyboard-${Date.now()}@muvuca.test`);
+  await expect(page).toHaveURL(/\/library/);
+
+  const themeButton = page.getByRole("button", { name: /^Tema:/ });
+  await expect(themeButton).toBeVisible();
+
+  // Tabula até alcançar o botão. Chegar lá já é metade da asserção: prova
+  // que o controle está na ordem de tabulação. O foco é movido por teclado
+  // de propósito -- `element.focus()` via JS não casa `:focus-visible` num
+  // <button> no Chromium, e o anel do repo é `focus-visible:ring-2`.
+  let reached = false;
+  for (let i = 0; i < 40 && !reached; i += 1) {
+    await page.keyboard.press("Tab");
+    reached = await themeButton.evaluate(
+      (node) => node === document.activeElement,
+    );
+  }
+
+  expect(reached, "botão de tema não alcançado em 40 tabulações").toBe(true);
+
+  // `outline: none` sem substituto é a forma mais comum de quebrar navegação
+  // por teclado, e a revisão manual não pega porque quem revisa usa mouse.
+  // O anel do Tailwind sai como box-shadow, então qualquer um dos dois vale.
+  const indicator = await themeButton.evaluate((node) => {
+    const style = getComputedStyle(node);
+    return {
+      outlineStyle: style.outlineStyle,
+      outlineWidth: style.outlineWidth,
+      boxShadow: style.boxShadow,
+    };
+  });
+
+  const hasIndicator =
+    (indicator.outlineStyle !== "none" && indicator.outlineWidth !== "0px") ||
+    indicator.boxShadow !== "none";
+
+  expect(
+    hasIndicator,
+    `botão de tema focado sem indicador visível: ${JSON.stringify(indicator)}`,
+  ).toBe(true);
+});
+
+test("a tabulação nunca para em um elemento de tamanho zero", async ({
+  page,
+}) => {
+  await signIn(page, `e2e-a11y-tabstops-${Date.now()}@muvuca.test`);
+  await expect(page).toHaveURL(/\/library/);
+
+  // Um elemento focável com 0x0 é foco que some: o usuário de teclado
+  // aperta Tab, nada aparenta mudar, e ele fica preso sem saber onde está.
+  // Esta asserção é deliberadamente estreita -- nada de exigir indicador em
+  // toda parada, porque há controles que delegam o anel a um filho ou a um
+  // `group-focus-visible` do pai, e a checagem genérica acusaria falso.
+  for (let i = 0; i < 20; i += 1) {
+    await page.keyboard.press("Tab");
+
+    const stop = await page.evaluate(() => {
+      const active = document.activeElement;
+      if (!active || active === document.body) return null;
+      // Os focus guards do Base UI são 1x1px de propósito (é assim que ficam
+      // fora da tela sem sair da ordem de tabulação), então são a única
+      // parada legítima que esta asserção precisa ignorar.
+      if (active.hasAttribute("data-base-ui-focus-guard")) return null;
+
+      const rect = active.getBoundingClientRect();
+      return {
+        tag: active.tagName,
+        label: active.getAttribute("aria-label") ?? active.textContent?.trim(),
+        width: rect.width,
+        height: rect.height,
+      };
+    });
+
+    if (!stop) continue;
+
+    expect(
+      stop.width > 0 && stop.height > 0,
+      `Tab #${i + 1} parou em ${stop.tag} (${stop.label}) com ${stop.width}x${stop.height}`,
+    ).toBe(true);
+  }
+});
