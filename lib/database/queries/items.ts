@@ -177,6 +177,23 @@ export async function getLibraryItemsCountForTag(
   return data ?? 0;
 }
 
+/**
+ * Contagem total de itens do usuário. `head: true` pede só o header
+ * `Content-Range` -- nenhuma linha trafega. O recorte por dono vem da policy
+ * `library_items_select`, não de um filtro aqui: `user_id` de cliente nunca é
+ * autoridade (CLAUDE.md §11). Servida por `library_items_user_id_idx`.
+ */
+export async function getLibraryItemsCount(): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("library_items")
+    .select("id", { count: "exact", head: true });
+
+  if (error) throw error;
+
+  return count ?? 0;
+}
+
 /** Used on demand for viewing/editing a prompt; lists never fetch full bodies. */
 export async function getLibraryItemById(
   id: string,

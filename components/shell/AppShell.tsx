@@ -25,12 +25,14 @@ export function AppShell({
   userEmail,
   signOutSlot,
   tags,
+  itemsCount,
 }: {
   children: ReactNode;
   theme: Theme;
   userEmail?: string | null;
   signOutSlot: ReactNode;
   tags?: FlatTag[];
+  itemsCount?: number;
 }) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -40,6 +42,7 @@ export function AppShell({
       theme={theme}
       userEmail={userEmail}
       signOutSlot={signOutSlot}
+      itemsCount={itemsCount}
     />
   );
 

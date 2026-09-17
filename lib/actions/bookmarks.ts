@@ -95,7 +95,7 @@ export async function importBrowserBookmarks(
     });
     return fail("UNKNOWN", "Não foi possível concluir a importação.");
   }
-  revalidatePath("/library");
+  revalidatePath("/library", "layout");
   revalidatePath("/tags", "layout");
   return ok({
     itemsImported: summary.items_imported,

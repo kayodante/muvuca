@@ -49,7 +49,7 @@ describe("resetAccount", () => {
 
     expect(rpcMock).toHaveBeenCalledWith("reset_account");
     expect(result.ok).toBe(true);
-    expect(revalidatePathMock).toHaveBeenCalledWith("/library");
+    expect(revalidatePathMock).toHaveBeenCalledWith("/library", "layout");
     expect(revalidatePathMock).toHaveBeenCalledWith("/tags", "layout");
     expect(revalidatePathMock).toHaveBeenCalledWith("/settings");
   });

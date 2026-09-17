@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { FlatTag } from "@/lib/tags/tree";
 import type { Theme } from "@/lib/theme/preference";
 import { Logo } from "@/components/brand/Logo";
+import { NavLink } from "./NavLink";
 import { TagNavigation } from "./TagNavigation";
 import { ThemeToggle } from "./ThemeToggle";
 import { SidebarUserMenu } from "./SidebarUserMenu";
@@ -21,11 +22,13 @@ export function Sidebar({
   theme,
   userEmail,
   signOutSlot,
+  itemsCount,
 }: {
   tags?: FlatTag[];
   theme: Theme;
   userEmail?: string | null;
   signOutSlot: ReactNode;
+  itemsCount?: number;
 }) {
   return (
     <nav
@@ -43,7 +46,19 @@ export function Sidebar({
         <ThemeToggle theme={theme} />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col bg-card p-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 bg-card p-4">
+        {/* Acima do heading "TAGS" (Figma 145:908). Fora do TagNavigation de
+            propósito: aquele componente devolve null sem tags, e esta row
+            precisa existir numa biblioteca vazia. */}
+        <div className="shrink-0">
+          <NavLink
+            item={{
+              label: "Todos os itens",
+              href: "/library",
+              count: itemsCount,
+            }}
+          />
+        </div>
         <TagNavigation tags={tags ?? []} />
       </div>
 

@@ -103,7 +103,7 @@ describe("items actions", () => {
         p_tag_ids: [validTagId],
         p_language: null,
       });
-      expect(revalidatePathMock).toHaveBeenCalledWith("/library");
+      expect(revalidatePathMock).toHaveBeenCalledWith("/library", "layout");
       expect(revalidatePathMock).toHaveBeenCalledWith("/tags", "layout");
     });
 
@@ -158,7 +158,7 @@ describe("items actions", () => {
         p_tag_ids: [validTagId],
         p_language: null,
       });
-      expect(revalidatePathMock).toHaveBeenCalledWith("/library");
+      expect(revalidatePathMock).toHaveBeenCalledWith("/library", "layout");
       expect(revalidatePathMock).toHaveBeenCalledWith("/tags", "layout");
     });
 
@@ -407,7 +407,7 @@ describe("items actions", () => {
         p_tag_ids: [validTagId],
         p_language: null,
       });
-      expect(revalidatePathMock).toHaveBeenCalledWith("/library");
+      expect(revalidatePathMock).toHaveBeenCalledWith("/library", "layout");
       expect(revalidatePathMock).toHaveBeenCalledWith("/tags", "layout");
     });
 
@@ -602,7 +602,7 @@ describe("items actions", () => {
       const result = await deleteItem(null, formData);
 
       expect(result).toEqual({ ok: true, data: null });
-      expect(revalidatePathMock).toHaveBeenCalledWith("/library");
+      expect(revalidatePathMock).toHaveBeenCalledWith("/library", "layout");
       expect(revalidatePathMock).toHaveBeenCalledWith("/tags", "layout");
     });
 
