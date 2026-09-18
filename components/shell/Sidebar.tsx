@@ -21,21 +21,23 @@ export function Sidebar({
   tags,
   theme,
   userEmail,
+  userName,
   signOutSlot,
   itemsCount,
 }: {
   tags?: FlatTag[];
   theme: Theme;
   userEmail?: string | null;
+  userName?: string | null;
   signOutSlot: ReactNode;
   itemsCount?: number;
 }) {
   return (
     <nav
       aria-label="Navegação principal"
-      className="flex h-full flex-col overflow-hidden rounded-md"
+      className="flex h-full flex-col overflow-hidden"
     >
-      <div className="flex shrink-0 items-center justify-between gap-2 bg-secondary p-2">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-r border-b border-border bg-secondary p-2">
         {/* Official Muvuca brand mark */}
         <Link
           href="/library"
@@ -46,7 +48,7 @@ export function Sidebar({
         <ThemeToggle theme={theme} />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 bg-card p-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 border-r border-border bg-card p-4">
         {/* Acima do heading "TAGS" (Figma 145:908). Fora do TagNavigation de
             propósito: aquele componente devolve null sem tags, e esta row
             precisa existir numa biblioteca vazia. */}
@@ -62,8 +64,12 @@ export function Sidebar({
         <TagNavigation tags={tags ?? []} />
       </div>
 
-      <div className="shrink-0 bg-secondary p-2">
-        <SidebarUserMenu userEmail={userEmail} signOutSlot={signOutSlot} />
+      <div className="shrink-0 border-t border-r border-border bg-secondary p-2">
+        <SidebarUserMenu
+          userEmail={userEmail}
+          userName={userName}
+          signOutSlot={signOutSlot}
+        />
       </div>
     </nav>
   );

@@ -1,4 +1,4 @@
-﻿import { swatchClassFor } from "@/lib/tags/colors";
+import { swatchClassFor } from "@/lib/tags/colors";
 import { cn } from "@/lib/utils";
 import type { Tag, TagAncestor } from "@/lib/database/queries/tags";
 import type { LibraryItemSummary } from "@/lib/database/queries/items";
@@ -32,35 +32,40 @@ export function TagDetailView({
   prevCursor?: string | null;
 }) {
   return (
-    // Figma 78:3675: breadcrumb, cabeçalho e barra da seção a 16px.
+    // Figma 78:3675 & 43:989: breadcrumb integrado no cabeçalho e barra da seção a 16px.
     <div className="flex flex-col gap-4">
-      <Breadcrumb ancestors={ancestors} currentName={tag.name} />
-
-      <div className="flex flex-col gap-4 rounded-xl border border-border p-1 pl-6 sm:flex-row sm:items-center sm:justify-between">
-        <h1
-          dir="auto"
-          className="text-headline-md flex min-w-0 flex-wrap items-center gap-4 py-3 [overflow-wrap:anywhere]"
-        >
-          Sua Muvuca em
-          <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-secondary px-3 py-1">
-            <span
-              aria-hidden="true"
-              className={cn(
-                "size-3 shrink-0 rounded-full",
-                swatchClassFor(tag.colorToken),
-              )}
-            />
-            <span className="truncate">{tag.name}</span>
-          </span>
-        </h1>
+      <div className="flex flex-col gap-4 rounded-2xl bg-background p-1 pl-6 shadow-light sm:h-[90px] sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-col justify-center py-2">
+          <Breadcrumb ancestors={ancestors} currentName={tag.name} />
+          <h1
+            dir="auto"
+            className="text-headline-md flex min-w-0 flex-wrap items-center gap-4 py-1 [overflow-wrap:anywhere]"
+          >
+            Sua Muvuca em
+            <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-secondary px-3 py-1 shadow-light">
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "size-3 shrink-0 rounded-full",
+                  swatchClassFor(tag.colorToken),
+                )}
+              />
+              <span className="truncate">{tag.name}</span>
+            </span>
+          </h1>
+        </div>
 
         <div className="flex gap-2 p-1">
-          <div className="flex min-w-[92px] flex-col items-center gap-1 rounded-lg bg-card p-4">
-            <span className="font-pixel text-3xl">{itemsCount}</span>
+          <div className="flex h-[82px] w-[108px] shrink-0 flex-col items-center justify-center gap-1 rounded-xl bg-linear-to-b from-secondary to-card p-4 shadow-light">
+            <span className="font-pixel text-[32px] leading-none text-foreground">
+              {itemsCount}
+            </span>
             <span className="text-body-sm text-muted-foreground">itens</span>
           </div>
-          <div className="flex min-w-[92px] flex-col items-center gap-1 rounded-lg bg-card p-4">
-            <span className="font-pixel text-3xl">{childCount}</span>
+          <div className="flex h-[82px] w-[108px] shrink-0 flex-col items-center justify-center gap-1 rounded-xl bg-linear-to-b from-secondary to-card p-4 shadow-light">
+            <span className="font-pixel text-[32px] leading-none text-foreground">
+              {childCount}
+            </span>
             <span className="text-body-sm text-muted-foreground">subtags</span>
           </div>
         </div>

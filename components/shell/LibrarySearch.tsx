@@ -272,7 +272,7 @@ export function LibrarySearch() {
         onChange={(event) => setQuery(event.target.value)}
         placeholder="Buscar na biblioteca"
         aria-label="Buscar na biblioteca"
-        className="bg-background pr-14 pl-9 dark:bg-background [&::-webkit-search-cancel-button]:hidden"
+        className="border-0 bg-background pr-14 pl-9 shadow-light dark:bg-background [&::-webkit-search-cancel-button]:hidden"
       />
       <div
         ref={mirrorRef}
@@ -307,7 +307,7 @@ export function LibrarySearch() {
       ) : (
         <kbd
           aria-hidden="true"
-          className="text-metadata pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 rounded border border-border/80 bg-muted/60 px-1.5 py-0.5 font-mono text-muted-foreground select-none"
+          className="text-metadata pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 rounded-xl bg-secondary/70 px-2 py-0.5 font-mono text-muted-foreground shadow-light select-none"
         >
           {shortcutLabel}
         </kbd>

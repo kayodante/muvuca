@@ -27,14 +27,17 @@ import {
  */
 export function SidebarUserMenu({
   userEmail,
+  userName,
   signOutSlot,
 }: {
   userEmail?: string | null;
+  userName?: string | null;
   signOutSlot: ReactNode;
 }) {
   if (!userEmail) return null;
 
   const initial = userEmail.charAt(0).toUpperCase();
+  const displayName = userName || userEmail.split("@")[0] || "Usuário";
 
   return (
     <DropdownMenu>
@@ -42,22 +45,30 @@ export function SidebarUserMenu({
         render={
           <button
             type="button"
-            className="flex w-full items-center gap-2 rounded-md p-2 text-left transition-colors duration-(--motion-fast) ease-out-muvuca hover:bg-card focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none motion-reduce:transition-none"
+            className="flex w-full items-center gap-2.5 rounded-md p-2 text-left transition-colors duration-(--motion-fast) ease-out-muvuca hover:bg-card focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none motion-reduce:transition-none"
           />
         }
       >
         <span
           aria-hidden="true"
-          className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground"
+          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-secondary text-sm font-medium text-foreground"
         >
           {initial}
         </span>
-        <span
-          dir="auto"
-          className="text-label-md min-w-0 flex-1 truncate text-foreground"
-        >
-          {userEmail}
-        </span>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span
+            dir="auto"
+            className="text-label-md truncate font-medium text-foreground"
+          >
+            {displayName}
+          </span>
+          <span
+            dir="auto"
+            className="text-metadata truncate text-muted-foreground"
+          >
+            {userEmail}
+          </span>
+        </div>
         <ChevronsUpDownIcon
           aria-hidden="true"
           className="size-4 shrink-0 text-muted-foreground"

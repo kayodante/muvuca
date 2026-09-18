@@ -26,6 +26,7 @@ export default async function AppLayout({
     <AppShell
       theme={theme}
       userEmail={user.email}
+      userName={user.name}
       signOutSlot={<SignOutButton />}
       tags={tags}
       itemsCount={itemsCount}

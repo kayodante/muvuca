@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 export type SessionUser = {
   id: string;
   email: string | undefined;
+  name?: string | null;
 };
 
 /**
@@ -19,9 +20,19 @@ async function currentUser(): Promise<SessionUser | null> {
     return null;
   }
 
+  const userMeta = data.claims.user_metadata as
+    Record<string, unknown> | undefined;
+  const name =
+    typeof userMeta?.full_name === "string"
+      ? userMeta.full_name
+      : typeof userMeta?.name === "string"
+        ? userMeta.name
+        : null;
+
   return {
     id: data.claims.sub,
     email: data.claims.email,
+    name,
   };
 }
 

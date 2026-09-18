@@ -44,6 +44,19 @@
   --color-foreground: var(--foreground);
   --color-background: var(--background);
 
+  /* Lighting & elevation tokens (Figma) */
+  --color-light-1: var(--light-1);
+  --color-light-2: var(--light-2);
+  --color-shadow-1: var(--shadow-1);
+  --color-shadow-2: var(--shadow-2);
+
+  /* Surface & ink tokens for high-contrast active states (Figma) */
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-subtle: var(--surface-subtle);
+
   /* Tags -- curated palette, one swatch each. */
   --color-tag-lime: var(--tag-lime);
   --color-tag-chartreuse: var(--tag-chartreuse);
@@ -88,6 +101,18 @@
   /* Elevation: overlays only, soft/short. */
   --shadow-overlay:
     0 8px 24px -4px rgb(0 0 0 / 0.14), 0 2px 8px -2px rgb(0 0 0 / 0.08);
+
+  /* Lighting & elevation tokens (Figma effect "Light") */
+  --shadow-light:
+    0 0 0 1px var(--color-shadow-1), inset 0 0 0 1px var(--color-light-2),
+    inset 0 1px 0 0 var(--color-light-1);
+
+  /* Tactile 3D create button (Figma node 193:5152) */
+  --shadow-create-button:
+    inset 0 -8px 14px 0 var(--color-shadow-1),
+    inset 0 0 0 1px var(--color-light-1),
+    inset 0 4px 6px 0 var(--color-light-1), 0 0 0 1px var(--color-background),
+    0 4px 4px 0 var(--color-light-2);
 
   /**
    * Motion is short and functional: duration expresses distance and
@@ -158,21 +183,26 @@ body {
      usa lime-700. */
   --brand-accent: #4d7c0f;
   --ink: #100f11;
-  --ink-muted: #64616a;
+  --ink-muted: #656467;
   --canvas: #f4f3f7;
-  --surface: #ffffff;
+  --surface: #f7f7f7;
   --surface-subtle: #edebf1;
-  --border: #dbd8e1;
+  --border: #dbd9e0;
   --focus: #65a30d;
   --success: #15803d;
   --warning: #b45309;
   --error: #b91c1c;
 
-  /* Type badges -- darker shades on the light surface (emerald/orange at
-     their 400/500 shade reprove AA on white at 13px). */
-  --type-link: #b91c1c;
+  /* Type badges -- dedicated hues per item type for AA contrast and semantic clarity (Figma). */
+  --type-link: #199ca8;
   --type-prompt: #047857;
-  --type-code: #c2410c;
+  --type-code: #d8480d;
+
+  /* Lighting and elevation tokens (Figma). */
+  --light-1: #ffffff;
+  --light-2: #ffffff80;
+  --shadow-1: #0707081a;
+  --shadow-2: #07070833;
 
   /* Syntax highlight de snippets: paleta GitHub alinhada ao DESIGN. Estes
      tokens são consumidos pelo tema `muvuca-code` do Shiki
@@ -256,17 +286,23 @@ body {
   :root:not(.light) {
     color-scheme: dark;
 
-    --canvas: #070708;
-    --surface: #111013;
-    --surface-subtle: #161519;
-    --border: #28252c;
+    --canvas: #080708;
+    --surface: #121113;
+    --surface-subtle: #171618;
+    --border: #28262b;
     --ink: #f1eff5;
-    --ink-muted: #a19caa;
+    --ink-muted: #a2a0a6;
     --error: #f87171;
-    --type-link: #f87171;
+    --type-link: #5ae9f6;
     --type-prompt: #10b981;
     --type-code: #f97316;
     --brand-accent: var(--primary);
+
+    /* Lighting and elevation tokens (Figma). */
+    --light-1: #ffffff1a;
+    --light-2: #ffffff0f;
+    --shadow-1: #07070880;
+    --shadow-2: #070708;
 
     --code-foreground: #e6edf3;
     --code-background: transparent;
@@ -291,17 +327,23 @@ body {
      force these tokens without touching the rest of the app. */
   color-scheme: dark;
 
-  --canvas: #070708;
-  --surface: #111013;
-  --surface-subtle: #161519;
-  --border: #28252c;
+  --canvas: #080708;
+  --surface: #121113;
+  --surface-subtle: #171618;
+  --border: #28262b;
   --ink: #f1eff5;
-  --ink-muted: #a19caa;
+  --ink-muted: #a2a0a6;
   --error: #f87171;
-  --type-link: #f87171;
+  --type-link: #5ae9f6;
   --type-prompt: #10b981;
   --type-code: #f97316;
   --brand-accent: var(--primary);
+
+  /* Lighting and elevation tokens (Figma). */
+  --light-1: #ffffff1a;
+  --light-2: #ffffff0f;
+  --shadow-1: #07070880;
+  --shadow-2: #070708;
 
   --code-foreground: #e6edf3;
   --code-background: transparent;
@@ -594,10 +636,10 @@ body {
   --reveal-dur: 400ms;
   --reveal-blur: 2px;
   --reveal-ease: ease-in-out;
-  --tabs-text-muted: var(--muted-foreground);
-  --tabs-text-active: var(--foreground);
-  --tabs-bar-bg: #f1f1f1;
-  --tabs-pill-bg: #ffffff;
+  --tabs-text-muted: var(--ink-muted);
+  --tabs-text-active: var(--canvas);
+  --tabs-bar-bg: var(--surface);
+  --tabs-pill-bg: var(--ink);
   --tt-in-dur: 150ms;
   --tt-out-dur: 50ms;
   --tt-scale: 0.98;
@@ -626,8 +668,10 @@ body {
   /* Same system-theme exception as the color block above: a user who never
      picked a theme still gets these on a dark OS, not the light defaults. */
   :root:not(.light) {
-    --tabs-bar-bg: var(--card);
-    --tabs-pill-bg: var(--secondary);
+    --tabs-bar-bg: var(--surface);
+    --tabs-pill-bg: var(--ink);
+    --tabs-text-muted: var(--ink-muted);
+    --tabs-text-active: var(--canvas);
     --tt-bg: var(--foreground);
     --tt-fg: var(--background);
     --glow-opacity: 0.85;
@@ -635,8 +679,10 @@ body {
 }
 
 .dark {
-  --tabs-bar-bg: var(--card);
-  --tabs-pill-bg: var(--secondary);
+  --tabs-bar-bg: var(--surface);
+  --tabs-pill-bg: var(--ink);
+  --tabs-text-muted: var(--ink-muted);
+  --tabs-text-active: var(--canvas);
   --tt-bg: var(--foreground);
   --tt-fg: var(--background);
   --glow-opacity: 0.85;
@@ -856,25 +902,31 @@ body {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 0px;
   padding: 3px;
-  border-radius: 48px;
+  border-radius: 9999px;
   background: var(--tabs-bar-bg);
+  box-shadow: var(--shadow-light);
 }
 .t-tab {
   position: relative;
   appearance: none;
   border: 0;
   background: transparent;
-  height: 30px;
-  padding: 4px 12px;
+  height: 26px;
+  padding: 2px 12px;
   color: var(--tabs-text-muted);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
   cursor: pointer;
-  border-radius: 48px;
+  border-radius: 9999px;
   z-index: 1;
   transition: color var(--motion-base) var(--ease-out-muvuca);
 }
-.t-tab:not([aria-pressed="true"]):hover,
+.t-tab:not([aria-pressed="true"]):hover {
+  color: var(--foreground);
+}
 .t-tab[aria-pressed="true"] {
   color: var(--tabs-text-active);
 }
@@ -882,14 +934,15 @@ body {
   position: absolute;
   top: 3px;
   left: 0;
-  height: 30px;
+  height: 26px;
   width: 0;
   background: var(--tabs-pill-bg);
-  border-radius: 48px;
+  border-radius: 9999px;
+  box-shadow: var(--shadow-light);
   transform: translateX(0);
   /* Exceção documentada a "animar apenas transform e opacity" (DESIGN.md ->
      Motion): a receita `scaleX` + `origin-left` vale para barra de progresso,
-     mas esta pill é um stadium (30px de altura, raio 48px) e escalar em X
+     mas esta pill é um stadium (26px de altura, raio 9999px) e escalar em X
      achata as tampas redondas em elipses a cada quadro. São 4 alvos num
      clique pontual, não um loop -- o custo de layout cabe. */
   transition:

@@ -60,10 +60,11 @@ export function ThemeToggle({ theme }: { theme: Theme }) {
       <DropdownMenuTrigger
         render={
           <Button
-            variant="ghost"
+            variant="secondary"
             size="icon"
             aria-label={`Tema: ${current.label}`}
             pending={isPending}
+            className="border-0 shadow-light"
           />
         }
       >

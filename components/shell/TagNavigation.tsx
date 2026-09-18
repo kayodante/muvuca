@@ -51,7 +51,7 @@ export function TagNavigation({ tags }: { tags: FlatTag[] }) {
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Buscar tags"
             aria-label="Buscar tags por nome"
-            className="pl-9 [&::-webkit-search-cancel-button]:hidden"
+            className="border-0 bg-background pl-9 shadow-light dark:bg-background [&::-webkit-search-cancel-button]:hidden"
           />
         </div>
       </div>
@@ -100,8 +100,10 @@ function TagNavigationRow({
     <li className="t-acc" data-open={open}>
       <div
         className={cn(
-          "flex min-w-0 items-center rounded-md pr-1 focus-within:bg-secondary/60 hover:bg-secondary/60",
-          active && "bg-secondary",
+          "flex h-8 min-w-0 items-center rounded-md pr-1 transition-colors duration-(--motion-fast) ease-out-muvuca",
+          active
+            ? "bg-ink text-surface shadow-light"
+            : "text-muted-foreground focus-within:bg-secondary/60 hover:bg-secondary/60",
         )}
       >
         {/* One 28px guide column per ancestor level, each with a 1px line
@@ -115,7 +117,12 @@ function TagNavigationRow({
             aria-hidden="true"
             className="flex w-7 shrink-0 justify-center self-stretch"
           >
-            <span className="w-px self-stretch bg-border" />
+            <span
+              className={cn(
+                "w-px self-stretch",
+                active ? "bg-surface/20" : "bg-border",
+              )}
+            />
           </span>
         ))}
         {hasChildren ? (
@@ -129,7 +136,12 @@ function TagNavigationRow({
               open ? `Recolher ${node.name}` : `Expandir ${node.name}`
             }
             onClick={() => setExpanded((value) => !value)}
-            className="flex size-7 shrink-0 items-center justify-center rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            className={cn(
+              "flex size-7 shrink-0 items-center justify-center rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+              active
+                ? "text-surface hover:text-surface/80"
+                : "text-muted-foreground hover:text-foreground",
+            )}
           >
             <span className="t-acc-chevron">
               <ChevronDownIcon aria-hidden="true" className="size-3.5" />
@@ -145,9 +157,9 @@ function TagNavigationRow({
             // No ring offset inside the tree: the subtree clips its own
             // overflow while expanding, and an offset ring on the first or
             // last row would be shaved by that clip.
-            "text-label-md flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+            "text-label-md flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
             active
-              ? "font-medium text-foreground"
+              ? "font-medium text-surface"
               : "text-muted-foreground hover:text-foreground",
           )}
         >
