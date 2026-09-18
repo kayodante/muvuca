@@ -42,6 +42,27 @@ updates:
         update-types:
           - minor
           - patch
+    # `@types/node` não é uma dependência como as outras: ele descreve a
+    # superfície de API de um major específico do Node, então a versão certa
+    # dele não é a mais nova -- é a que casa com o runtime. E o runtime aqui
+    # está travado no 24 em quatro lugares: `engines` (`>=24 <25`), os três
+    # `node-version: 24` de ci.yml, o `node:24-slim` das duas etapas do
+    # Dockerfile, e o `nodeVersion: 24.x` do projeto na Vercel -- que é a
+    # produção de verdade e hoje não oferece o 26.
+    #
+    # Por isso o `"@types/node"` do package.json é uma versão exata, sem
+    # caret. Subir o major sozinho não quebra o CI: `tsc` passaria a aceitar
+    # APIs que não existem em produção e o typecheck ficaria verde mentindo.
+    # Foi o que o #23 propunha.
+    #
+    # Minor e patch da linha 24.x continuam entrando pelo grupo acima; só o
+    # major fica de fora. Quando o Node do projeto subir -- o 26 vira LTS em
+    # outubro/2026 e o Node 24 é suportado até perto do fim de 2027, então não
+    # há pressa --, este ignore sai junto e os dois sobem no mesmo PR.
+    ignore:
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
 
   # As actions são pinadas por commit SHA (ARCHITECTURE.md §16), e é
   # justamente esse pin que apodrece sem ninguém perceber: o Dependabot
