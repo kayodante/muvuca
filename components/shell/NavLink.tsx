@@ -6,7 +6,7 @@ import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-export type NavItem = {
+type NavItem = {
   label: string;
   href: string;
   /** Opcional: a row "Todos os itens" do Figma (node 145:908) não tem ícone. */

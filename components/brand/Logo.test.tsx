@@ -2,7 +2,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { Logo, LogoSymbol } from "./Logo";
-import { Wordmark } from "./Wordmark";
 
 describe("Logo Component", () => {
   it("renders full logo with accessible label and SVG viewBox 0 0 279 65", () => {
@@ -38,12 +37,5 @@ describe("Logo Component", () => {
 
     expect(smMarkup).toContain("h-5");
     expect(xlMarkup).toContain("h-12");
-  });
-
-  it("renders Wordmark wrapper component identically to full logo", () => {
-    const wordmarkMarkup = renderToStaticMarkup(<Wordmark size="lg" />);
-    const logoMarkup = renderToStaticMarkup(<Logo variant="full" size="lg" />);
-
-    expect(wordmarkMarkup).toBe(logoMarkup);
   });
 });

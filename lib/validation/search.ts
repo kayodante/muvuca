@@ -12,7 +12,7 @@ export const SEARCH_SORTS = [
 
 export type SearchSort = (typeof SEARCH_SORTS)[number];
 
-export const searchSortSchema = z.enum(SEARCH_SORTS);
+const searchSortSchema = z.enum(SEARCH_SORTS);
 
 const SEARCH_QUERY_MAX_LENGTH = 240;
 
