@@ -5,7 +5,18 @@ import { CopyIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { copyToClipboard } from "@/lib/clipboard";
+
+function copyWithExecCommand(content: string) {
+  const textarea = document.createElement("textarea");
+  textarea.value = content;
+  textarea.readOnly = true;
+  textarea.style.cssText = "position:fixed;opacity:0";
+  document.body.append(textarea);
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  return copied;
+}
 
 export function PromptCopyButton({
   content,
@@ -25,8 +36,11 @@ export function PromptCopyButton({
   async function copyContent() {
     setPending(true);
     try {
-      if (await copyToClipboard(content)) toast.success(successMessage);
-      else toast.error(errorMessage);
+      if (navigator.clipboard) await navigator.clipboard.writeText(content);
+      else if (!copyWithExecCommand(content)) throw new Error("copy failed");
+      toast.success(successMessage);
+    } catch {
+      toast.error(errorMessage);
     } finally {
       setPending(false);
     }

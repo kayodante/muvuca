@@ -245,6 +245,10 @@ describe("ItemCard", () => {
       configurable: true,
       value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
     });
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: vi.fn().mockReturnValue(false),
+    });
 
     const dom = await renderCard(mockPrompt);
     const copyButton = dom.querySelector('button[aria-label="Copiar prompt"]');
@@ -284,6 +288,10 @@ describe("ItemCard", () => {
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
+    });
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: vi.fn().mockReturnValue(false),
     });
 
     const dom = await renderCard(mockLink);
@@ -402,6 +410,10 @@ describe("ItemCard", () => {
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
+    });
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: vi.fn().mockReturnValue(false),
     });
 
     const dom = await renderCard(mockCodeComponent);
