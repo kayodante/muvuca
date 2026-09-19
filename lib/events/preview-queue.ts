@@ -5,15 +5,16 @@
  * every caller is a client component reacting to an already-resolved
  * `ActionResult`.
  */
-type Listener = () => void;
+const CHANGED = "preview-queue-changed";
 
-const listeners = new Set<Listener>();
+const target = new EventTarget();
 
 export function notifyPreviewQueueChanged(): void {
-  for (const listener of listeners) listener();
+  target.dispatchEvent(new Event(CHANGED));
 }
 
-export function subscribePreviewQueueChanged(listener: Listener): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
+export function subscribePreviewQueueChanged(listener: () => void): () => void {
+  const controller = new AbortController();
+  target.addEventListener(CHANGED, listener, { signal: controller.signal });
+  return () => controller.abort();
 }
