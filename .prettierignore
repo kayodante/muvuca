@@ -16,4 +16,5 @@ lib/metadata/__fixtures__/*.html
 # reformatados pelo `pnpm format`.
 .agents/
 .claude/
+.impeccable/
 .repowise/
