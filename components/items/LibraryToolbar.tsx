@@ -150,7 +150,7 @@ function TextSwap({ text }: { text: string }) {
   );
 }
 
-export const SORT_LABELS: Record<SearchSort, string> = {
+const SORT_LABELS: Record<SearchSort, string> = {
   newest: "Mais recentes",
   oldest: "Mais antigos",
   title_asc: "Título A–Z",
@@ -165,7 +165,7 @@ const TYPE_TABS: { value: ItemType | null; label: string }[] = [
   { value: "code_component", label: "Code" },
 ];
 
-export interface LibraryToolbarProps {
+interface LibraryToolbarProps {
   type: ItemType | null;
   sort: SearchSort;
   isPending: boolean;

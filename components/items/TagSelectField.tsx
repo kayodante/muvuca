@@ -14,7 +14,7 @@ import {
 } from "@/lib/tags/tree";
 import type { Tag } from "@/lib/database/queries/tags";
 
-export interface TagSelectFieldProps {
+interface TagSelectFieldProps {
   id?: string;
   name?: string;
   tags: Tag[] | FlatTag[];

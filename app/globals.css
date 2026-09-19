@@ -975,10 +975,6 @@ body {
   pointer-events: none;
 }
 
-.t-tt-wrap {
-  position: relative;
-  display: inline-block;
-}
 .t-tt {
   position: absolute;
   bottom: calc(100% + 8px);
@@ -1000,8 +996,6 @@ body {
     opacity var(--tt-out-dur) var(--tt-out-ease),
     transform var(--tt-out-dur) var(--tt-out-ease);
 }
-.t-tt-wrap:hover .t-tt,
-.t-tt-trigger:focus-visible + .t-tt,
 .t-tt[data-open] {
   opacity: 1;
   transform: translate(-50%, 0) scale(1);
