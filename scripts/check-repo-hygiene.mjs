@@ -141,6 +141,16 @@ const PATH_RULES = [
       /^(\.cursorrules|\.mcp\.json|opencode\.jsonc|skills-lock\.json)$|^repomix-output.*\.xml$/,
     hint: "is local agent/editor configuration",
   },
+  {
+    name: "storybook-material",
+    // The design system is developed here but published nowhere: the
+    // Storybook config, every story, its docs-only components, and the
+    // Geist files that exist solely so stories render with the app's
+    // typefaces (the app itself loads them through next/font/google).
+    pattern:
+      /^\.storybook\/|\.stories\.tsx?$|^components\/(docs|foundations)\/|^public\/fonts\//,
+    hint: "is Storybook/design-system material, which stays private",
+  },
 ];
 
 function listCandidateFiles() {
