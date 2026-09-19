@@ -29,11 +29,11 @@ export function Breadcrumb({
 
   return (
     <nav aria-label="Caminho da tag" className="min-w-0">
-      <ol className="text-body-sm flex min-w-0 flex-wrap items-center gap-1 text-muted-foreground">
+      <ol className="flex min-w-0 flex-wrap items-center gap-1 text-xs text-muted-foreground">
         <li>
           <Link
             href="/tags"
-            className="inline-flex min-h-11 items-center rounded px-0.5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            className="inline-flex h-5 items-center rounded px-0.5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
             Tags
           </Link>
@@ -54,7 +54,7 @@ export function Breadcrumb({
               href={`/tags/${ancestor.id}`}
               title={ancestor.name}
               dir="auto"
-              className="inline-flex min-h-11 max-w-[12rem] items-center truncate rounded px-0.5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:max-w-xs"
+              className="inline-flex h-5 max-w-[12rem] items-center truncate rounded px-0.5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:max-w-xs"
             >
               {ancestor.name}
             </Link>

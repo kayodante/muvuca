@@ -514,7 +514,7 @@ export function ItemCard({
     <article
       aria-busy={isPending || undefined}
       className={cn(
-        "group relative flex min-h-56 flex-col overflow-hidden rounded-xl border border-border bg-card transition-[background-color,border-color,transform,opacity] duration-(--motion-fast) ease-out-muvuca hover:border-foreground/20 hover:bg-secondary/30 motion-safe:hover:-translate-y-px motion-reduce:transition-none",
+        "group relative flex min-h-56 flex-col overflow-hidden rounded-2xl bg-card shadow-light transition-[background-color,box-shadow,transform,opacity] duration-(--motion-fast) ease-out-muvuca hover:bg-secondary/30 motion-safe:hover:-translate-y-px motion-reduce:transition-none",
         morphing && MORPH_CLASS,
         isPending && "pointer-events-none opacity-75",
       )}
@@ -525,7 +525,7 @@ export function ItemCard({
             href={safeHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex flex-1 flex-col rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+            className="flex flex-1 flex-col rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
           >
             <div className="relative">
               <LinkPreviewMedia

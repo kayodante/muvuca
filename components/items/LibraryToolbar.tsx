@@ -288,7 +288,12 @@ export function LibraryToolbar({
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button variant="outline" size="sm" aria-label="Ordenar itens" />
+            <Button
+              variant="outline"
+              size="sm"
+              aria-label="Ordenar itens"
+              className="h-8 rounded-md border-0 bg-background px-3 py-1.5 shadow-light"
+            />
           }
         >
           {SORT_LABELS[sort]}

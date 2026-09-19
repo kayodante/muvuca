@@ -23,6 +23,7 @@ export function AppShell({
   children,
   theme,
   userEmail,
+  userName,
   signOutSlot,
   tags,
   itemsCount,
@@ -30,6 +31,7 @@ export function AppShell({
   children: ReactNode;
   theme: Theme;
   userEmail?: string | null;
+  userName?: string | null;
   signOutSlot: ReactNode;
   tags?: FlatTag[];
   itemsCount?: number;
@@ -41,6 +43,7 @@ export function AppShell({
       tags={tags}
       theme={theme}
       userEmail={userEmail}
+      userName={userName}
       signOutSlot={signOutSlot}
       itemsCount={itemsCount}
     />
@@ -73,6 +76,7 @@ export function AppShell({
               }
               aria-expanded={!collapsed}
               onClick={() => setCollapsed((value) => !value)}
+              className="border-0 shadow-light"
             >
               <PanelLeftIcon aria-hidden="true" />
             </Button>
@@ -91,11 +95,11 @@ export function AppShell({
           aria-hidden="true"
           className="pointer-events-none sticky bottom-0 z-20 -mt-32 h-32"
         >
-          <div className="absolute inset-0 bg-linear-to-t from-background/10 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-background via-background/40 to-transparent" />
           {/* One masked layer standing in for a true progressive blur (which
               needs 4-5 stacked partial-blur layers). Upgrade to stacked
               masked layers if the ramp ever reads visibly wrong. */}
-          <div className="absolute inset-0 [mask-image:linear-gradient(to_top,black_0%,transparent_50%)] backdrop-blur-[8px]" />
+          <div className="absolute inset-0 [mask-image:linear-gradient(to_top,black_0%,transparent_60%)] backdrop-blur-[4px]" />
         </div>
       </div>
     </div>
