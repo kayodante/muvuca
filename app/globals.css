@@ -193,10 +193,15 @@ body {
   --warning: #b45309;
   --error: #b91c1c;
 
-  /* Type badges -- dedicated hues per item type for AA contrast and semantic clarity (Figma). */
-  --type-link: #199ca8;
+  /* Type badges -- dedicated hues per item type for AA contrast and semantic
+     clarity (Figma). `--type-link` and `--type-code` are darkened against the
+     Figma swatches (#199ca8, #d8480d): the badge is 13px at normal weight, so
+     it needs 4.5:1, and the Figma values reached only 2.79:1 and 3.66:1 over
+     `--surface-subtle`. Hue and saturation are unchanged; only lightness moved.
+     Dark mode already cleared 4.5:1 and is untouched. */
+  --type-link: #13757e;
   --type-prompt: #047857;
-  --type-code: #d8480d;
+  --type-code: #bd3f0b;
 
   /* Lighting and elevation tokens (Figma). */
   --light-1: #ffffff;
@@ -209,7 +214,10 @@ body {
      (`createCssVariablesTheme` com `variablePrefix: "--code-"` em
      `lib/code/highlight.ts`); o `--code-background` fica `transparent`
      porque o painel de preview já traz o fundo — mesmo critério dos
-     `--type-*`, que vivem na superfície do card sem fundo próprio. */
+     `--type-*`, que vivem na superfície do card sem fundo próprio. Por isso
+     cada token precisa passar AA contra a superfície clara, e dois deles não
+     passavam: `--code-token-function` (#8250df, 4.27:1) e `--code-token-link`
+     (#3378c4, 3.84:1) foram escurecidos mantendo matiz e saturação. */
   --code-foreground: #1f2328;
   --code-background: transparent;
   --code-token-constant: #0550ae;
@@ -217,10 +225,10 @@ body {
   --code-token-comment: #57606a;
   --code-token-keyword: #cf222e;
   --code-token-parameter: #953800;
-  --code-token-function: #8250df;
+  --code-token-function: #7d49de;
   --code-token-string-expression: #0a3069;
   --code-token-punctuation: #1f2328;
-  --code-token-link: #3378c4;
+  --code-token-link: #2f6cb0;
 
   --background: var(--canvas);
   --foreground: var(--ink);
