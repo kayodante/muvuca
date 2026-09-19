@@ -932,10 +932,24 @@ body {
   z-index: 1;
   transition: color var(--motion-base) var(--ease-out-muvuca);
 }
-.t-tab:not([aria-pressed="true"]):hover {
+.t-tab:not([aria-pressed="true"]):not([aria-selected="true"]):hover {
   color: var(--foreground);
 }
-.t-tab[aria-pressed="true"] {
+/* A cor "sobre pill" depende de a pill estar de fato sob a aba, e as duas
+   coisas eram independentes. Duas consequencias, ambas medidas:
+   1. Dois idiomas ARIA chegam aqui -- grupo de toggle (`aria-pressed`, em
+      LibraryToolbar) e tablist de verdade (`aria-selected`, em
+      LandingGalleryOverview). Sem o segundo seletor a aba ativa do tablist
+      ficava com `--tabs-text-muted` sobre a pill: 3.25:1 no claro, 2.27:1
+      no escuro, contra 4.5:1 do AA.
+   2. A pill nasce com `width: 0` e so e posicionada por JS, entao ate a
+      hidratacao nao ha pill sob a aba. Aplicar a cor clara ali deixa o
+      rotulo sobre a barra, que e o mesmo defeito invertido.
+   Por isso o `[data-ready]`, escrito por `movePill` nos dois componentes
+   junto com a largura: antes dele a aba ativa fica com `--tabs-text-muted`,
+   que passa AA sobre `--surface` (5.88:1 claro, 6.97:1 escuro). */
+.t-tabs-pill[data-ready] ~ .t-tab[aria-pressed="true"],
+.t-tabs-pill[data-ready] ~ .t-tab[aria-selected="true"] {
   color: var(--tabs-text-active);
 }
 .t-tabs-pill {

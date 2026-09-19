@@ -209,6 +209,7 @@ export function LibraryToolbar({
     if (!animate) pill.style.transition = "none";
     pill.style.transform = `translateX(${tab.offsetLeft}px)`;
     pill.style.width = `${tab.offsetWidth}px`;
+    pill.dataset.ready = "true";
     if (!animate) {
       void pill.offsetWidth;
       pill.style.transition = transition;
