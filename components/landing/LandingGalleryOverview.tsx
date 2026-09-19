@@ -39,6 +39,7 @@ export function LandingGalleryOverview() {
       pill.style.transition = "none";
       pill.style.transform = `translateX(${tab.offsetLeft}px)`;
       pill.style.width = `${tab.offsetWidth}px`;
+      pill.dataset.ready = "true";
       void pill.offsetWidth;
       pill.style.transition = previousTransition;
       return;
@@ -46,6 +47,7 @@ export function LandingGalleryOverview() {
 
     pill.style.transform = `translateX(${tab.offsetLeft}px)`;
     pill.style.width = `${tab.offsetWidth}px`;
+    pill.dataset.ready = "true";
   }, []);
 
   useEffect(() => {

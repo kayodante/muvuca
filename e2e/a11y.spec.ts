@@ -106,6 +106,16 @@ test("o tema escuro não tem violações de contraste", async ({ page }) => {
   await page.getByRole("menuitem", { name: "Escuro" }).click();
   await expect(page.locator("html")).toHaveClass(/dark/);
 
+  // A classe em <html> NÃO prova que o menu fechou: ela vem do revalidate da
+  // Server Action, enquanto o fechamento é estado do Base UI, e num runner
+  // lento o segundo chega depois do primeiro. Medir a11y nesse intervalo
+  // varre um menu modal aberto, e os focus guards do Base UI (`aria-hidden`
+  // com `tabindex=0`, ver FocusGuard) acusam `aria-hidden-focus` -- defeito
+  // do instante da medição, não do tema escuro que este teste existe para
+  // cobrir. Confirmado no trace do CI: `role=menu`, `data-popup-open` e
+  // `data-base-ui-inert` presentes no snapshot da falha.
+  await expect(page.getByRole("menu")).toHaveCount(0);
+
   await expectNoViolations(page, "/library no tema escuro");
 });
 
