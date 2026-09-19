@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 
-import { highlightCode, type CodeLine } from "@/lib/code/highlight";
+import {
+  highlightCode,
+  toPlainLines,
+  type CodeLine,
+} from "@/lib/code/highlight";
 import type { CodeLanguage } from "@/lib/code/languages";
 
 /**
@@ -17,16 +21,6 @@ import type { CodeLanguage } from "@/lib/code/languages";
  * `source` mantém as linhas antigas até o novo highlight resolver, já que o
  * estado inicial só roda na montagem.
  */
-function toPlainLines(source: string): CodeLine[] {
-  // Um `\n` final é o fim da última linha, não uma linha a mais — mesma
-  // normalização que o próprio highlightCode faz, senão o estado plaintext
-  // teria uma linha vazia a mais que o estado colorido.
-  return source
-    .replace(/\n$/, "")
-    .split("\n")
-    .map((line) => [{ content: line }]);
-}
-
 export function useHighlightedLines(
   source: string,
   language: CodeLanguage | null,

@@ -74,8 +74,14 @@ function getHighlighter(): Promise<CodeHighlighter> {
   return highlighterPromise;
 }
 
-function toPlainLines(source: string): CodeLine[] {
-  return source.split("\n").map((line) => [{ content: line }]);
+/** As linhas de `source` sem cor, no mesmo formato do caminho colorido.
+ * Um `\n` final é o fim da última linha, não uma linha a mais: sem esse
+ * strip o estado plaintext ganharia uma linha vazia a mais que o colorido. */
+export function toPlainLines(source: string): CodeLine[] {
+  return source
+    .replace(/\n$/, "")
+    .split("\n")
+    .map((line) => [{ content: line }]);
 }
 
 /** Highlights `code` as plain tokens (never HTML — callers render React
@@ -90,10 +96,11 @@ export async function highlightCode(
   code: string,
   language: CodeLanguage | null,
 ): Promise<CodeLine[]> {
-  // Normalize once so highlighted and plain paths agree on line counts.
+  // Normalize once so highlighted and plain paths agree on line counts --
+  // `toPlainLines` applies the same strip, so it takes the raw `code`.
   const source = code.replace(/\n$/, "");
   if (language === null || source === "") {
-    return toPlainLines(source);
+    return toPlainLines(code);
   }
   try {
     const highlighter = await getHighlighter();
@@ -106,6 +113,6 @@ export async function highlightCode(
     );
   } catch {
     // Intentional: highlight is decorative — degrade to plain text.
-    return toPlainLines(source);
+    return toPlainLines(code);
   }
 }
