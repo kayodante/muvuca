@@ -110,21 +110,17 @@ describe("PromptCopyButton", () => {
     );
   });
 
-  it("uses the browser fallback when the Clipboard API is unavailable", async () => {
+  it("shows the error toast when the Clipboard API is unavailable", async () => {
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: undefined,
-    });
-    const execCommand = vi.fn().mockReturnValue(true);
-    Object.defineProperty(document, "execCommand", {
-      configurable: true,
-      value: execCommand,
     });
 
     const button = await renderCopyButton("Fallback content");
     await act(async () => button.click());
 
-    expect(execCommand).toHaveBeenCalledWith("copy");
-    expect(toast.success).toHaveBeenCalledWith("Conteúdo copiado.");
+    expect(toast.error).toHaveBeenCalledWith(
+      "Não foi possível copiar o conteúdo.",
+    );
   });
 });

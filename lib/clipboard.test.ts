@@ -19,39 +19,23 @@ describe("copyToClipboard", () => {
     expect(writeText).toHaveBeenCalledWith("test content");
   });
 
-  it("falls back to execCommand when Clipboard API rejects", async () => {
+  it("returns false when the Clipboard API rejects", async () => {
     const writeText = vi.fn().mockRejectedValue(new Error("denied"));
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: { writeText },
     });
 
-    const execCommand = vi.fn().mockReturnValue(true);
-    Object.defineProperty(document, "execCommand", {
-      configurable: true,
-      value: execCommand,
-    });
-
-    const result = await copyToClipboard("fallback content");
-    expect(result).toBe(true);
-    expect(execCommand).toHaveBeenCalledWith("copy");
+    await expect(copyToClipboard("fallback content")).resolves.toBe(false);
   });
 
-  it("falls back to execCommand when navigator.clipboard is undefined", async () => {
+  it("returns false when navigator.clipboard is undefined", async () => {
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
       value: undefined,
     });
 
-    const execCommand = vi.fn().mockReturnValue(true);
-    Object.defineProperty(document, "execCommand", {
-      configurable: true,
-      value: execCommand,
-    });
-
-    const result = await copyToClipboard("fallback content");
-    expect(result).toBe(true);
-    expect(execCommand).toHaveBeenCalledWith("copy");
+    await expect(copyToClipboard("fallback content")).resolves.toBe(false);
   });
 
   it("hands a pending promise to ClipboardItem instead of awaiting it", async () => {
@@ -104,19 +88,18 @@ describe("copyToClipboard", () => {
     expect(writeText).not.toHaveBeenCalled();
   });
 
-  it("returns false when both methods fail", async () => {
+  it("returns false when the deferred write and writeText both fail", async () => {
+    const write = vi.fn().mockRejectedValue(new Error("refused"));
+    const writeText = vi.fn().mockRejectedValue(new Error("denied"));
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
-      value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
+      value: { write, writeText },
     });
+    vi.stubGlobal("ClipboardItem", vi.fn());
 
-    const execCommand = vi.fn().mockReturnValue(false);
-    Object.defineProperty(document, "execCommand", {
-      configurable: true,
-      value: execCommand,
-    });
-
-    const result = await copyToClipboard("failed content");
-    expect(result).toBe(false);
+    await expect(
+      copyToClipboard(Promise.resolve("failed content")),
+    ).resolves.toBe(false);
+    expect(writeText).toHaveBeenCalledWith("failed content");
   });
 });
