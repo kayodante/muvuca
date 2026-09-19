@@ -42,6 +42,46 @@ updates:
         update-types:
           - minor
           - patch
+    # `@types/node` não é uma dependência como as outras: ele descreve a
+    # superfície de API de um major específico do Node, então a versão certa
+    # dele não é a mais nova -- é a que casa com o runtime. E o runtime aqui
+    # está travado no 24 em quatro lugares: `engines` (`>=24 <25`), os três
+    # `node-version: 24` de ci.yml, o `node:24-slim` das duas etapas do
+    # Dockerfile, e o `nodeVersion: 24.x` do projeto na Vercel -- que é a
+    # produção de verdade e hoje não oferece o 26.
+    #
+    # Por isso o `"@types/node"` do package.json é uma versão exata, sem
+    # caret. Subir o major sozinho não quebra o CI: `tsc` passaria a aceitar
+    # APIs que não existem em produção e o typecheck ficaria verde mentindo.
+    # Foi o que o #23 propunha.
+    #
+    # Minor e patch da linha 24.x continuam entrando pelo grupo acima; só o
+    # major fica de fora. Quando o Node do projeto subir -- o 26 vira LTS em
+    # outubro/2026 e o Node 24 é suportado até perto do fim de 2027, então não
+    # há pressa --, este ignore sai junto e os dois sobem no mesmo PR.
+    #
+    # A 2.117.0 do CLI do `supabase` derruba o job `integration` em
+    # `supabase start`: as 30 migrations aplicam e o CLI morre em
+    # `failed to create seed table: current transaction is aborted
+    # (SQLSTATE 25P02)`. Ela troca as imagens do stack local por baixo do pano
+    # -- postgres 17.6.1.165 -> .167, storage-api 1.70.3 -> 1.72.1,
+    # postgres-meta 0.98 -> 0.99, logflare 1.50.4 -> 1.50.6 -- e alguma delas
+    # é a culpada; isolar qual precisa de `supabase start --debug` com Docker.
+    # Reproduzido em quatro runs, nos PRs #22 e #25, sempre no mesmo passo,
+    # enquanto o main na 2.116.0 sobe o stack e passa pgTAP e E2E.
+    #
+    # O ignore é de UMA versão, não do pacote: a 2.117.0 é a `latest` do npm e
+    # voltaria em todo PR do grupo enquanto fosse, porque o Dependabot
+    # recalcula os grupos a cada push no main. A 2.118.0 (hoje só em beta)
+    # entra normalmente quando sair estável, e é lá que se confirma se o
+    # problema foi corrigido. Se tiver sido, esta entrada some.
+    ignore:
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: supabase
+        versions:
+          - 2.117.0
 
   # As actions são pinadas por commit SHA (ARCHITECTURE.md §16), e é
   # justamente esse pin que apodrece sem ninguém perceber: o Dependabot
