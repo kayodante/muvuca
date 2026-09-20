@@ -58,6 +58,22 @@ jobs:
         run: pnpm typecheck
       - name: Unit tests
         run: pnpm test
+      # `pnpm test` já imprime o resumo de cobertura e falha sozinho quando
+      # um módulo cai abaixo do piso (vitest.config.ts, test.coverage) -- não
+      # há step de gate separado. O lcov sobe como artifact para abrir o
+      # relatório fora do log; `if: always()` porque a execução que falhou o
+      # piso é justamente a que alguém vai querer inspecionar.
+      #
+      # Sem serviço externo (Codecov/Coveralls): é conta de terceiro e um
+      # token a mais num repo de um dev, para substituir um resumo que já
+      # está no log.
+      - name: Upload coverage (lcov)
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+          retention-days: 7
       - name: Format check
         run: pnpm format:check
       - name: Dependency audit
