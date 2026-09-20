@@ -27,9 +27,10 @@ jobs:
     timeout-minutes: 20
     steps:
       # `fetch-depth: 0` porque o gitleaks abaixo varre commits, não a
-      # árvore: com o clone raso padrão ele enxergaria só o último e um
-      # segredo introduzido e removido dentro do mesmo PR passaria batido.
-      # Custo medido neste repo: 98 commits, 2.4 MB, 367 ms de varredura.
+      # árvore, e a range que ele monta começa no pai do primeiro commit
+      # (`<base>^..HEAD`): com o clone raso padrão esse pai não existe
+      # localmente e a varredura não resolve. Custo neste repo: 98 commits,
+      # 2.4 MB.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -130,11 +131,21 @@ jobs:
       # porque os docs do repo citam `service_role` e `sb_secret_` em prosa
       # sem poder falhar o CI.
       #
-      # Falha em achado, não avisa: o histórico completo foi varrido em
-      # 2026-09-19 e os três achados eram a chave publicável do stack local
-      # e o JWT de exemplo do jwt.io, ambos no allowlist de .gitleaks.toml
-      # com o motivo. Não há segredo real pendente para rotacionar, então o
-      # gate pode nascer travando.
+      # Escopo real, conferido no log do runner e não presumido: a action
+      # varre a range de commits do evento (`<base>^..HEAD` no PR), não o
+      # histórico inteiro -- 2 commits neste PR. Isso basta para o buraco
+      # que motiva o step, porque a proteção de `main` exige PR: todo
+      # commit que chega lá passa por uma range varrida, incluindo o par
+      # "introduz segredo / remove segredo" dentro do mesmo PR.
+      #
+      # O que a range NÃO cobre é segredo que já estivesse em `main` antes
+      # deste step existir. Isso foi varrido uma vez, à mão, em 2026-09-19:
+      # 98 commits, 367 ms, três achados, todos benignos -- a chave
+      # publicável do stack local e o JWT de exemplo do jwt.io, ambos no
+      # allowlist de .gitleaks.toml com o motivo. Nenhum segredo real
+      # pendente de rotação, então o gate nasce travando em vez de avisando.
+      # Se algum dia a varredura recorrente do histórico completo passar a
+      # importar, ela é um step próprio, não uma opção desta action.
       #
       # `GITLEAKS_ENABLE_COMMENTS: false` para não precisar de
       # `pull-requests: write`: o job falhando já é o sinal, e um comentário
