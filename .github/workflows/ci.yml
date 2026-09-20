@@ -26,8 +26,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      # `fetch-depth: 0` porque o gitleaks abaixo varre commits, não a
+      # árvore, e a range que ele monta começa no pai do primeiro commit
+      # (`<base>^..HEAD`): com o clone raso padrão esse pai não existe
+      # localmente e a varredura não resolve. Custo neste repo: 98 commits,
+      # 2.4 MB.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -58,6 +65,22 @@ jobs:
         run: pnpm typecheck
       - name: Unit tests
         run: pnpm test
+      # `pnpm test` já imprime o resumo de cobertura e falha sozinho quando
+      # um módulo cai abaixo do piso (vitest.config.ts, test.coverage) -- não
+      # há step de gate separado. O lcov sobe como artifact para abrir o
+      # relatório fora do log; `if: always()` porque a execução que falhou o
+      # piso é justamente a que alguém vai querer inspecionar.
+      #
+      # Sem serviço externo (Codecov/Coveralls): é conta de terceiro e um
+      # token a mais num repo de um dev, para substituir um resumo que já
+      # está no log.
+      - name: Upload coverage (lcov)
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+          retention-days: 7
       - name: Format check
         run: pnpm format:check
       - name: Dependency audit
@@ -96,6 +119,44 @@ jobs:
           fi
       - name: Repository hygiene
         run: pnpm check:hygiene
+      # Complementa a hygiene acima, não substitui: aquele script lê a
+      # árvore rastreada, então um segredo commitado e removido depois
+      # continua em `git log` com o CI verde. Verificado com um
+      # `sb_secret_*`, formato que a hygiene cobre: na árvore ela sai 1, e
+      # depois de removido num commit seguinte ela sai 0 enquanto este step
+      # falha -- a diferença é o histórico, não o formato.
+      #
+      # Também troca as ~10 regras estreitas escritas à mão por ~150
+      # mantidas, com entropia -- as do script precisam ser estreitas
+      # porque os docs do repo citam `service_role` e `sb_secret_` em prosa
+      # sem poder falhar o CI.
+      #
+      # Escopo real, conferido no log do runner e não presumido: a action
+      # varre a range de commits do evento (`<base>^..HEAD` no PR), não o
+      # histórico inteiro -- 2 commits neste PR. Isso basta para o buraco
+      # que motiva o step, porque a proteção de `main` exige PR: todo
+      # commit que chega lá passa por uma range varrida, incluindo o par
+      # "introduz segredo / remove segredo" dentro do mesmo PR.
+      #
+      # O que a range NÃO cobre é segredo que já estivesse em `main` antes
+      # deste step existir. Isso foi varrido uma vez, à mão, em 2026-09-19:
+      # 98 commits, 367 ms, três achados, todos benignos -- a chave
+      # publicável do stack local e o JWT de exemplo do jwt.io, ambos no
+      # allowlist de .gitleaks.toml com o motivo. Nenhum segredo real
+      # pendente de rotação, então o gate nasce travando em vez de avisando.
+      # Se algum dia a varredura recorrente do histórico completo passar a
+      # importar, ela é um step próprio, não uma opção desta action.
+      #
+      # `GITLEAKS_ENABLE_COMMENTS: false` para não precisar de
+      # `pull-requests: write`: o job falhando já é o sinal, e um comentário
+      # não vale ampliar a permissão do token.
+      - name: Scan for secrets (gitleaks)
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+          GITLEAKS_VERSION: 8.30.0
+          GITLEAKS_ENABLE_COMMENTS: false
 
   # Everything that needs a browser, a database or a production build. These
   # were three jobs that each re-downloaded Chromium, re-started Supabase or
