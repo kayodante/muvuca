@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { highlightCode } from "./highlight";
+import { highlightCode, toPlainLines } from "./highlight";
 import type { CodeLanguage } from "./languages";
 
 function joinLine(line: Awaited<ReturnType<typeof highlightCode>>[number]) {
@@ -71,5 +71,18 @@ describe("highlightCode", () => {
     const plain = await highlightCode(code, null);
     expect(highlighted.map(joinLine)).toEqual(["const a = 1"]);
     expect(plain.map(joinLine)).toEqual(highlighted.map(joinLine));
+  });
+});
+
+describe("toPlainLines", () => {
+  it("trata um `\n` final como fim da última linha, não uma linha a mais", () => {
+    expect(toPlainLines("const a = 1\n")).toEqual([
+      [{ content: "const a = 1" }],
+    ]);
+    expect(toPlainLines("a\n\n")).toEqual([
+      [{ content: "a" }],
+      [{ content: "" }],
+    ]);
+    expect(toPlainLines("")).toEqual([[{ content: "" }]]);
   });
 });
