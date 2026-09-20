@@ -26,8 +26,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      # `fetch-depth: 0` porque o gitleaks abaixo varre commits, não a
+      # árvore: com o clone raso padrão ele enxergaria só o último e um
+      # segredo introduzido e removido dentro do mesmo PR passaria batido.
+      # Custo medido neste repo: 98 commits, 2.4 MB, 367 ms de varredura.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -112,6 +118,34 @@ jobs:
           fi
       - name: Repository hygiene
         run: pnpm check:hygiene
+      # Complementa a hygiene acima, não substitui: aquele script lê a
+      # árvore rastreada, então um segredo commitado e removido depois
+      # continua em `git log` com o CI verde. Verificado com um
+      # `sb_secret_*`, formato que a hygiene cobre: na árvore ela sai 1, e
+      # depois de removido num commit seguinte ela sai 0 enquanto este step
+      # falha -- a diferença é o histórico, não o formato.
+      #
+      # Também troca as ~10 regras estreitas escritas à mão por ~150
+      # mantidas, com entropia -- as do script precisam ser estreitas
+      # porque os docs do repo citam `service_role` e `sb_secret_` em prosa
+      # sem poder falhar o CI.
+      #
+      # Falha em achado, não avisa: o histórico completo foi varrido em
+      # 2026-09-19 e os três achados eram a chave publicável do stack local
+      # e o JWT de exemplo do jwt.io, ambos no allowlist de .gitleaks.toml
+      # com o motivo. Não há segredo real pendente para rotacionar, então o
+      # gate pode nascer travando.
+      #
+      # `GITLEAKS_ENABLE_COMMENTS: false` para não precisar de
+      # `pull-requests: write`: o job falhando já é o sinal, e um comentário
+      # não vale ampliar a permissão do token.
+      - name: Scan for secrets (gitleaks)
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml
+          GITLEAKS_VERSION: 8.30.0
+          GITLEAKS_ENABLE_COMMENTS: false
 
   # Everything that needs a browser, a database or a production build. These
   # were three jobs that each re-downloaded Chromium, re-started Supabase or

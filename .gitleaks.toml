@@ -1,0 +1,38 @@
+# Configuração do gitleaks (CI: job `quality` em .github/workflows/ci.yml).
+#
+# Complementa `scripts/check-repo-hygiene.mjs`, não o substitui: a hygiene
+# lê a árvore de trabalho rastreada e cobre vazamento de caminho local e
+# arquivo development-only, que o gitleaks não faz. O gitleaks cobre o que
+# falta -- o histórico, e ~150 regras mantidas com entropia, contra as ~10
+# escritas à mão da hygiene.
+
+[extend]
+useDefault = true
+
+# A chave publicável do stack local do Supabase. `supabase start` imprime
+# este mesmo valor em toda máquina: não identifica projeto, não concede
+# nada além do que o RLS já permite a um anônimo, e está em ci.yml de
+# propósito para o job de integração apontar para o stack local. CLAUDE.md
+# §10 lista `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` como publicável.
+#
+# Sem restrição de caminho porque o valor é público onde quer que apareça
+# -- amarrar a um arquivo só quebraria na primeira vez que alguém o
+# movesse, sem ganhar segurança nenhuma. Uma chave `sb_secret_*` ou
+# `service_role` continua disparando normalmente, aqui e na hygiene.
+[[allowlists]]
+description = "Chave publicável do stack local do Supabase (valor público, idêntico em toda máquina)"
+regexTarget = "line"
+regexes = ['''sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH''']
+
+# O token de exemplo do jwt.io, usado como fixture para provar que
+# `redact()` apaga JWT. Assinado com o segredo de demonstração público
+# ("your-256-bit-secret") e com payload `{"sub":"1234567890"}` -- não é
+# credencial de nada.
+#
+# Este sim é amarrado ao arquivo (`matchCondition = "AND"`): um JWT em
+# qualquer outro lugar do repo deve falhar o CI.
+[[allowlists]]
+description = "JWT de exemplo do jwt.io usado como fixture de redação"
+matchCondition = "AND"
+paths = ['''lib/security/__tests__/logging\.test\.ts''']
+regexes = ['''eyJhbGciOiJIUzI1NiJ9\.eyJzdWIiOiIxMjM0NTY3ODkwIn0\.''']
