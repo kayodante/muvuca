@@ -86,12 +86,10 @@ describe("LibrarySearch", () => {
   });
 
   it("exibe o botão de limpar busca quando há texto digitado e limpa o valor ao clicar", async () => {
-    const animate = vi
-      .spyOn(Element.prototype, "animate")
-      .mockReturnValue({
-        cancel: vi.fn(),
-        onfinish: null,
-      } as unknown as Animation);
+    const animate = vi.spyOn(Element.prototype, "animate").mockReturnValue({
+      cancel: vi.fn(),
+      onfinish: null,
+    } as unknown as Animation);
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
       font: "",
       measureText: (text: string) => ({ width: text.length * 8 }),
