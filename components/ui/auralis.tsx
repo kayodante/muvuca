@@ -1,16 +1,8 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { cn } from "@/lib/utils";
-
-const vertexShaderGLSL = `
-attribute vec2 position;
-varying vec2 vUv;
-void main() {
-  vUv = position * 0.5 + 0.5;
-  gl_Position = vec4(position, 0.0, 1.0);
-}
-`;
+import { ShaderCanvas } from "@/components/ui/shader-canvas";
 
 const fragmentShaderGLSL = `
 precision highp float;
@@ -74,7 +66,7 @@ void main() {
 }
 `;
 
-export interface AuralisProps {
+interface AuralisProps {
   colors?: string[];
   speed?: number;
   grain?: number;
@@ -91,6 +83,25 @@ export interface AuralisProps {
  */
 const DEFAULT_MUVUCA_COLORS = ["#a3e635", "#65a30d", "#111013"];
 
+const hexToRgb = (hex: string): [number, number, number] => {
+  let h = hex.replace("#", "");
+  if (h.length === 3) {
+    h = h
+      .split("")
+      .map((c) => c + c)
+      .join("");
+  }
+  const num = parseInt(h, 16);
+  if (Number.isNaN(num)) {
+    return [0, 0, 0];
+  }
+  return [
+    ((num >> 16) & 255) / 255,
+    ((num >> 8) & 255) / 255,
+    (num & 255) / 255,
+  ];
+};
+
 const Auralis = ({
   colors = DEFAULT_MUVUCA_COLORS,
   speed = 0.3,
@@ -99,124 +110,21 @@ const Auralis = ({
   className,
   children,
 }: AuralisProps) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  const hexToRgb = (hex: string): [number, number, number] => {
-    let h = hex.replace("#", "");
-    if (h.length === 3) {
-      h = h
-        .split("")
-        .map((c) => c + c)
-        .join("");
-    }
-    const num = parseInt(h, 16);
-    if (Number.isNaN(num)) {
-      return [0, 0, 0];
-    }
-    return [
-      ((num >> 16) & 255) / 255,
-      ((num >> 8) & 255) / 255,
-      (num & 255) / 255,
-    ];
-  };
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container) return;
-
-    const gl = canvas.getContext("webgl", { antialias: true });
-    if (!gl) return;
-
-    const createShader = (type: number, src: string) => {
-      const s = gl.createShader(type);
-      if (!s) return null;
-      gl.shaderSource(s, src);
-      gl.compileShader(s);
-      return s;
-    };
-
-    const vertShader = createShader(gl.VERTEX_SHADER, vertexShaderGLSL);
-    const fragShader = createShader(gl.FRAGMENT_SHADER, fragmentShaderGLSL);
-    if (!vertShader || !fragShader) return;
-
-    const program = gl.createProgram();
-    if (!program) return;
-
-    gl.attachShader(program, vertShader);
-    gl.attachShader(program, fragShader);
-    gl.linkProgram(program);
-    gl.useProgram(program);
-
-    const buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
-      gl.STATIC_DRAW,
-    );
-
-    const pos = gl.getAttribLocation(program, "position");
-    gl.enableVertexAttribArray(pos);
-    gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
-
-    const locs = {
-      res: gl.getUniformLocation(program, "u_resolution"),
-      time: gl.getUniformLocation(program, "u_time"),
-      grain: gl.getUniformLocation(program, "u_grain"),
-      colors: gl.getUniformLocation(program, "u_colors"),
-    };
-
-    const resize = () => {
-      if (!container || !canvas) return;
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      const width = container.clientWidth || window.innerWidth;
-      const height = container.clientHeight || window.innerHeight;
-      canvas.width = Math.max(1, width * dpr);
-      canvas.height = Math.max(1, height * dpr);
-      gl.viewport(0, 0, canvas.width, canvas.height);
-    };
-
-    resize();
-
-    const ro = new ResizeObserver(resize);
-    ro.observe(container);
-
-    let raf: number;
-    const render = (t: number) => {
-      if (!canvas) return;
-      gl.uniform2f(locs.res, canvas.width, canvas.height);
-      gl.uniform1f(locs.time, t * 0.001 * speed);
-      gl.uniform1f(locs.grain, grain);
-
-      const palette = [...colors, ...DEFAULT_MUVUCA_COLORS].slice(0, 3);
-      const flat = new Float32Array(palette.flatMap(hexToRgb));
-      gl.uniform3fv(locs.colors, flat);
-
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      raf = requestAnimationFrame(render);
-    };
-
-    raf = requestAnimationFrame(render);
-    return () => {
-      ro.disconnect();
-      cancelAnimationFrame(raf);
-      gl.deleteBuffer(buffer);
-      gl.deleteShader(vertShader);
-      gl.deleteShader(fragShader);
-      gl.deleteProgram(program);
-    };
-  }, [colors, speed, grain]);
+  const palette = [...colors, ...DEFAULT_MUVUCA_COLORS].slice(0, 3);
 
   return (
     <div
-      ref={containerRef}
       style={{ height }}
       className={cn("relative w-full overflow-hidden bg-[#070708]", className)}
     >
-      <canvas
-        ref={canvasRef}
+      <ShaderCanvas
+        fragment={fragmentShaderGLSL}
+        speed={speed}
+        maxDpr={1.5}
+        uniforms={{
+          u_grain: grain,
+          u_colors: palette.flatMap(hexToRgb),
+        }}
         className="pointer-events-none absolute inset-0 h-full w-full"
       />
       {children && (

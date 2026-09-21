@@ -1,25 +1,18 @@
-import { useRef, useEffect } from "react";
-import { Renderer, Program, Mesh, Triangle, Vec2 } from "ogl";
-import "./DarkVeil.css";
-
-const vertex = `
-attribute vec2 position;
-void main(){gl_Position=vec4(position,0.0,1.0);}
-`;
+import { ShaderCanvas } from "@/components/ui/shader-canvas";
 
 const fragment = `
 #ifdef GL_ES
 precision lowp float;
 #endif
-uniform vec2 uResolution;
-uniform float uTime;
+uniform vec2 u_resolution;
+uniform float u_time;
 uniform float uHueShift;
 uniform float uNoise;
 uniform float uScan;
 uniform float uScanFreq;
 uniform float uWarp;
-#define iTime uTime
-#define iResolution uResolution
+#define iTime u_time
+#define iResolution u_resolution
 
 vec4 buf[8];
 float rand(vec2 c){return fract(sin(dot(c,vec2(12.9898,78.233)))*43758.5453);}
@@ -58,10 +51,10 @@ vec4 cppn_fn(vec2 coordinate,float in0,float in1,float in2){
 }
 
 void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-    vec2 uv = (fragCoord - 0.5 * uResolution.xy) / min(uResolution.x, uResolution.y) * 1.15;
+    vec2 uv = (fragCoord - 0.5 * u_resolution.xy) / min(u_resolution.x, u_resolution.y) * 1.15;
     uv.y *= -1.0;
-    uv += uWarp * vec2(sin(uv.y * 6.283 + uTime * 0.5), cos(uv.x * 6.283 + uTime * 0.5)) * 0.05;
-    fragColor = cppn_fn(uv, 0.1 * sin(0.3 * uTime), 0.1 * sin(0.69 * uTime), 0.1 * sin(0.44 * uTime));
+    uv += uWarp * vec2(sin(uv.y * 6.283 + u_time * 0.5), cos(uv.x * 6.283 + u_time * 0.5)) * 0.05;
+    fragColor = cppn_fn(uv, 0.1 * sin(0.3 * u_time), 0.1 * sin(0.69 * u_time), 0.1 * sin(0.44 * u_time));
 }
 
 void main() {
@@ -72,12 +65,12 @@ void main() {
     col.rgb = pow(col.rgb, vec3(0.85));
     float scanline_val = sin(gl_FragCoord.y * uScanFreq) * 0.5 + 0.5;
     col.rgb *= 1.0 - (scanline_val * scanline_val) * uScan;
-    col.rgb += (rand(gl_FragCoord.xy + uTime) - 0.5) * uNoise;
+    col.rgb += (rand(gl_FragCoord.xy + u_time) - 0.5) * uNoise;
     gl_FragColor = vec4(clamp(col.rgb, 0.0, 1.0), 1.0);
 }
 `;
 
-export interface DarkVeilProps {
+interface DarkVeilProps {
   hueShift?: number;
   noiseIntensity?: number;
   scanlineIntensity?: number;
@@ -96,105 +89,19 @@ export default function DarkVeil({
   warpAmount = 0,
   resolutionScale = 1,
 }: DarkVeilProps) {
-  const ref = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-    const parent = canvas.parentElement;
-    if (!parent) return;
-
-    const renderer = new Renderer({
-      dpr: Math.min(window.devicePixelRatio, 2),
-      canvas,
-    });
-
-    const gl = renderer.gl;
-    const geometry = new Triangle(gl);
-
-    const program = new Program(gl, {
-      vertex,
-      fragment,
-      uniforms: {
-        uTime: { value: 0 },
-        uResolution: { value: new Vec2() },
-        uHueShift: { value: hueShift },
-        uNoise: { value: noiseIntensity },
-        uScan: { value: scanlineIntensity },
-        uScanFreq: { value: scanlineFrequency },
-        uWarp: { value: warpAmount },
-      },
-    });
-
-    const mesh = new Mesh(gl, { geometry, program });
-
-    // Respect prefers-reduced-motion: render one static frame instead of
-    // looping requestAnimationFrame forever.
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-
-    const resize = () => {
-      const w = parent.clientWidth || window.innerWidth;
-      const h = parent.clientHeight || window.innerHeight;
-      if (w === 0 || h === 0) return;
-      renderer.setSize(w * resolutionScale, h * resolutionScale);
-      program.uniforms.uResolution.value.set(w, h);
-      // ogl's setSize also writes an inline CSS size onto the canvas — it must
-      // stay full-bleed regardless of resolutionScale, only the drawing buffer
-      // (the GPU work) should shrink.
-      canvas.style.width = "100%";
-      canvas.style.height = "100%";
-      // Under reduced motion the rAF loop never runs, so resize() is the only
-      // place a fresh frame gets painted — without this the veil goes black
-      // on any resize (window resize, orientation change, mobile URL bar).
-      if (reduceMotion) renderer.render({ scene: mesh });
-    };
-
-    const ro =
-      typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(() => resize())
-        : null;
-    if (ro) ro.observe(parent);
-
-    window.addEventListener("resize", resize);
-    resize();
-
-    const start = performance.now();
-    let frame = 0;
-
-    const loop = () => {
-      program.uniforms.uTime.value =
-        ((performance.now() - start) / 1000) * speed;
-      program.uniforms.uHueShift.value = hueShift;
-      program.uniforms.uNoise.value = noiseIntensity;
-      program.uniforms.uScan.value = scanlineIntensity;
-      program.uniforms.uScanFreq.value = scanlineFrequency;
-      program.uniforms.uWarp.value = warpAmount;
-      renderer.render({ scene: mesh });
-      frame = requestAnimationFrame(loop);
-    };
-
-    if (reduceMotion) {
-      renderer.render({ scene: mesh });
-    } else {
-      loop();
-    }
-
-    return () => {
-      cancelAnimationFrame(frame);
-      window.removeEventListener("resize", resize);
-      ro?.disconnect();
-    };
-  }, [
-    hueShift,
-    noiseIntensity,
-    scanlineIntensity,
-    speed,
-    scanlineFrequency,
-    warpAmount,
-    resolutionScale,
-  ]);
-
-  return <canvas ref={ref} className="darkveil-canvas" />;
+  return (
+    <ShaderCanvas
+      fragment={fragment}
+      speed={speed}
+      resolutionScale={resolutionScale}
+      uniforms={{
+        uHueShift: hueShift,
+        uNoise: noiseIntensity,
+        uScan: scanlineIntensity,
+        uScanFreq: scanlineFrequency,
+        uWarp: warpAmount,
+      }}
+      className="absolute inset-0 block h-full w-full"
+    />
+  );
 }
