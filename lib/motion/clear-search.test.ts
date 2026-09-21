@@ -10,16 +10,24 @@ import { animateSearchClear } from "./clear-search";
  */
 type Recorded = { keyframes: Keyframe[]; options: KeyframeAnimationOptions };
 
+Element.prototype.animate = (() => {
+  throw new Error("Element.animate stub was called without a spy in place");
+}) as unknown as Element["animate"];
+
 function installAnimate() {
   const calls: Recorded[] = [];
-  Element.prototype.animate = vi.fn(function (
+  // A spy rather than a bare assignment: `vi.restoreAllMocks()` undoes it.
+  vi.spyOn(Element.prototype, "animate").mockImplementation(function (
     this: Element,
-    keyframes: Keyframe[],
-    options: KeyframeAnimationOptions,
+    keyframes?: Keyframe[] | PropertyIndexedKeyframes | null,
+    options?: number | KeyframeAnimationOptions,
   ) {
-    calls.push({ keyframes, options });
+    calls.push({
+      keyframes: (keyframes ?? []) as Keyframe[],
+      options: (options ?? {}) as KeyframeAnimationOptions,
+    });
     return { cancel: vi.fn(), onfinish: null } as unknown as Animation;
-  }) as unknown as Element["animate"];
+  });
   return calls;
 }
 

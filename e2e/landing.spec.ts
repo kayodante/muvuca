@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 /**
  * A revelação de entrada (`.t-stagger-line`) parte de `opacity: 0` e depende do
@@ -54,14 +54,17 @@ test.describe("landing com prefers-reduced-motion", () => {
  * Animations API, então o teste lê de volta o que o motor de animação recebeu.
  */
 test.describe("clear da busca do landing", () => {
+  const searchDemo = (page: Page) =>
+    page
+      .locator(".t-clear")
+      .filter({ has: page.getByLabel("Demonstração interativa de busca") });
+
   test("anima com a curva do token, não com o fallback linear", async ({
     page,
   }) => {
     await page.goto("/");
 
-    const demo = page
-      .locator(".t-clear")
-      .filter({ has: page.getByLabel("Demonstração interativa de busca") });
+    const demo = searchDemo(page);
     await demo.getByRole("button", { name: "Limpar busca" }).click();
 
     const easings = await demo.locator(".t-clear-mirror").evaluate((element) =>
@@ -84,5 +87,35 @@ test.describe("clear da busca do landing", () => {
       (value.match(/[-\d.]+/g) ?? []).map(Number);
     expect(token).toContain(" ");
     expect(easings.map(numbers)).toContainEqual(numbers(token));
+  });
+
+  test("com prefers-reduced-motion não cria animação nenhuma", async ({
+    page,
+  }) => {
+    // `test.use({ reducedMotion })` não propaga nesta versão do Playwright, e
+    // o teste passaria sem nunca ter emulado nada. A preferência só vale como
+    // premissa depois de ser lida de volta de dentro do browser.
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+    await expect(
+      page.evaluate(
+        () => matchMedia("(prefers-reduced-motion: reduce)").matches,
+      ),
+    ).resolves.toBe(true);
+
+    const demo = searchDemo(page);
+    await demo.getByRole("button", { name: "Limpar busca" }).click();
+
+    // O clear continua acontecendo -- o que some é o movimento. `.t-clear-mirror`
+    // não tem `transition` em `globals.css`, então qualquer animação aqui só
+    // pode ter vindo da Web Animations API.
+    await expect(
+      page.getByLabel("Demonstração interativa de busca"),
+    ).toHaveValue("");
+    await expect(
+      demo
+        .locator(".t-clear-mirror")
+        .evaluate((element) => element.getAnimations().length),
+    ).resolves.toBe(0);
   });
 });

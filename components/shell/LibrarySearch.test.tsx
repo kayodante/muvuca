@@ -13,6 +13,15 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => searchParamsState.current,
 }));
 
+/**
+ * jsdom implements no Web Animations API. The no-op below only exists so the
+ * property is there to spy on -- `vi.restoreAllMocks()` puts this back between
+ * tests, which a bare assignment to the prototype would not.
+ */
+Element.prototype.animate = (() => {
+  throw new Error("Element.animate stub was called without a spy in place");
+}) as unknown as Element["animate"];
+
 const { LibrarySearch } = await import("./LibrarySearch");
 
 let root: Root | null = null;
@@ -77,12 +86,12 @@ describe("LibrarySearch", () => {
   });
 
   it("exibe o botão de limpar busca quando há texto digitado e limpa o valor ao clicar", async () => {
-    // jsdom implements no Web Animations API, so the clear moment gets a
-    // stub and the test asserts that it was handed to the browser at all.
-    const animate = vi.fn(
-      () => ({ cancel: vi.fn(), onfinish: null }) as unknown as Animation,
-    );
-    Element.prototype.animate = animate as unknown as Element["animate"];
+    const animate = vi
+      .spyOn(Element.prototype, "animate")
+      .mockReturnValue({
+        cancel: vi.fn(),
+        onfinish: null,
+      } as unknown as Animation);
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
       font: "",
       measureText: (text: string) => ({ width: text.length * 8 }),
