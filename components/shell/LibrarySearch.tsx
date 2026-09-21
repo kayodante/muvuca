@@ -11,6 +11,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SearchIcon, XIcon } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import {
+  animateSearchClear,
+  type ClearSearchAnimation,
+} from "@/lib/motion/clear-search";
 
 const emptySubscribe = () => () => {};
 
@@ -19,32 +23,6 @@ function cssNumber(name: string, fallback: number) {
     getComputedStyle(document.documentElement).getPropertyValue(name),
   );
   return Number.isFinite(value) ? value : fallback;
-}
-
-function cubicBezier(value: string) {
-  const match = value.match(
-    /cubic-bezier\(\s*([-\d.]+)\s*,\s*([-\d.]+)\s*,\s*([-\d.]+)\s*,\s*([-\d.]+)\s*\)/,
-  );
-  if (!match) return (time: number) => time;
-  const [x1 = 0, y1 = 0, x2 = 1, y2 = 1] = match.slice(1).map(Number);
-  const cx = 3 * x1;
-  const bx = 3 * (x2 - x1) - cx;
-  const ax = 1 - cx - bx;
-  const cy = 3 * y1;
-  const by = 3 * (y2 - y1) - cy;
-  const ay = 1 - cy - by;
-  return (time: number) => {
-    if (time <= 0) return 0;
-    if (time >= 1) return 1;
-    let sample = time;
-    for (let index = 0; index < 8; index += 1) {
-      const delta = ((ax * sample + bx) * sample + cx) * sample - time;
-      const derivative = (3 * ax * sample + 2 * bx) * sample + cx;
-      if (Math.abs(delta) < 0.000001 || derivative === 0) break;
-      sample -= delta / derivative;
-    }
-    return ((ay * sample + by) * sample + cy) * sample;
-  };
 }
 
 function getShortcutLabel() {
@@ -69,7 +47,7 @@ export function LibrarySearch() {
   const mirrorRef = useRef<HTMLDivElement>(null);
   const placeholderRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
-  const clearFrameRef = useRef<number | null>(null);
+  const clearAnimationRef = useRef<ClearSearchAnimation | null>(null);
   const skipDebouncedClearRef = useRef(false);
   const [isClearing, setIsClearing] = useState(false);
   const shortcutLabel = useSyncExternalStore(
@@ -101,9 +79,7 @@ export function LibrarySearch() {
 
   useEffect(
     () => () => {
-      if (clearFrameRef.current !== null) {
-        cancelAnimationFrame(clearFrameRef.current);
-      }
+      clearAnimationRef.current?.cancel();
     },
     [],
   );
@@ -156,18 +132,8 @@ export function LibrarySearch() {
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    const total = cssNumber("--clear-dur", 1000);
-    const outDuration = cssNumber("--clear-out-dur", 400);
-    const inDuration = cssNumber("--clear-in-dur", 400);
-    const outFly = cssNumber("--clear-out-fly", 12);
     const inFly = cssNumber("--clear-in-fly", 12);
     const blur = cssNumber("--clear-blur", 2);
-    const glowDelay = cssNumber("--glow-delay", 50);
-    const glowPeak = cssNumber("--glow-peak-at", 0.15);
-    const glowOpacity = cssNumber("--glow-opacity", 0.42);
-    const rootStyle = getComputedStyle(document.documentElement);
-    const easeOut = cubicBezier(rootStyle.getPropertyValue("--clear-out-ease"));
-    const easeIn = cubicBezier(rootStyle.getPropertyValue("--clear-in-ease"));
 
     activeMirror.textContent = capturedText.replace(/ /g, "\u00a0");
     const context = document.createElement("canvas").getContext("2d");
@@ -212,45 +178,24 @@ export function LibrarySearch() {
     activePlaceholder.style.transform = `translateY(-${inFly}px)`;
     activePlaceholder.style.opacity = "0.9";
     activePlaceholder.style.filter = `blur(${blur}px)`;
-    const started = performance.now();
-
-    function tick(now: number) {
-      const elapsed = now - started;
-      const outProgress = easeOut(Math.min(1, elapsed / outDuration));
-      activeMirror.style.transform = `translateY(${(outProgress * outFly).toFixed(1)}px)`;
-      activeMirror.style.opacity = (1 - outProgress).toFixed(3);
-      activeMirror.style.filter = `blur(${(outProgress * blur).toFixed(1)}px)`;
-      const inProgress = easeIn(Math.min(1, elapsed / inDuration));
-      activePlaceholder.style.transform = `translateY(${(-inFly + inProgress * inFly).toFixed(1)}px)`;
-      activePlaceholder.style.opacity = (0.9 + inProgress * 0.1).toFixed(3);
-      activePlaceholder.style.filter = `blur(${(blur - inProgress * blur).toFixed(1)}px)`;
-      const glowProgress =
-        elapsed <= glowDelay
-          ? 0
-          : Math.min(1, (elapsed - glowDelay) / Math.max(1, total - glowDelay));
-      const envelope =
-        glowProgress < glowPeak
-          ? glowProgress / glowPeak
-          : 1 - (glowProgress - glowPeak) / (1 - glowPeak);
-      activeGlow.style.opacity = (envelope * glowOpacity).toFixed(3);
-
-      if (elapsed < total) {
-        clearFrameRef.current = requestAnimationFrame(tick);
-        return;
-      }
+    const animation = animateSearchClear({
+      mirror: activeMirror,
+      placeholder: activePlaceholder,
+      glow: activeGlow,
+    });
+    clearAnimationRef.current = animation;
+    void animation.finished.then(() => {
+      clearAnimationRef.current = null;
       setIsClearing(false);
       activeMirror.style.cssText = "";
       activePlaceholder.style.cssText = "";
       activeMirror.textContent = "";
       activeGlow.style.opacity = "0";
       activeGlow.style.background = "";
-      clearFrameRef.current = null;
       if (keepFocus) {
         requestAnimationFrame(() => activeInput.focus({ preventScroll: true }));
       }
-    }
-
-    tick(started);
+    });
   }
 
   return (

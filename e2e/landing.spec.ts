@@ -46,3 +46,43 @@ test.describe("landing com prefers-reduced-motion", () => {
     ).toHaveCSS("opacity", "1");
   });
 });
+
+/**
+ * A animação de clear da busca lia o token `--clear-out-ease` com uma regex
+ * própria, e a cópia do landing rejeitava os espaços com que o token é escrito
+ * -- caía em linear sem erro nenhum. Agora a curva vai direto para a Web
+ * Animations API, então o teste lê de volta o que o motor de animação recebeu.
+ */
+test.describe("clear da busca do landing", () => {
+  test("anima com a curva do token, não com o fallback linear", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const demo = page
+      .locator(".t-clear")
+      .filter({ has: page.getByLabel("Demonstração interativa de busca") });
+    await demo.getByRole("button", { name: "Limpar busca" }).click();
+
+    const easings = await demo.locator(".t-clear-mirror").evaluate((element) =>
+      element.getAnimations().map((animation) => {
+        const timing = animation.effect?.getTiming();
+        return typeof timing?.easing === "string" ? timing.easing : "";
+      }),
+    );
+
+    const token = await page.evaluate(() =>
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--clear-out-ease")
+        .trim(),
+    );
+
+    // Comparação numérica: o token sai do minificador como `.22` e a WAAPI
+    // devolve `0.22` -- mesma curva, serialização diferente. O espaço depois
+    // da vírgula é o detalhe que derrubava a regex antiga, então fica asserido.
+    const numbers = (value: string) =>
+      (value.match(/[-\d.]+/g) ?? []).map(Number);
+    expect(token).toContain(" ");
+    expect(easings.map(numbers)).toContainEqual(numbers(token));
+  });
+});
