@@ -364,6 +364,69 @@ body {
   --code-token-string-expression: #a5d6ff;
   --code-token-punctuation: #c9d1d9;
   --code-token-link: #66a3ff;
+
+  /* Semantic tokens re-derived here, not just the primitives above: they
+     are `var()` references resolved per-element, and the `:root` block
+     that defines them only matches the document root. On a `.dark`
+     subtree that isn't `:root` (the landing page), the primitives above
+     do flip, but without this block the semantics would keep resolving
+     to the inherited light values from `:root` -- `--background` stuck
+     light while `--canvas` reads dark on the same element. */
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --secondary: var(--surface-subtle);
+  --secondary-foreground: var(--ink);
+  --muted: var(--surface-subtle);
+  --muted-foreground: var(--ink-muted);
+  --accent: var(--surface-subtle);
+  --accent-foreground: var(--ink);
+  --destructive: var(--error);
+  --input: var(--border);
+  --ring: var(--focus);
+
+  /* Same trap one layer up: Tailwind's `@theme` block (top of this file)
+     generates `--color-foreground: var(--foreground)` etc. so utilities
+     like `text-foreground`/`bg-card` exist, but Tailwind always emits
+     that mapping under `:root, :host` only. A non-root `.dark` subtree
+     never gets its own `--color-*` declaration, so it inherits the
+     alias's value already resolved (light) at the real `:root`, no
+     matter what `--foreground` is redeclared to above. Re-pointing the
+     aliases here, on the same element as the tokens above, is what
+     actually makes `text-foreground`/`bg-card`/etc. render dark on a
+     `.dark` subtree. */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-border: var(--border);
+  --color-brand-accent: var(--brand-accent);
+  --color-type-link: var(--type-link);
+  --color-type-prompt: var(--type-prompt);
+  --color-type-code: var(--type-code);
+  --color-light-1: var(--light-1);
+  --color-light-2: var(--light-2);
+  --color-shadow-1: var(--shadow-1);
+  --color-shadow-2: var(--shadow-2);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-subtle: var(--surface-subtle);
 }
 
 @layer base {

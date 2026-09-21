@@ -119,3 +119,53 @@ test.describe("clear da busca do landing", () => {
     ).resolves.toBe(0);
   });
 });
+
+/**
+ * A landing é dark-only: `app/page.tsx` força `className="dark"` na div
+ * raiz, independente da preferência do SO. Isso só funciona porque
+ * `app/globals.css` redeclara os tokens semânticos (`--background`,
+ * `--foreground`, ...) e os aliases do Tailwind (`--color-background`,
+ * `--color-foreground`, ...) dentro do próprio bloco `.dark` -- custom
+ * property resolve `var()` no elemento que a declara, e uma subárvore
+ * `.dark` fora de `:root` herdaria o valor claro já computado se esses
+ * aliases só existissem em `:root`. Quem adicionar um token novo e
+ * esquecer de espelhar no bloco `.dark` quebra a landing em silêncio, e só
+ * sob preferência clara do SO -- este teste existe para pegar esse caso.
+ */
+test.describe("landing ignora prefers-color-scheme claro do SO", () => {
+  test("mantém fundo escuro e texto claro mesmo com o SO em modo claro", async ({
+    page,
+  }) => {
+    // `test.use({ colorScheme })` seria o caminho óbvio, mas o resto deste
+    // arquivo já documenta que opções de `test.use` podem ser ignoradas
+    // silenciosamente nesta versão do Playwright. `emulateMedia` mais a
+    // leitura de volta é o padrão que o describe de reduced-motion acima
+    // usa, e é o único que prova que a emulação pegou de verdade.
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.goto("/");
+
+    await expect(
+      page.evaluate(() => matchMedia("(prefers-color-scheme: dark)").matches),
+    ).resolves.toBe(false);
+
+    // Luminância relativa (sRGB, sem correção de gama -- suficiente para
+    // distinguir "escuro" de "claro" por larga margem) a partir do
+    // `rgb(...)` computado. Comparar por luminância, não por string de cor
+    // exata, para não quebrar quando alguém só ajustar o hex de um token.
+    const relativeLuminance = (rgb: string) => {
+      const [r = 0, g = 0, b = 0] = (rgb.match(/[\d.]+/g) ?? []).map(Number);
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+
+    const backgroundColor = await page
+      .locator("div.dark")
+      .first()
+      .evaluate((element) => getComputedStyle(element).backgroundColor);
+    const headlineColor = await page
+      .getByRole("heading", { level: 1 })
+      .evaluate((element) => getComputedStyle(element).color);
+
+    expect(relativeLuminance(backgroundColor)).toBeLessThan(64);
+    expect(relativeLuminance(headlineColor)).toBeGreaterThan(160);
+  });
+});
