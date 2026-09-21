@@ -57,16 +57,23 @@ export default defineConfig({
       // repo de um dev, e a contagem de branch do v8 oscila com mudança de
       // forma do código sem que a cobertura real mude. Subir qualquer um
       // destes pisos é trabalho separado.
-      thresholds: {
-        "lib/backup/**": { lines: 89 }, // medido 91.78
-        "lib/bookmarks/**": { lines: 89 }, // medido 91.12
-        "lib/code/**": { lines: 88 }, // medido 90.47
-        "lib/database/queries/**": { lines: 78 }, // medido 80.95
-        "lib/metadata/**": { lines: 96 }, // medido 98.39
-        "lib/security/**": { lines: 94 }, // medido 96.15
-        "lib/tags/**": { lines: 98 }, // medido 100
-        "lib/validation/**": { lines: 96 }, // medido 98.97
-      },
+      //
+      // Só sob `CI`: o vitest avalia o piso contra o que rodou naquela
+      // execução, então `vitest run <um-arquivo>` reprovaria todo módulo que
+      // o arquivo não toca. O resumo continua imprimindo localmente; para
+      // reproduzir o gate antes do push, `CI=1 pnpm test`.
+      thresholds: process.env.CI
+        ? {
+            "lib/backup/**": { lines: 89 }, // medido 91.78
+            "lib/bookmarks/**": { lines: 89 }, // medido 91.12
+            "lib/code/**": { lines: 88 }, // medido 90.47
+            "lib/database/queries/**": { lines: 78 }, // medido 80.95
+            "lib/metadata/**": { lines: 96 }, // medido 98.39
+            "lib/security/**": { lines: 94 }, // medido 96.15
+            "lib/tags/**": { lines: 98 }, // medido 100
+            "lib/validation/**": { lines: 96 }, // medido 98.97
+          }
+        : undefined,
     },
   },
 });
