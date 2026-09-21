@@ -104,7 +104,7 @@ describe("createClient (lib/supabase/server.ts)", () => {
   });
 
   it("silencia erro em setAll quando chamado em Server Component sem permissão de escrita", async () => {
-    cookieStoreMock.set.mockImplementation(() => {
+    cookieStoreMock.set.mockImplementationOnce(() => {
       throw new Error(
         "Cookies can only be modified in a Server Action or Route Handler",
       );
