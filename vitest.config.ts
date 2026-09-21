@@ -37,16 +37,23 @@ export default defineConfig({
       // e caro -- trust boundary, os controles da ADR-015, o parser que
       // recebe arquivo de terceiro, a allowlist de sort/filter.
       include: [
+        "lib/actions/**/*.{ts,tsx}",
+        "lib/auth/**/*.{ts,tsx}",
         "lib/backup/**/*.{ts,tsx}",
         "lib/bookmarks/**/*.{ts,tsx}",
         "lib/code/**/*.{ts,tsx}",
         "lib/database/queries/**/*.{ts,tsx}",
         "lib/metadata/**/*.{ts,tsx}",
         "lib/security/**/*.{ts,tsx}",
+        "lib/supabase/**/*.{ts,tsx}",
         "lib/tags/**/*.{ts,tsx}",
         "lib/validation/**/*.{ts,tsx}",
       ],
-      exclude: ["**/*.test.{ts,tsx}", "**/__tests__/**"],
+      exclude: [
+        "**/*.test.{ts,tsx}",
+        "**/__tests__/**",
+        "lib/supabase/client.ts",
+      ],
       // Pisos medidos em 2026-09-19, não aspiracionais: cada um é a
       // cobertura real do módulo naquele dia, arredondada ~2 pontos para
       // baixo. Um threshold global de 80% inventado só produz um gate
@@ -64,12 +71,15 @@ export default defineConfig({
       // reproduzir o gate antes do push, `CI=1 pnpm test`.
       thresholds: process.env.CI
         ? {
+            "lib/actions/**": { lines: 84 }, // medido 86.87
+            "lib/auth/**": { lines: 98 }, // medido 100
             "lib/backup/**": { lines: 89 }, // medido 91.78
             "lib/bookmarks/**": { lines: 89 }, // medido 91.12
             "lib/code/**": { lines: 88 }, // medido 90.47
             "lib/database/queries/**": { lines: 78 }, // medido 80.95
             "lib/metadata/**": { lines: 96 }, // medido 98.39
             "lib/security/**": { lines: 94 }, // medido 96.15
+            "lib/supabase/**": { lines: 98 }, // medido 100
             "lib/tags/**": { lines: 98 }, // medido 100
             "lib/validation/**": { lines: 96 }, // medido 98.97
           }
