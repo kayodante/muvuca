@@ -13,6 +13,15 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => searchParamsState.current,
 }));
 
+/**
+ * jsdom implements no Web Animations API. The no-op below only exists so the
+ * property is there to spy on -- `vi.restoreAllMocks()` puts this back between
+ * tests, which a bare assignment to the prototype would not.
+ */
+Element.prototype.animate = (() => {
+  throw new Error("Element.animate stub was called without a spy in place");
+}) as unknown as Element["animate"];
+
 const { LibrarySearch } = await import("./LibrarySearch");
 
 let root: Root | null = null;
@@ -77,12 +86,10 @@ describe("LibrarySearch", () => {
   });
 
   it("exibe o botão de limpar busca quando há texto digitado e limpa o valor ao clicar", async () => {
-    const frames: FrameRequestCallback[] = [];
-    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
-      frames.push(callback);
-      return frames.length;
-    });
-    vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+    const animate = vi.spyOn(Element.prototype, "animate").mockReturnValue({
+      cancel: vi.fn(),
+      onfinish: null,
+    } as unknown as Animation);
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
       font: "",
       measureText: (text: string) => ({ width: text.length * 8 }),
@@ -123,7 +130,7 @@ describe("LibrarySearch", () => {
     expect(
       (clear?.querySelector(".t-clear-glow") as HTMLElement).style.background,
     ).toContain("255, 255, 255");
-    expect(frames.length).toBeGreaterThan(0);
+    expect(animate).toHaveBeenCalledTimes(3);
     expect(focusSpy).toHaveBeenCalled();
     expect(replaceMock).toHaveBeenCalledWith("/items", { scroll: false });
     expect(replaceMock).toHaveBeenCalledTimes(1);

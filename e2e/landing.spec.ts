@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 /**
  * A revelação de entrada (`.t-stagger-line`) parte de `opacity: 0` e depende do
@@ -44,5 +44,78 @@ test.describe("landing com prefers-reduced-motion", () => {
     await expect(
       page.getByRole("heading", { name: HEADLINE_ABAIXO_DA_DOBRA }),
     ).toHaveCSS("opacity", "1");
+  });
+});
+
+/**
+ * A animação de clear da busca lia o token `--clear-out-ease` com uma regex
+ * própria, e a cópia do landing rejeitava os espaços com que o token é escrito
+ * -- caía em linear sem erro nenhum. Agora a curva vai direto para a Web
+ * Animations API, então o teste lê de volta o que o motor de animação recebeu.
+ */
+test.describe("clear da busca do landing", () => {
+  const searchDemo = (page: Page) =>
+    page
+      .locator(".t-clear")
+      .filter({ has: page.getByLabel("Demonstração interativa de busca") });
+
+  test("anima com a curva do token, não com o fallback linear", async ({
+    page,
+  }) => {
+    await page.goto("/");
+
+    const demo = searchDemo(page);
+    await demo.getByRole("button", { name: "Limpar busca" }).click();
+
+    const easings = await demo.locator(".t-clear-mirror").evaluate((element) =>
+      element.getAnimations().map((animation) => {
+        const timing = animation.effect?.getTiming();
+        return typeof timing?.easing === "string" ? timing.easing : "";
+      }),
+    );
+
+    const token = await page.evaluate(() =>
+      getComputedStyle(document.documentElement)
+        .getPropertyValue("--clear-out-ease")
+        .trim(),
+    );
+
+    // Comparação numérica: o token sai do minificador como `.22` e a WAAPI
+    // devolve `0.22` -- mesma curva, serialização diferente. O espaço depois
+    // da vírgula é o detalhe que derrubava a regex antiga, então fica asserido.
+    const numbers = (value: string) =>
+      (value.match(/[-\d.]+/g) ?? []).map(Number);
+    expect(token).toContain(" ");
+    expect(easings.map(numbers)).toContainEqual(numbers(token));
+  });
+
+  test("com prefers-reduced-motion não cria animação nenhuma", async ({
+    page,
+  }) => {
+    // `test.use({ reducedMotion })` não propaga nesta versão do Playwright, e
+    // o teste passaria sem nunca ter emulado nada. A preferência só vale como
+    // premissa depois de ser lida de volta de dentro do browser.
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+    await expect(
+      page.evaluate(
+        () => matchMedia("(prefers-reduced-motion: reduce)").matches,
+      ),
+    ).resolves.toBe(true);
+
+    const demo = searchDemo(page);
+    await demo.getByRole("button", { name: "Limpar busca" }).click();
+
+    // O clear continua acontecendo -- o que some é o movimento. `.t-clear-mirror`
+    // não tem `transition` em `globals.css`, então qualquer animação aqui só
+    // pode ter vindo da Web Animations API.
+    await expect(
+      page.getByLabel("Demonstração interativa de busca"),
+    ).toHaveValue("");
+    await expect(
+      demo
+        .locator(".t-clear-mirror")
+        .evaluate((element) => element.getAnimations().length),
+    ).resolves.toBe(0);
   });
 });

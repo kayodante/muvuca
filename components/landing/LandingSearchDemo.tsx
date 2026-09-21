@@ -17,39 +17,13 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { cn } from "@/lib/utils";
+import {
+  animateSearchClear,
+  type ClearSearchAnimation,
+} from "@/lib/motion/clear-search";
 
 interface LandingSearchDemoProps {
   onOpenCommandPalette?: () => void;
-}
-
-function cubicBezier(value: string): (progress: number) => number {
-  const match = value.match(
-    /cubic-bezier\(([-\d.]+),([\-\d.]+),([\-\d.]+),([\-\d.]+)\)/,
-  );
-  if (!match) return (progress) => progress;
-
-  const [x1 = 0, y1 = 0, x2 = 1, y2 = 1] = match.slice(1).map(Number);
-  const cx = 3 * x1;
-  const bx = 3 * (x2 - x1) - cx;
-  const ax = 1 - cx - bx;
-  const cy = 3 * y1;
-  const by = 3 * (y2 - y1) - cy;
-  const ay = 1 - cy - by;
-
-  return (progress) => {
-    if (progress <= 0) return 0;
-    if (progress >= 1) return 1;
-
-    let sample = progress;
-    for (let index = 0; index < 8; index += 1) {
-      const delta = ((ax * sample + bx) * sample + cx) * sample - progress;
-      const slope = (3 * ax * sample + 2 * bx) * sample + cx;
-      if (Math.abs(delta) < 0.000001 || slope === 0) break;
-      sample -= delta / slope;
-    }
-
-    return ((ay * sample + by) * sample + cy) * sample;
-  };
 }
 
 export function LandingSearchDemo({
@@ -64,7 +38,7 @@ export function LandingSearchDemo({
   const mirrorRef = useRef<HTMLDivElement>(null);
   const placeholderRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
-  const clearFrameRef = useRef<number | null>(null);
+  const clearAnimationRef = useRef<ClearSearchAnimation | null>(null);
   const clearingRef = useRef(false);
 
   const quickQueries = ["design", "prompt", "frontend", "linear", "tailwind"];
@@ -83,9 +57,7 @@ export function LandingSearchDemo({
 
   useEffect(() => {
     return () => {
-      if (clearFrameRef.current !== null) {
-        window.cancelAnimationFrame(clearFrameRef.current);
-      }
+      clearAnimationRef.current?.cancel();
     };
   }, []);
 
@@ -124,20 +96,9 @@ export function LandingSearchDemo({
       const value = Number.parseFloat(rootStyles.getPropertyValue(name));
       return Number.isFinite(value) ? value : fallback;
     };
-    const total = numberVariable("--clear-dur", 1000);
-    const outDuration = numberVariable("--clear-out-dur", 400);
-    const inDuration = numberVariable("--clear-in-dur", 400);
-    const outFly = numberVariable("--clear-out-fly", 12);
     const inFly = numberVariable("--clear-in-fly", 12);
     const blur = numberVariable("--clear-blur", 2);
-    const glowDelay = numberVariable("--glow-delay", 50);
-    const glowPeakAt = numberVariable("--glow-peak-at", 0.15);
-    const glowOpacity = numberVariable("--glow-opacity", 0.42);
     const glowSpread = numberVariable("--glow-spread", 1.5);
-    const easeOut = cubicBezier(
-      rootStyles.getPropertyValue("--clear-out-ease"),
-    );
-    const easeIn = cubicBezier(rootStyles.getPropertyValue("--clear-in-ease"));
     const context = document.createElement("canvas").getContext("2d");
 
     const buildGlow = (text: string) => {
@@ -187,37 +148,10 @@ export function LandingSearchDemo({
     placeholder.style.opacity = "0.9";
     placeholder.style.filter = `blur(${blur}px)`;
 
-    const startedAt = performance.now();
-    const tick = (now: number) => {
-      const elapsed = now - startedAt;
-      const outProgress = easeOut(Math.min(1, elapsed / outDuration));
-      const inProgress = easeIn(Math.min(1, elapsed / inDuration));
-      mirror.style.transform = `translateY(${(outProgress * outFly).toFixed(1)}px)`;
-      mirror.style.opacity = (1 - outProgress).toFixed(3);
-      mirror.style.filter = `blur(${(outProgress * blur).toFixed(1)}px)`;
-      placeholder.style.transform = `translateY(${(-inFly + inProgress * inFly).toFixed(1)}px)`;
-      placeholder.style.opacity = (0.9 + inProgress * 0.1).toFixed(3);
-      placeholder.style.filter = `blur(${(blur - inProgress * blur).toFixed(1)}px)`;
-
-      let glowProgress = 0;
-      if (elapsed > glowDelay) {
-        const progress = Math.min(
-          1,
-          (elapsed - glowDelay) / Math.max(1, total - glowDelay),
-        );
-        glowProgress =
-          progress < glowPeakAt
-            ? progress / glowPeakAt
-            : 1 - (progress - glowPeakAt) / (1 - glowPeakAt);
-      }
-      glow.style.opacity = (glowProgress * glowOpacity).toFixed(3);
-
-      if (elapsed < total) {
-        clearFrameRef.current = window.requestAnimationFrame(tick);
-        return;
-      }
-
-      clearFrameRef.current = null;
+    const animation = animateSearchClear({ mirror, placeholder, glow });
+    clearAnimationRef.current = animation;
+    void animation.finished.then(() => {
+      clearAnimationRef.current = null;
       clearingRef.current = false;
       setIsClearing(false);
       setMirroredQuery("");
@@ -230,9 +164,7 @@ export function LandingSearchDemo({
           input.focus({ preventScroll: true }),
         );
       }
-    };
-
-    clearFrameRef.current = window.requestAnimationFrame(tick);
+    });
   }
 
   async function handleCopy(item: DemoItem) {
