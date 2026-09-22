@@ -1,7 +1,6 @@
 "use client";
 
 import { useId, useState, useTransition } from "react";
-import { toast } from "sonner";
 
 import { resetAccount } from "@/lib/actions/account";
 import {
@@ -17,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toastSuccess } from "@/components/states/Toast";
 
 const CONFIRM_PHRASE = "APAGAR";
 
@@ -45,7 +45,7 @@ export function ResetAccountCard() {
         setError(result.message);
         return;
       }
-      toast.success("Sua conta foi zerada.");
+      toastSuccess("Sua conta foi zerada.");
       close(false);
     });
   }

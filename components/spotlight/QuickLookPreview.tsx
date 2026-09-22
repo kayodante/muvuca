@@ -10,7 +10,6 @@ import {
   FileTextIcon,
   Code2Icon,
 } from "lucide-react";
-import { toast } from "sonner";
 
 import type { LibraryItemSummary } from "@/lib/database/queries/items";
 import type { FlatTag } from "@/lib/tags/tree";
@@ -23,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { useHighlightedLines } from "@/components/items/useHighlightedLines";
 import { LinkPreviewMedia } from "@/components/items/LinkPreviewMedia";
 import { cn } from "@/lib/utils";
+import { toastError, toastSuccess } from "@/components/states/Toast";
 
 export function QuickLookPreview({
   item,
@@ -53,10 +53,10 @@ export function QuickLookPreview({
     const ok = await copyToClipboard(textToCopy);
     if (ok) {
       setCopied(true);
-      toast.success(`${label} copiado para a área de transferência.`);
+      toastSuccess(`${label} copiado para a área de transferência.`);
       setTimeout(() => setCopied(false), 2000);
     } else {
-      toast.error("Não foi possível copiar.");
+      toastError("Não foi possível copiar.");
     }
   }
 
@@ -78,10 +78,10 @@ export function QuickLookPreview({
     const ok = await copyToClipboard(fullContentPromise);
     if (ok) {
       setCopied(true);
-      toast.success(`${label} copiado para a área de transferência.`);
+      toastSuccess(`${label} copiado para a área de transferência.`);
       setTimeout(() => setCopied(false), 2000);
     } else {
-      toast.error("Não foi possível copiar.");
+      toastError("Não foi possível copiar.");
     }
   }
 
@@ -227,7 +227,7 @@ export function QuickLookPreview({
                   window.open(safeUrl, "_blank", "noopener,noreferrer");
                   onClose();
                 } else {
-                  toast.error("URL inválida ou insegura.");
+                  toastError("URL inválida ou insegura.");
                 }
               }}
             >

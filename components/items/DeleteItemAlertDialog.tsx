@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
-import { toast } from "sonner";
 import type { LibraryItemSummary } from "@/lib/database/queries/items";
 import { deleteItem } from "@/lib/actions/items";
 import {
@@ -14,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { toastSuccess } from "@/components/states/Toast";
 
 export function DeleteItemAlertDialog({
   item,
@@ -26,7 +26,7 @@ export function DeleteItemAlertDialog({
 
   useEffect(() => {
     if (state?.ok) {
-      toast.success("Item excluído.");
+      toastSuccess("Item excluído.");
       onOpenChange(false);
     }
     // `onOpenChange` may be inline and change identity with parent renders.

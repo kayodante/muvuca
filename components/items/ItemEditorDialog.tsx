@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useCallback, useEffect, useState } from "react";
-import { toast } from "sonner";
 import { CodeXmlIcon, FileTextIcon, LinkIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -33,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { toastSuccess } from "@/components/states/Toast";
 import { TagSelectField } from "./TagSelectField";
 
 export type EditorTarget =
@@ -154,7 +154,7 @@ export function ItemEditorDialog({
 
   useEffect(() => {
     if (state?.ok) {
-      toast.success(editing ? "Item atualizado." : "Item criado.");
+      toastSuccess(editing ? "Item atualizado." : "Item criado.");
       // Creating a link, or editing one's URL, can (re-)enqueue a
       // link_previews job server-side (trigger). Wake a drain session
       // that already found the queue empty and stopped.

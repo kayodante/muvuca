@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { useActionState } from "react";
-import { toast } from "sonner";
 import { CheckIcon } from "lucide-react";
 
 import { createTag, updateTag } from "@/lib/actions/tags";
@@ -34,6 +33,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { toastSuccess } from "@/components/states/Toast";
 
 export type TagEditorTarget =
   { mode: "create"; parentId: string | null } | { mode: "edit"; tag: FlatTag };
@@ -79,7 +79,7 @@ export function TagEditor({
 
   useEffect(() => {
     if (state?.ok) {
-      toast.success(mode === "edit" ? "Tag atualizada." : "Tag criada.");
+      toastSuccess(mode === "edit" ? "Tag atualizada." : "Tag criada.");
       onOpenChange(false);
       onSaved?.();
     }

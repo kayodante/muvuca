@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { FileJsonIcon, Loader2Icon } from "lucide-react";
-import { toast } from "sonner";
 
 import {
   importLibraryBackup,
@@ -20,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { toastSuccess } from "@/components/states/Toast";
 
 type Preview = { file: BackupFile; skipped: number };
 
@@ -108,7 +108,7 @@ export function ImportBackupDialog({
     }
 
     setResult(response.data);
-    toast.success("Backup restaurado.");
+    toastSuccess("Backup restaurado.");
   }
 
   return (

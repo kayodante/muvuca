@@ -2,10 +2,10 @@
 
 import { useTransition } from "react";
 import { FileCodeIcon, FileTextIcon } from "lucide-react";
-import { toast } from "sonner";
 import { exportUserLibrary } from "@/lib/actions/export";
 import { formatAsNetscapeBookmarks } from "@/lib/export/formatter";
 import { Button } from "@/components/ui/button";
+import { toastError, toastSuccess } from "@/components/states/Toast";
 
 export function ExportLibraryCard() {
   const [isPending, startTransition] = useTransition();
@@ -30,7 +30,7 @@ export function ExportLibraryCard() {
     startTransition(async () => {
       const result = await exportUserLibrary();
       if (!result.ok) {
-        toast.error(result.message);
+        toastError(result.message);
         return;
       }
       const today = new Date().toISOString().split("T")[0];
@@ -41,7 +41,7 @@ export function ExportLibraryCard() {
           `muvuca-backup-${today}.json`,
           "application/json",
         );
-        toast.success("Backup JSON exportado com sucesso.");
+        toastSuccess("Backup JSON exportado com sucesso.");
       } else {
         const htmlString = formatAsNetscapeBookmarks(result.data);
         triggerDownload(
@@ -49,7 +49,7 @@ export function ExportLibraryCard() {
           `muvuca-bookmarks-${today}.html`,
           "text/html",
         );
-        toast.success("Favoritos HTML exportados com sucesso.");
+        toastSuccess("Favoritos HTML exportados com sucesso.");
       }
     });
   }

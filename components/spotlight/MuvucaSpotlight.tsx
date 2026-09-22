@@ -28,7 +28,6 @@ import {
   EyeIcon,
   Loader2Icon,
 } from "lucide-react";
-import { toast } from "sonner";
 
 import type { LibraryItemSummary } from "@/lib/database/queries/items";
 import type { FlatTag } from "@/lib/tags/tree";
@@ -45,6 +44,7 @@ import { setTheme } from "@/lib/actions/theme";
 import { useSpotlight } from "./SpotlightContext";
 import { QuickLookPreview } from "./QuickLookPreview";
 import { cn } from "@/lib/utils";
+import { toastError, toastSuccess } from "@/components/states/Toast";
 
 type QuickAction = {
   id: string;
@@ -337,7 +337,7 @@ export function MuvucaSpotlight({
           const next = isDark ? "light" : "dark";
           void setTheme(next).then((res) => {
             if (res.ok) {
-              toast.success(
+              toastSuccess(
                 `Tema alterado para ${next === "dark" ? "escuro" : "claro"}.`,
               );
             }
@@ -409,7 +409,7 @@ export function MuvucaSpotlight({
         window.open(safeUrl, "_blank", "noopener,noreferrer");
         onOpenChange(false);
       } else {
-        toast.error("URL inválida ou insegura.");
+        toastError("URL inválida ou insegura.");
       }
     } else if (item.type === "prompt" || item.type === "code_component") {
       const fallback = item.contentPreview ?? "";
@@ -425,14 +425,14 @@ export function MuvucaSpotlight({
       const ok = await copyToClipboard(fullContentPromise);
       if (ok) {
         setCopiedId(item.id);
-        toast.success(
+        toastSuccess(
           item.type === "prompt"
             ? "Prompt copiado para a área de transferência."
             : "Código copiado para a área de transferência.",
         );
         setTimeout(() => setCopiedId(null), 2000);
       } else {
-        toast.error("Não foi possível copiar o conteúdo.");
+        toastError("Não foi possível copiar o conteúdo.");
       }
     }
   }

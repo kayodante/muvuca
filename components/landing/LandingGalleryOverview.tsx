@@ -11,10 +11,10 @@ import {
   CheckIcon,
 } from "lucide-react";
 import { copyToClipboard } from "@/lib/clipboard";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
+import { toastSuccess } from "@/components/states/Toast";
 
 const FILTER_TABS = [
   { id: "all", label: "Todos" },
@@ -79,7 +79,7 @@ export function LandingGalleryOverview() {
     const ok = await copyToClipboard(item.contentPreview);
     if (ok) {
       setCopiedId(item.id);
-      toast.success("Prompt copiado.");
+      toastSuccess("Prompt copiado.");
       setTimeout(() => setCopiedId(null), 2000);
     }
   }
