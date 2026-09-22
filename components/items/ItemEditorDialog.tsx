@@ -202,7 +202,11 @@ export function ItemEditorDialog({
                       value={itemType}
                       checked={isChecked}
                       onChange={() => setType(itemType)}
-                      className="sr-only"
+                      className="peer sr-only"
+                    />
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-0 rounded-lg ring-offset-background peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2"
                     />
                     <Icon
                       aria-hidden="true"

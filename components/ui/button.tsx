@@ -86,8 +86,8 @@ function Button({
           <MatrixLoader
             variant="orbit"
             rounded
+            aria-hidden="true"
             className="absolute size-4 text-current"
-            aria-label={ariaLabel ?? pendingLabel}
           />
         ) : (
           <Loader2Icon

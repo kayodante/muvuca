@@ -53,8 +53,19 @@ describe("MatrixLoader", () => {
     );
     const matrix = dom.querySelector('.t-matrix[data-variant="scan"]');
     expect(matrix).not.toBeNull();
+    expect(matrix?.getAttribute("aria-hidden")).toBe("true");
+    expect(matrix?.getAttribute("role")).toBeNull();
     const gaps = dom.querySelectorAll(".t-matrix i.is-gap");
     expect(gaps).toHaveLength(0);
+  });
+
+  it("applies --matrix-cycle CSS custom property when cycle is provided", async () => {
+    const dom = await renderComponent(
+      <MatrixLoader cycle={800} aria-label="Custom cycle" />,
+    );
+    const matrix = dom.querySelector<HTMLElement>(".t-matrix");
+    expect(matrix).not.toBeNull();
+    expect(matrix?.style.getPropertyValue("--matrix-cycle")).toBe("800ms");
   });
 });
 
@@ -93,5 +104,7 @@ describe("Button with pendingIndicator", () => {
     expect(button).not.toBeNull();
     const matrix = button?.querySelector(".t-matrix");
     expect(matrix).not.toBeNull();
+    expect(matrix?.getAttribute("aria-hidden")).toBe("true");
+    expect(matrix?.getAttribute("role")).toBeNull();
   });
 });

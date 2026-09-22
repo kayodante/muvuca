@@ -28,17 +28,29 @@ export function MatrixLoader({
   rounded = true,
   cycle = DEFAULT_CYCLE,
   className,
+  style,
   "aria-label": ariaLabel,
   ...props
 }: MatrixLoaderProps) {
+  const isAriaHidden = props["aria-hidden"] ?? (!ariaLabel || undefined);
+  const resolvedRole = isAriaHidden
+    ? undefined
+    : (props.role ?? (ariaLabel ? "status" : undefined));
+
   return (
     <span
-      role="status"
+      role={resolvedRole}
       aria-label={ariaLabel}
-      aria-hidden={!ariaLabel || undefined}
+      aria-hidden={isAriaHidden}
       data-variant={variant}
       data-rounded={rounded ? "true" : undefined}
       className={cn("t-matrix inline-grid shrink-0", className)}
+      style={
+        {
+          "--matrix-cycle": `${cycle}ms`,
+          ...style,
+        } as React.CSSProperties
+      }
       {...props}
     >
       {Array.from({ length: 16 }, (_, idx) => {
