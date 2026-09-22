@@ -193,7 +193,7 @@ export function TagEditor({
                 <label
                   key={token}
                   title={TAG_COLOR_LABELS[token]}
-                  className="relative flex cursor-pointer items-center justify-center"
+                  className="group relative flex cursor-pointer items-center justify-center p-0.5"
                 >
                   <input
                     type="radio"
@@ -205,7 +205,7 @@ export function TagEditor({
                   <span
                     aria-hidden="true"
                     className={cn(
-                      "size-7 rounded-full ring-offset-background transition-[box-shadow] duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none",
+                      "size-7 rounded-full ring-offset-background transition-[box-shadow,transform] duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none group-hover:scale-110 active:scale-90 peer-checked:scale-105 motion-reduce:group-hover:scale-100 motion-reduce:active:scale-100 motion-reduce:peer-checked:scale-100",
                       "peer-checked:ring-2 peer-checked:ring-foreground peer-checked:ring-offset-2",
                       "peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2",
                       TAG_SWATCH_CLASS[token],
@@ -214,7 +214,7 @@ export function TagEditor({
                   <CheckIcon
                     aria-hidden="true"
                     strokeWidth={3}
-                    className="pointer-events-none absolute size-4 text-white opacity-0 drop-shadow-[0_1px_1px_rgb(0_0_0/0.55)] peer-checked:opacity-100"
+                    className="pointer-events-none absolute size-4 text-white opacity-0 scale-75 transition-[opacity,transform] duration-(--motion-fast) ease-out-muvuca drop-shadow-[0_1px_1px_rgb(0_0_0/0.55)] peer-checked:opacity-100 peer-checked:scale-100 motion-reduce:transition-none"
                   />
                   <span className="sr-only">{TAG_COLOR_LABELS[token]}</span>
                 </label>

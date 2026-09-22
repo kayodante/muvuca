@@ -4,10 +4,10 @@ import { cn } from "@/lib/utils";
 /** Mirrors the filters and sort toolbar geometry during route transitions. */
 export function LibraryToolbarSkeleton() {
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3">
-      <Skeleton className="h-8 w-36 rounded-md" />
+    <div className="flex flex-wrap items-center gap-3">
+      <Skeleton className="h-8 w-48 rounded-md" />
+      <Skeleton className="h-8 w-64 rounded-lg" />
       <Skeleton className="h-8 w-32 rounded-md" />
-      <Skeleton className="h-8 w-40 rounded-md" />
     </div>
   );
 }
@@ -38,7 +38,7 @@ export function LibraryGridSkeleton() {
               "--skeleton-delay": `${(index % 4) * 90}ms`,
             } as React.CSSProperties
           }
-          className="min-h-56 overflow-hidden rounded-xl border border-border"
+          className="min-h-56 overflow-hidden rounded-2xl bg-card shadow-light"
         >
           <Skeleton
             className={cn("aspect-[365/172] w-full rounded-none", DELAYED)}

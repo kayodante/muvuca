@@ -13,6 +13,7 @@ import {
   type FlatTag,
 } from "@/lib/tags/tree";
 import type { Tag } from "@/lib/database/queries/tags";
+import { ShimmerText } from "@/components/ui/shimmer-text";
 
 interface TagSelectFieldProps {
   id?: string;
@@ -257,7 +258,7 @@ export function TagSelectField({
           }
         >
           {tags.length === 0
-            ? emptyLabel
+            ? (emptyLabel.startsWith("Carregando") ? <ShimmerText text={emptyLabel} /> : emptyLabel)
             : selectedIds.length === 0
               ? placeholder
               : `${selectedIds.length} tag${

@@ -137,7 +137,7 @@ function TagNavigationRow({
             }
             onClick={() => setExpanded((value) => !value)}
             className={cn(
-              "flex size-7 shrink-0 items-center justify-center rounded-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+              "flex size-7 shrink-0 items-center justify-center rounded-md active:scale-90 transition-[transform,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none motion-reduce:active:scale-100",
               active
                 ? "text-surface hover:text-surface/80"
                 : "text-muted-foreground hover:text-foreground",
@@ -157,7 +157,7 @@ function TagNavigationRow({
             // No ring offset inside the tree: the subtree clips its own
             // overflow while expanding, and an offset ring on the first or
             // last row would be shaved by that clip.
-            "text-label-md flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+            "group/taglink text-label-md flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 active:scale-[0.98] transition-[transform,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none motion-reduce:active:scale-100",
             active
               ? "font-medium text-surface"
               : "text-muted-foreground hover:text-foreground",
@@ -166,7 +166,7 @@ function TagNavigationRow({
           <span
             aria-hidden="true"
             className={cn(
-              "size-2 shrink-0 rounded-full",
+              "size-2 shrink-0 rounded-full transition-transform duration-(--motion-fast) ease-out-muvuca group-hover/taglink:scale-125 motion-reduce:transition-none motion-reduce:group-hover/taglink:scale-100",
               swatchClassFor(node.colorToken),
             )}
           />

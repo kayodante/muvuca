@@ -117,7 +117,7 @@ function TagTreeRow({
           href={`/tags/${node.id}`}
           aria-current={isActive || undefined}
           className={cn(
-            "text-label-md flex min-w-0 flex-1 items-center gap-2 rounded px-1.5 py-1 transition-colors duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+            "group/tagitem text-label-md flex min-w-0 flex-1 items-center gap-2 rounded px-1.5 py-1 active:scale-[0.98] transition-[transform,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none motion-reduce:active:scale-100",
             isActive
               ? "font-medium text-foreground"
               : "text-muted-foreground hover:text-foreground",
@@ -126,7 +126,7 @@ function TagTreeRow({
           <span
             aria-hidden="true"
             className={cn(
-              "size-2 shrink-0 rounded-full",
+              "size-2 shrink-0 rounded-full transition-transform duration-(--motion-fast) ease-out-muvuca group-hover/tagitem:scale-125 motion-reduce:transition-none motion-reduce:group-hover/tagitem:scale-100",
               swatchClassFor(node.colorToken),
             )}
           />
@@ -141,7 +141,7 @@ function TagTreeRow({
               <Button
                 variant="ghost"
                 size="icon-sm"
-                className="shrink-0 opacity-100 transition-opacity duration-(--motion-fast) ease-out-muvuca focus-visible:opacity-100 sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100"
+                className="shrink-0 opacity-100 active:scale-90 transition-[opacity,transform] duration-(--motion-fast) ease-out-muvuca focus-visible:opacity-100 motion-reduce:active:scale-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100"
               />
             }
           >

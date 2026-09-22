@@ -1,6 +1,6 @@
 "use client";
 
-import type { CodeLanguage } from "@/lib/code/languages";
+import { CODE_LANGUAGE_LABELS, type CodeLanguage } from "@/lib/code/languages";
 
 import { useHighlightedLines } from "./useHighlightedLines";
 
@@ -38,6 +38,14 @@ export function CodeSnippetPreview({
 
   return (
     <div className="relative overflow-hidden rounded-md bg-secondary p-3">
+      {language && (
+        <span
+          aria-hidden="true"
+          className="text-metadata absolute top-2 right-2 rounded border border-border/60 bg-card/80 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground select-none"
+        >
+          {CODE_LANGUAGE_LABELS[language] ?? language}
+        </span>
+      )}
       <div
         className="text-body-sm font-mono leading-6"
         style={{ color: "var(--code-foreground)" }}

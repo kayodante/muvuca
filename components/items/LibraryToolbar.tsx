@@ -12,6 +12,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { MatrixLoader } from "@/components/ui/matrix-loader";
+import { ShimmerText } from "@/components/ui/shimmer-text";
 
 /** How long the "Atualizado" confirmation holds before reverting to default
  * (Figma node 142:496). Only flashes after a click this hook was told about
@@ -40,29 +42,13 @@ function useRefreshDoneFlash(isRefreshing: boolean) {
   return { done, markRequested: () => (requested.current = true) };
 }
 
-const MATRIX_RING = [1, 2, 7, 11, 14, 13, 8, 4];
-const MATRIX_CORNERS = new Set([0, 3, 12, 15]);
-
 function MatrixIcon() {
   return (
-    <span
+    <MatrixLoader
+      variant="orbit"
+      rounded
       aria-hidden="true"
-      className="t-matrix"
-      data-variant="orbit"
-      data-rounded="true"
-    >
-      {Array.from({ length: 16 }, (_, index) => {
-        const ring = MATRIX_RING.indexOf(index);
-        return (
-          <i
-            key={index}
-            ref={(dot) => dot?.style.setProperty("--d", String(ring * 150))}
-            className={MATRIX_CORNERS.has(index) ? "is-gap" : undefined}
-            style={ring < 0 ? { animation: "none" } : undefined}
-          />
-        );
-      })}
-    </span>
+    />
   );
 }
 
@@ -319,8 +305,12 @@ export function LibraryToolbar({
       </DropdownMenu>
 
       {isPending && (
-        <span className="text-body-sm text-muted-foreground" aria-live="polite">
-          Carregando item…
+        <span
+          className="text-body-sm flex items-center gap-1.5 text-muted-foreground"
+          aria-live="polite"
+        >
+          <MatrixLoader variant="scan" rounded className="size-3.5" aria-hidden="true" />
+          <ShimmerText text="Carregando item…" />
         </span>
       )}
     </section>

@@ -105,6 +105,10 @@ describe("ImportBookmarksDialog", () => {
     expect(document.body.textContent).toContain(
       "As prévias de link (miniatura, favicon, título e descrição remotos) carregam em segundo plano.",
     );
+    expect(document.body.textContent).toContain("acervo catalogado");
+    expect(document.body.textContent).toContain(
+      "1 novo link e sua estrutura de tags foram organizados.",
+    );
     // An import must wake a drain session that
     // already found the queue empty and stopped looping.
     expect(notifyPreviewQueueChangedMock).toHaveBeenCalled();

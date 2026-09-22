@@ -2,6 +2,8 @@
 
 import { useActionState, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { CodeXmlIcon, FileTextIcon, LinkIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   CODE_LANGUAGE_LABELS,
   CODE_LANGUAGES,
@@ -66,6 +68,27 @@ type TagsLoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "success"; tags: Tag[] };
+
+const ITEM_TYPES_CONFIG = [
+  {
+    type: "link" as const,
+    label: "Link",
+    Icon: LinkIcon,
+    colorClass: "text-type-link",
+  },
+  {
+    type: "prompt" as const,
+    label: "Prompt",
+    Icon: FileTextIcon,
+    colorClass: "text-type-prompt",
+  },
+  {
+    type: "code_component" as const,
+    label: "Componente de código",
+    Icon: CodeXmlIcon,
+    colorClass: "text-type-code",
+  },
+];
 
 export function ItemEditorDialog({
   target,
@@ -156,26 +179,38 @@ export function ItemEditorDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <fieldset className="flex flex-wrap gap-2" aria-label="Tipo do item">
-            {(["link", "prompt", "code_component"] as const).map((itemType) => (
-              <label
-                key={itemType}
-                className="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm has-checked:border-foreground has-checked:bg-secondary"
-              >
-                <input
-                  type="radio"
-                  name="type"
-                  value={itemType}
-                  checked={type === itemType}
-                  onChange={() => setType(itemType)}
-                />
-                {itemType === "link"
-                  ? "Link"
-                  : itemType === "prompt"
-                    ? "Prompt"
-                    : "Componente de código"}
-              </label>
-            ))}
+          <fieldset className="grid grid-cols-1 gap-2 sm:grid-cols-3" aria-label="Tipo do item">
+            {ITEM_TYPES_CONFIG.map(({ type: itemType, label, Icon, colorClass }) => {
+              const isChecked = type === itemType;
+              return (
+                <label
+                  key={itemType}
+                  className={cn(
+                    "group relative flex cursor-pointer items-center justify-center gap-2 rounded-lg border py-2.5 px-3 text-sm font-medium transition-[background-color,border-color,transform,box-shadow] duration-(--motion-fast) ease-out-muvuca active:scale-[0.97] motion-reduce:active:scale-100 motion-reduce:transition-none select-none",
+                    isChecked
+                      ? "border-foreground/30 bg-secondary text-foreground shadow-xs"
+                      : "border-border bg-card text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
+                  )}
+                >
+                  <input
+                    type="radio"
+                    name="type"
+                    value={itemType}
+                    checked={isChecked}
+                    onChange={() => setType(itemType)}
+                    className="sr-only"
+                  />
+                  <Icon
+                    aria-hidden="true"
+                    className={cn(
+                      "size-4 shrink-0 transition-transform duration-(--motion-fast) ease-out-muvuca group-hover:scale-110 motion-reduce:group-hover:scale-100",
+                      colorClass,
+                    )}
+                  />
+                  <span>{label}</span>
+                </label>
+              );
+            })}
           </fieldset>
 
           <Field id="item-title" label="Título" error={fieldError("title")}>
