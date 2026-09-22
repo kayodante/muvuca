@@ -35,6 +35,8 @@ import type { FlatTag } from "@/lib/tags/tree";
 import type { Tag } from "@/lib/database/queries/tags";
 import { swatchClassFor } from "@/lib/tags/colors";
 import { copyToClipboard } from "@/lib/clipboard";
+import { getItemDetails } from "@/lib/actions/items";
+import { normalizeHttpUrl } from "@/lib/validation/item";
 import {
   getSpotlightInitialData,
   searchSpotlightItems,
@@ -104,6 +106,9 @@ export function MuvucaSpotlight({
   const [prevOpen, setPrevOpen] = useState(open);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousActiveElementRef = useRef<HTMLElement | null>(null);
+  const latestRequestIdRef = useRef(0);
 
   const listboxId = useId();
   const optionId = useCallback(
@@ -127,9 +132,10 @@ export function MuvucaSpotlight({
   // Keep dialog mounted for exit animation
   useEffect(() => {
     if (!closing) return;
-    const reducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
+    const reducedMotion =
+      typeof window !== "undefined" && typeof window.matchMedia === "function"
+        ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        : false;
     const closeDuration = Number.parseFloat(
       getComputedStyle(document.documentElement).getPropertyValue(
         "--modal-close-dur",
@@ -143,30 +149,26 @@ export function MuvucaSpotlight({
     return () => clearTimeout(timer);
   }, [closing]);
 
-  // Load initial data when opened
+  // Focus management, scroll lock, and focus restoration
   useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-
-    getSpotlightInitialData()
-      .then((res) => {
-        if (!cancelled && res.ok) {
-          setItems(res.data.items);
-          if (res.data.tags.length > 0) {
-            setTags(res.data.tags);
-          }
-        }
-      })
-      .catch(() => {
-        // Fallback silently if offline or initial load fails
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    if (open) {
+      previousActiveElementRef.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      const timer = setTimeout(() => inputRef.current?.focus(), 30);
+      return () => {
+        clearTimeout(timer);
+        document.body.style.overflow = originalOverflow;
+      };
+    } else {
+      previousActiveElementRef.current?.focus();
+    }
   }, [open]);
 
-  // Global shortcut ⌘K / Ctrl+K
+  // Global shortcut ⌘K / Ctrl+K, Escape, and modal focus trap
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -179,6 +181,39 @@ export function MuvucaSpotlight({
         } else {
           onOpenChange(false);
         }
+      } else if (e.key === "Tab" && open) {
+        const dialog = dialogRef.current;
+        if (!dialog) return;
+        const focusable = dialog.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusable.length === 0) {
+          e.preventDefault();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (!first || !last) {
+          e.preventDefault();
+          return;
+        }
+        if (e.shiftKey) {
+          if (
+            document.activeElement === first ||
+            !dialog.contains(document.activeElement)
+          ) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (
+            document.activeElement === last ||
+            !dialog.contains(document.activeElement)
+          ) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
       }
     }
 
@@ -186,22 +221,30 @@ export function MuvucaSpotlight({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, onOpenChange, quickLookOpen]);
 
-  // Auto-focus input when opened
-  useEffect(() => {
-    if (open) {
-      const timer = setTimeout(() => inputRef.current?.focus(), 30);
-      return () => clearTimeout(timer);
-    }
-  }, [open]);
-
-  // Debounced search on server
+  // Load initial data and debounced search without race conditions
   useEffect(() => {
     if (!open) return;
     const trimmed = query.trim();
+    const requestId = ++latestRequestIdRef.current;
+
+    if (!trimmed && !selectedTagFilter) {
+      getSpotlightInitialData()
+        .then((res) => {
+          if (requestId === latestRequestIdRef.current && res.ok) {
+            setItems(res.data.items);
+            if (res.data.tags.length > 0) {
+              setTags(res.data.tags);
+            }
+          }
+        })
+        .catch(() => {});
+      return;
+    }
+
     const timeout = window.setTimeout(() => {
       startSearchTransition(async () => {
         const res = await searchSpotlightItems(trimmed, selectedTagFilter);
-        if (res.ok) {
+        if (requestId === latestRequestIdRef.current && res.ok) {
           setItems(res.data.items);
           if (res.data.tags.length > 0) {
             setTags(res.data.tags);
@@ -222,7 +265,15 @@ export function MuvucaSpotlight({
         title: "Criar novo item",
         description: "Adicionar link, prompt ou código à biblioteca",
         icon: PlusIcon,
-        keywords: ["novo", "criar", "adicionar", "salvar", "link", "prompt", "code"],
+        keywords: [
+          "novo",
+          "criar",
+          "adicionar",
+          "salvar",
+          "link",
+          "prompt",
+          "code",
+        ],
         run: () => {
           onOpenChange(false);
           router.push("/library?create=1");
@@ -270,7 +321,15 @@ export function MuvucaSpotlight({
         title: "Alternar tema (Claro / Escuro / Sistema)",
         description: "Mudar a aparência da interface",
         icon: SunMoonIcon,
-        keywords: ["tema", "escuro", "claro", "dark", "light", "aparência", "modo"],
+        keywords: [
+          "tema",
+          "escuro",
+          "claro",
+          "dark",
+          "light",
+          "aparência",
+          "modo",
+        ],
         run: () => {
           const isDark =
             document.documentElement.classList.contains("dark") ||
@@ -278,7 +337,9 @@ export function MuvucaSpotlight({
           const next = isDark ? "light" : "dark";
           void setTheme(next).then((res) => {
             if (res.ok) {
-              toast.success(`Tema alterado para ${next === "dark" ? "escuro" : "claro"}.`);
+              toast.success(
+                `Tema alterado para ${next === "dark" ? "escuro" : "claro"}.`,
+              );
             }
           });
           onOpenChange(false);
@@ -302,24 +363,6 @@ export function MuvucaSpotlight({
       );
     });
 
-    // Client-side quick filter on current items
-    let filteredItems = items;
-    if (selectedTagFilter) {
-      filteredItems = filteredItems.filter((item) =>
-        item.tagIds?.includes(selectedTagFilter),
-      );
-    }
-    if (q) {
-      filteredItems = filteredItems.filter(
-        (item) =>
-          item.title.toLowerCase().includes(q) ||
-          item.description?.toLowerCase().includes(q) ||
-          ("contentPreview" in item &&
-            item.contentPreview.toLowerCase().includes(q)) ||
-          ("url" in item && item.url?.toLowerCase().includes(q)),
-      );
-    }
-
     const result: OptionItem[] = [];
 
     // Include actions
@@ -327,13 +370,13 @@ export function MuvucaSpotlight({
       result.push({ kind: "action", action });
     }
 
-    // Include library items
-    for (const item of filteredItems) {
+    // Include library items (already searched/filtered on server via Postgres search_library)
+    for (const item of items) {
       result.push({ kind: "item", item });
     }
 
     return result;
-  }, [query, quickActions, items, selectedTagFilter]);
+  }, [query, quickActions, items]);
 
   const safeSelectedIndex =
     flatOptions.length > 0
@@ -361,21 +404,35 @@ export function MuvucaSpotlight({
 
     const item = option.item;
     if (item.type === "link" && item.url) {
-      window.open(item.url, "_blank", "noopener,noreferrer");
-      onOpenChange(false);
-    } else if (item.type === "prompt" && item.contentPreview) {
-      const ok = await copyToClipboard(item.contentPreview);
-      if (ok) {
-        setCopiedId(item.id);
-        toast.success("Prompt copiado para a área de transferência.");
-        setTimeout(() => setCopiedId(null), 2000);
+      const safeUrl = normalizeHttpUrl(item.url);
+      if (safeUrl) {
+        window.open(safeUrl, "_blank", "noopener,noreferrer");
+        onOpenChange(false);
+      } else {
+        toast.error("URL inválida ou insegura.");
       }
-    } else if (item.type === "code_component" && item.contentPreview) {
-      const ok = await copyToClipboard(item.contentPreview);
+    } else if (item.type === "prompt" || item.type === "code_component") {
+      const fallback = item.contentPreview ?? "";
+      const fullContentPromise = getItemDetails(item.id).then((res) => {
+        if (
+          res.ok &&
+          (res.data.type === "prompt" || res.data.type === "code_component")
+        ) {
+          return res.data.content;
+        }
+        return fallback;
+      });
+      const ok = await copyToClipboard(fullContentPromise);
       if (ok) {
         setCopiedId(item.id);
-        toast.success("Código copiado para a área de transferência.");
+        toast.success(
+          item.type === "prompt"
+            ? "Prompt copiado para a área de transferência."
+            : "Código copiado para a área de transferência.",
+        );
         setTimeout(() => setCopiedId(null), 2000);
+      } else {
+        toast.error("Não foi possível copiar o conteúdo.");
       }
     }
   }
@@ -384,10 +441,14 @@ export function MuvucaSpotlight({
   function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev < flatOptions.length - 1 ? prev + 1 : 0));
+      setSelectedIndex((prev) =>
+        prev < flatOptions.length - 1 ? prev + 1 : 0,
+      );
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : flatOptions.length - 1));
+      setSelectedIndex((prev) =>
+        prev > 0 ? prev - 1 : flatOptions.length - 1,
+      );
     } else if (e.key === "Enter" && flatOptions[safeSelectedIndex]) {
       e.preventDefault();
       handleAction(flatOptions[safeSelectedIndex]);
@@ -418,6 +479,7 @@ export function MuvucaSpotlight({
       }}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label="Muvuca Spotlight — Busca rápida"
@@ -654,7 +716,11 @@ export function MuvucaSpotlight({
                             {item.title}
                           </span>
                           <span className="text-metadata shrink-0 font-mono text-muted-foreground uppercase">
-                            {isLink ? domain : isPrompt ? "PROMPT" : item.language || "CODE"}
+                            {isLink
+                              ? domain
+                              : isPrompt
+                                ? "PROMPT"
+                                : item.language || "CODE"}
                           </span>
                         </div>
                         {snippet && (
@@ -697,7 +763,9 @@ export function MuvucaSpotlight({
                             handleAction(option);
                           }}
                           className="text-metadata inline-flex items-center gap-1 rounded-md bg-muted/60 px-2 py-1 text-foreground transition-colors duration-(--motion-fast) ease-out-muvuca group-hover:bg-primary group-hover:text-primary-foreground motion-reduce:transition-none"
-                          aria-label={isPrompt ? "Copiar prompt" : "Copiar código"}
+                          aria-label={
+                            isPrompt ? "Copiar prompt" : "Copiar código"
+                          }
                         >
                           {copiedId === item.id ? (
                             <>

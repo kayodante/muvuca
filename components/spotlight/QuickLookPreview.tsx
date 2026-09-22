@@ -17,6 +17,8 @@ import type { FlatTag } from "@/lib/tags/tree";
 import type { Tag } from "@/lib/database/queries/tags";
 import { swatchClassFor } from "@/lib/tags/colors";
 import { copyToClipboard } from "@/lib/clipboard";
+import { getItemDetails } from "@/lib/actions/items";
+import { normalizeHttpUrl } from "@/lib/validation/item";
 import { Button } from "@/components/ui/button";
 import { useHighlightedLines } from "@/components/items/useHighlightedLines";
 import { LinkPreviewMedia } from "@/components/items/LinkPreviewMedia";
@@ -49,6 +51,31 @@ export function QuickLookPreview({
 
   async function handleCopy(textToCopy: string, label: string) {
     const ok = await copyToClipboard(textToCopy);
+    if (ok) {
+      setCopied(true);
+      toast.success(`${label} copiado para a área de transferência.`);
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      toast.error("Não foi possível copiar.");
+    }
+  }
+
+  async function handleCopyContent(
+    itemId: string,
+    fallback: string,
+    label: string,
+  ) {
+    const fullContentPromise = getItemDetails(itemId).then((res) => {
+      if (
+        res.ok &&
+        (res.data.type === "prompt" || res.data.type === "code_component")
+      ) {
+        return res.data.content;
+      }
+      return fallback;
+    });
+
+    const ok = await copyToClipboard(fullContentPromise);
     if (ok) {
       setCopied(true);
       toast.success(`${label} copiado para a área de transferência.`);
@@ -152,7 +179,7 @@ export function QuickLookPreview({
         {/* Content body preview */}
         {isPrompt && content && (
           <div className="mt-4 rounded-md border border-border bg-secondary/30 p-3">
-            <p className="text-body-sm max-h-56 overflow-y-auto whitespace-pre-wrap break-words text-foreground">
+            <p className="text-body-sm max-h-56 overflow-y-auto break-words whitespace-pre-wrap text-foreground">
               {content}
             </p>
           </div>
@@ -195,8 +222,13 @@ export function QuickLookPreview({
               size="sm"
               className="w-full justify-center gap-2"
               onClick={() => {
-                window.open(url, "_blank", "noopener,noreferrer");
-                onClose();
+                const safeUrl = normalizeHttpUrl(url);
+                if (safeUrl) {
+                  window.open(safeUrl, "_blank", "noopener,noreferrer");
+                  onClose();
+                } else {
+                  toast.error("URL inválida ou insegura.");
+                }
               }}
             >
               <span>Abrir página</span>
@@ -218,12 +250,16 @@ export function QuickLookPreview({
           </>
         )}
 
-        {(isPrompt || isCode) && content && (
+        {(isPrompt || isCode) && (
           <Button
             size="sm"
             className="w-full justify-center gap-2"
             onClick={() =>
-              handleCopy(content, isPrompt ? "Prompt" : "Código")
+              handleCopyContent(
+                item.id,
+                content,
+                isPrompt ? "Prompt" : "Código",
+              )
             }
           >
             {copied ? (

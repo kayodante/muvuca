@@ -64,23 +64,6 @@ export function LibrarySearch() {
     setQuery(urlQuery);
   }
 
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.defaultPrevented) return;
-      if (
-        (event.metaKey || event.ctrlKey) &&
-        (event.key === "k" || event.key === "K")
-      ) {
-        event.preventDefault();
-        inputRef.current?.focus();
-        inputRef.current?.select();
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
   useEffect(
     () => () => {
       clearAnimationRef.current?.cancel();
@@ -262,7 +245,7 @@ export function LibrarySearch() {
         >
           <kbd
             aria-hidden="true"
-            className="text-metadata block rounded-xl bg-secondary/70 px-2 py-0.5 font-mono text-muted-foreground shadow-light transition-colors hover:bg-secondary hover:text-foreground select-none"
+            className="text-metadata block rounded-xl bg-secondary/70 px-2 py-0.5 font-mono text-muted-foreground shadow-light transition-colors select-none hover:bg-secondary hover:text-foreground"
           >
             {shortcutLabel}
           </kbd>

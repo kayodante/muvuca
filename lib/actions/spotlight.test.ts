@@ -20,10 +20,7 @@ vi.mock("@/lib/database/queries/tags", () => ({
   getTagList: getTagListMock,
 }));
 
-import {
-  getSpotlightInitialData,
-  searchSpotlightItems,
-} from "./spotlight";
+import { getSpotlightInitialData, searchSpotlightItems } from "./spotlight";
 
 describe("spotlight actions", () => {
   beforeEach(() => {
@@ -32,7 +29,10 @@ describe("spotlight actions", () => {
 
   describe("getSpotlightInitialData", () => {
     it("retorna itens e tags quando o usuário está autenticado", async () => {
-      requireUserMock.mockResolvedValue({ id: "user-1", email: "test@example.com" });
+      requireUserMock.mockResolvedValue({
+        id: "user-1",
+        email: "test@example.com",
+      });
       getLibraryItemsMock.mockResolvedValue({
         items: [
           {
@@ -87,7 +87,10 @@ describe("spotlight actions", () => {
 
   describe("searchSpotlightItems", () => {
     it("busca itens com query e tagId e retorna resultado encapsulado", async () => {
-      requireUserMock.mockResolvedValue({ id: "user-1", email: "test@example.com" });
+      requireUserMock.mockResolvedValue({
+        id: "user-1",
+        email: "test@example.com",
+      });
       getLibraryItemsMock.mockResolvedValue({
         items: [
           {
@@ -119,7 +122,10 @@ describe("spotlight actions", () => {
     });
 
     it("retorna fail com UNKNOWN quando a query falha", async () => {
-      requireUserMock.mockResolvedValue({ id: "user-1", email: "test@example.com" });
+      requireUserMock.mockResolvedValue({
+        id: "user-1",
+        email: "test@example.com",
+      });
       getLibraryItemsMock.mockRejectedValue(new Error("RPC failed"));
 
       const result = await searchSpotlightItems("teste");

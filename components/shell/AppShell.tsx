@@ -10,10 +10,7 @@ import { Button } from "@/components/ui/button";
 import { MobileNav } from "./MobileNav";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
-import {
-  SpotlightProvider,
-  MuvucaSpotlight,
-} from "@/components/spotlight";
+import { SpotlightProvider, MuvucaSpotlight } from "@/components/spotlight";
 
 /**
  * App shell composition: fixed sidebar + topbar + fluid main region,
@@ -66,7 +63,9 @@ export function AppShell({
             collapsed ? "md:w-0" : "md:w-[var(--layout-sidebar-width)]",
           )}
         >
-          <div className="h-full w-[var(--layout-sidebar-width)]">{sidebar}</div>
+          <div className="h-full w-[var(--layout-sidebar-width)]">
+            {sidebar}
+          </div>
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
@@ -77,7 +76,9 @@ export function AppShell({
                 variant="secondary"
                 size="icon"
                 aria-label={
-                  collapsed ? "Expandir barra lateral" : "Recolher barra lateral"
+                  collapsed
+                    ? "Expandir barra lateral"
+                    : "Recolher barra lateral"
                 }
                 aria-expanded={!collapsed}
                 onClick={() => setCollapsed((value) => !value)}
