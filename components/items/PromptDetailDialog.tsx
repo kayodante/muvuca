@@ -115,7 +115,12 @@ export function PromptDetailDialog({
               errorMessage="Não foi possível copiar o código."
             />
           ) : (
-            <PromptCopyButton content={item.content} />
+            <PromptCopyButton
+              content={item.content}
+              label="Copiar prompt"
+              successMessage="Prompt copiado para a área de transferência."
+              errorMessage="Não foi possível copiar o prompt."
+            />
           )}
         </DialogFooter>
       </DialogContent>

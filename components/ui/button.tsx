@@ -3,6 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { Loader2Icon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { MatrixLoader } from "@/components/ui/matrix-loader";
 
 const buttonVariants = cva(
   "group/button relative inline-flex shrink-0 items-center justify-center rounded-md border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[background-color,border-color,color,box-shadow,transform] duration-(--motion-fast) ease-out-muvuca outline-none select-none motion-reduce:transition-none active:not-aria-[haspopup]:scale-[0.97] motion-reduce:active:scale-100 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
@@ -46,6 +47,7 @@ function Button({
   size = "default",
   pending = false,
   pendingLabel = "Carregando",
+  pendingIndicator = "spinner",
   disabled,
   children,
   "aria-label": ariaLabel,
@@ -65,6 +67,10 @@ function Button({
      * button would otherwise have no discernible name.
      */
     pendingLabel?: string;
+    /**
+     * Choose between standard spinner and quiet transitions.dev matrix loader.
+     */
+    pendingIndicator?: "spinner" | "matrix";
   }) {
   return (
     <ButtonPrimitive
@@ -75,13 +81,21 @@ function Button({
       className={cn(buttonVariants({ variant, size, className }))}
       {...props}
     >
-      {pending && (
-        <Loader2Icon
-          aria-hidden="true"
-          // Spinner acelerado (600ms); sob prefers-reduced-motion desacelera em vez de remover.
-          className="absolute size-4 animate-spin [animation-duration:600ms] motion-reduce:[animation-duration:1200ms]"
-        />
-      )}
+      {pending &&
+        (pendingIndicator === "matrix" ? (
+          <MatrixLoader
+            variant="orbit"
+            rounded
+            aria-hidden="true"
+            className="absolute size-4 text-current"
+          />
+        ) : (
+          <Loader2Icon
+            aria-hidden="true"
+            // Spinner acelerado (600ms); sob prefers-reduced-motion desacelera em vez de remover.
+            className="absolute size-4 animate-spin [animation-duration:600ms] motion-reduce:[animation-duration:1200ms]"
+          />
+        ))}
       <span className={cn("contents", pending && "invisible")}>{children}</span>
     </ButtonPrimitive>
   );

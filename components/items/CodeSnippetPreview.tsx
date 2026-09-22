@@ -1,6 +1,7 @@
 "use client";
 
-import type { CodeLanguage } from "@/lib/code/languages";
+import { cn } from "@/lib/utils";
+import { CODE_LANGUAGE_LABELS, type CodeLanguage } from "@/lib/code/languages";
 
 import { useHighlightedLines } from "./useHighlightedLines";
 
@@ -38,6 +39,14 @@ export function CodeSnippetPreview({
 
   return (
     <div className="relative overflow-hidden rounded-md bg-secondary p-3">
+      {language && (
+        <span
+          aria-hidden="true"
+          className="text-metadata absolute top-2 right-2 z-10 rounded border border-border/60 bg-card/80 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground select-none"
+        >
+          {CODE_LANGUAGE_LABELS[language] ?? language}
+        </span>
+      )}
       <div
         className="text-body-sm font-mono leading-6"
         style={{ color: "var(--code-foreground)" }}
@@ -46,7 +55,17 @@ export function CodeSnippetPreview({
           // min-h-6 mantém a linha vazia com a mesma altura das demais, e
           // whitespace-pre + overflow-hidden do painel clipam linhas longas
           // na horizontal em vez de quebrar a grade do card.
-          <div key={index} className="min-h-6 whitespace-pre">
+          // Quando há badge de linguagem, a linha 0 trunca antes da badge
+          // para não passar por baixo de seu fundo opaco.
+          <div
+            key={index}
+            className={cn(
+              "min-h-6 whitespace-pre",
+              index === 0 &&
+                language &&
+                "max-w-[calc(100%-5.5rem)] overflow-hidden text-ellipsis",
+            )}
+          >
             {line.map((token, tokenIndex) =>
               token.color ? (
                 <span key={tokenIndex} style={{ color: token.color }}>

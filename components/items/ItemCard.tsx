@@ -21,6 +21,7 @@ import { MORPH_CLASS, MORPH_TITLE_CLASS } from "@/lib/motion/view-transition";
 import { cn } from "@/lib/utils";
 import { TagChip } from "@/components/tags/TagChip";
 import { Button } from "@/components/ui/button";
+import { MatrixLoader } from "@/components/ui/matrix-loader";
 import {
   Tooltip,
   TooltipContent,
@@ -78,7 +79,7 @@ const TYPE_META = {
  * esconder-em-repouso só se aplica a quem realmente pode passar o mouse.
  */
 const ACTION_CLASS =
-  "opacity-100 transition-opacity duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100";
+  "opacity-100 active:scale-[0.92] transition-[opacity,transform] duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none motion-reduce:active:scale-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100";
 
 /**
  * Crossfade entre o ícone de "copiar" e o Check de confirmação: os dois
@@ -220,6 +221,14 @@ export function ItemCard({
       <span className={`text-brand-pixel ${typeMeta.hue}`}>
         {typeMeta.label}
       </span>
+      {isPending && (
+        <MatrixLoader
+          variant="pulse"
+          rounded
+          className="size-3"
+          aria-label="Carregando item"
+        />
+      )}
       <Tooltip>
         <TooltipTrigger
           render={
@@ -234,7 +243,7 @@ export function ItemCard({
               // linha do badge não muda. O anel de foco fica no botão em si
               // (10x10), não no pseudo-elemento -- o anel acompanha o ícone,
               // a área de toque invisível é só clicável.
-              className="pointer-events-auto relative rounded-full text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca outline-none after:absolute after:-inset-[7px] after:content-[''] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+              className="pointer-events-auto relative rounded-full text-muted-foreground transition-[color,transform] duration-(--motion-fast) ease-out-muvuca outline-none after:absolute after:-inset-[7px] after:content-[''] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-90 motion-reduce:transition-none motion-reduce:active:scale-100"
             />
           }
         >
@@ -514,7 +523,7 @@ export function ItemCard({
     <article
       aria-busy={isPending || undefined}
       className={cn(
-        "group relative flex min-h-56 flex-col overflow-hidden rounded-2xl bg-card shadow-light transition-[background-color,box-shadow,transform,opacity] duration-(--motion-fast) ease-out-muvuca hover:bg-secondary/30 motion-safe:hover:-translate-y-px motion-reduce:transition-none",
+        "group relative flex min-h-56 flex-col overflow-hidden rounded-2xl bg-card shadow-light transition-[background-color,box-shadow,transform,opacity] duration-(--motion-fast) ease-out-muvuca hover:bg-secondary/40 hover:ring-1 hover:ring-foreground/10 motion-safe:hover:-translate-y-0.5 motion-reduce:transition-none",
         morphing && MORPH_CLASS,
         isPending && "pointer-events-none opacity-75",
       )}

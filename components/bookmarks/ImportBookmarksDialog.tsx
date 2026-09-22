@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { FileUpIcon, Loader2Icon } from "lucide-react";
+import { CheckIcon, FileUpIcon } from "lucide-react";
 import { toast } from "sonner";
 import {
   findExistingBookmarkUrls,
@@ -21,7 +21,11 @@ import {
   type BookmarkParseResult,
 } from "@/lib/bookmarks/types";
 import { indentClassFor } from "@/lib/tags/indent";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { MatrixLoader } from "@/components/ui/matrix-loader";
+import { NumberPopIn } from "@/components/ui/number-pop-in";
+import { ShimmerText } from "@/components/ui/shimmer-text";
 import {
   Dialog,
   DialogContent,
@@ -206,11 +210,13 @@ export function ImportBookmarksDialog({
               <Count
                 label="Já na biblioteca"
                 value={
-                  isCheckingDuplicates
-                    ? "..."
-                    : existingChecked
-                      ? (duplicateSummary?.alreadyInLibrary ?? 0)
-                      : "—"
+                  isCheckingDuplicates ? (
+                    <ShimmerText text="..." />
+                  ) : existingChecked ? (
+                    (duplicateSummary?.alreadyInLibrary ?? 0)
+                  ) : (
+                    "—"
+                  )
                 }
               />
               <Count
@@ -224,12 +230,18 @@ export function ImportBookmarksDialog({
               <div className="space-y-2 rounded-lg border bg-muted/30 p-4">
                 <div className="text-body-sm flex items-center justify-between">
                   <span className="flex items-center gap-2 font-medium">
-                    <Loader2Icon className="size-4 animate-spin text-primary [animation-duration:600ms] motion-reduce:[animation-duration:1200ms]" />
-                    Importando lote {progress.currentBatch} de{" "}
-                    {progress.totalBatches}...
+                    <MatrixLoader
+                      variant="orbit"
+                      rounded
+                      className="size-4 text-primary"
+                      aria-label="Importando favoritos"
+                    />
+                    <ShimmerText
+                      text={`Importando lote ${progress.currentBatch} de ${progress.totalBatches}...`}
+                    />
                   </span>
                   <span className="font-mono text-muted-foreground">
-                    {progress.percent}%
+                    <NumberPopIn value={`${progress.percent}%`} />
                   </span>
                 </div>
                 <div
@@ -280,13 +292,40 @@ export function ImportBookmarksDialog({
         )}
 
         {result && (
-          <div className="space-y-3">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between rounded-lg border border-primary/25 bg-primary/[0.04] p-3.5 dark:border-primary/20 dark:bg-primary/[0.06]">
+              <div className="space-y-0.5">
+                <span className="text-brand-pixel text-brand-accent uppercase">
+                  acervo catalogado
+                </span>
+                <p className="text-body-sm font-medium text-foreground">
+                  {result.itemsImported === 0
+                    ? "Nenhum link novo precisou ser adicionado à sua biblioteca."
+                    : result.itemsImported === 1
+                      ? "1 novo link e sua estrutura de tags foram organizados."
+                      : `${result.itemsImported.toLocaleString("pt-BR")} novos links e a estrutura de pastas foram organizados.`}
+                </p>
+              </div>
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-brand-accent">
+                <CheckIcon aria-hidden="true" className="size-4" />
+              </span>
+            </div>
+
             <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
-              <Count label="Itens importados" value={result.itemsImported} />
-              <Count label="Tags criadas" value={result.tagsCreated} />
+              <Count
+                label="Itens importados"
+                value={<NumberPopIn value={result.itemsImported} />}
+                highlight={result.itemsImported > 0}
+              />
+              <Count
+                label="Tags criadas"
+                value={<NumberPopIn value={result.tagsCreated} />}
+                highlight={result.tagsCreated > 0}
+              />
               <Count
                 label="Associações de tag"
-                value={result.associationsCreated}
+                value={<NumberPopIn value={result.associationsCreated} />}
+                highlight={result.associationsCreated > 0}
               />
               <Count
                 label="Já estavam na biblioteca"
@@ -302,13 +341,20 @@ export function ImportBookmarksDialog({
               />
               <Count label="Erros ignorados" value={result.errorsIgnored} />
             </div>
+
             {/* Imports never fetch anything server-side during the import
               itself -- previews are enqueued the same way a manually-created
               link is, and drain in the background afterward. */}
-            <p className="text-metadata text-muted-foreground">
-              As prévias de link (miniatura, favicon, título e descrição
-              remotos) carregam em segundo plano.
-            </p>
+            <div className="text-metadata flex items-center gap-2.5 rounded-md border border-border/40 bg-muted/30 px-3 py-2 text-muted-foreground">
+              <span className="relative flex size-2 shrink-0">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/60 opacity-75 motion-reduce:hidden" />
+                <span className="relative inline-flex size-2 rounded-full bg-primary" />
+              </span>
+              <span>
+                As prévias de link (miniatura, favicon, título e descrição
+                remotos) carregam em segundo plano.
+              </span>
+            </div>
           </div>
         )}
 
@@ -340,18 +386,47 @@ export function ImportBookmarksDialog({
               </Button>
             </>
           )}
-          {result && <Button onClick={() => close(false)}>Concluir</Button>}
+          {result && (
+            <Button
+              onClick={() => close(false)}
+              className="transition-transform duration-(--motion-fast) ease-out-muvuca active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100"
+            >
+              Concluir
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
 
-function Count({ label, value }: { label: string; value: number | string }) {
+function Count({
+  label,
+  value,
+  highlight = false,
+}: {
+  label: string;
+  value: number | string | React.ReactNode;
+  highlight?: boolean;
+}) {
   return (
-    <div className="rounded-md bg-muted p-3">
+    <div
+      className={cn(
+        "rounded-md border p-3 transition-[border-color,background-color] duration-(--motion-base) ease-out-muvuca",
+        highlight
+          ? "border-primary/25 bg-primary/[0.04] dark:border-primary/20 dark:bg-primary/[0.06]"
+          : "border-transparent bg-muted",
+      )}
+    >
       <p className="text-metadata text-muted-foreground">{label}</p>
-      <p className="text-headline-sm mt-1">{value}</p>
+      <div
+        className={cn(
+          "text-headline-sm mt-1 tabular-nums",
+          highlight && "font-semibold text-foreground",
+        )}
+      >
+        {value}
+      </div>
     </div>
   );
 }

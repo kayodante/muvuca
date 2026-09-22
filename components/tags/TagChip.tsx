@@ -26,7 +26,7 @@ export function TagChip({
       <span
         aria-hidden="true"
         className={cn(
-          "size-2 shrink-0 rounded-full",
+          "size-2 shrink-0 rounded-full transition-transform duration-(--motion-fast) ease-out-muvuca group-hover/chip:scale-125 motion-reduce:transition-none motion-reduce:group-hover/chip:scale-100",
           swatchClassFor(colorToken),
         )}
       />
@@ -35,10 +35,10 @@ export function TagChip({
   );
 
   const classes = cn(
-    "bg-secondary text-muted-foreground text-label-md inline-flex h-7 max-w-full items-center gap-1.5 rounded-full px-2.5",
+    "group/chip bg-secondary text-muted-foreground text-label-md inline-flex h-7 max-w-full items-center gap-1.5 rounded-full px-2.5",
     selected && "ring-primary text-foreground ring-2",
     href &&
-      "hover:bg-secondary/70 focus-visible:ring-ring ease-out-muvuca transition-colors duration-(--motion-fast) focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none motion-reduce:transition-none",
+      "hover:bg-secondary/80 hover:text-foreground active:scale-[0.96] focus-visible:ring-ring ease-out-muvuca transition-[background-color,color,box-shadow,transform] duration-(--motion-fast) focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none motion-reduce:active:scale-100 motion-reduce:transition-none",
     className,
   );
 

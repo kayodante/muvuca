@@ -13,6 +13,7 @@ import {
   type FlatTag,
 } from "@/lib/tags/tree";
 import type { Tag } from "@/lib/database/queries/tags";
+import { ShimmerText } from "@/components/ui/shimmer-text";
 
 interface TagSelectFieldProps {
   id?: string;
@@ -256,13 +257,19 @@ export function TagSelectField({
               : "text-foreground"
           }
         >
-          {tags.length === 0
-            ? emptyLabel
-            : selectedIds.length === 0
-              ? placeholder
-              : `${selectedIds.length} tag${
-                  selectedIds.length > 1 ? "s" : ""
-                } selecionada${selectedIds.length > 1 ? "s" : ""}`}
+          {tags.length === 0 ? (
+            emptyLabel.startsWith("Carregando") ? (
+              <ShimmerText text={emptyLabel} />
+            ) : (
+              emptyLabel
+            )
+          ) : selectedIds.length === 0 ? (
+            placeholder
+          ) : (
+            `${selectedIds.length} tag${
+              selectedIds.length > 1 ? "s" : ""
+            } selecionada${selectedIds.length > 1 ? "s" : ""}`
+          )}
         </span>
         <ChevronDownIcon
           className={cn(

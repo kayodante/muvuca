@@ -45,7 +45,7 @@ export function SidebarUserMenu({
         render={
           <button
             type="button"
-            className="flex w-full items-center gap-2.5 rounded-md p-2 text-left transition-colors duration-(--motion-fast) ease-out-muvuca hover:bg-card focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none motion-reduce:transition-none"
+            className="flex w-full items-center gap-2.5 rounded-md p-2 text-left transition-[background-color,transform] duration-(--motion-fast) ease-out-muvuca hover:bg-card focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100"
           />
         }
       >

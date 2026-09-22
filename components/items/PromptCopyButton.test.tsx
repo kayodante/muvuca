@@ -127,4 +127,34 @@ describe("PromptCopyButton", () => {
     expect(execCommand).toHaveBeenCalledWith("copy");
     expect(toast.success).toHaveBeenCalledWith("Conteúdo copiado.");
   });
+
+  it("exibe o estado tátil de confirmação com icon-swap e retorna ao repouso", async () => {
+    vi.useFakeTimers();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+
+    const button = await renderCopyButton("Prompt de teste", {
+      label: "Copiar prompt",
+    });
+
+    const iconSwap = button.querySelector(".t-icon-swap");
+    expect(iconSwap?.getAttribute("data-state")).toBe("a");
+    expect(button.textContent).toContain("Copiar prompt");
+
+    await act(async () => button.click());
+
+    expect(button.textContent).toContain("Prompt copiado!");
+    expect(iconSwap?.getAttribute("data-state")).toBe("b");
+
+    await act(async () => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    expect(button.textContent).toContain("Copiar prompt");
+    expect(iconSwap?.getAttribute("data-state")).toBe("a");
+    vi.useRealTimers();
+  });
 });
