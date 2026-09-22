@@ -202,7 +202,7 @@ export function ItemEditorDialog({
                       value={itemType}
                       checked={isChecked}
                       onChange={() => setType(itemType)}
-                      className="peer sr-only"
+                      className="peer absolute inset-0 z-10 cursor-pointer opacity-0"
                     />
                     <span
                       aria-hidden="true"
@@ -211,11 +211,11 @@ export function ItemEditorDialog({
                     <Icon
                       aria-hidden="true"
                       className={cn(
-                        "size-4 shrink-0 transition-transform duration-(--motion-fast) ease-out-muvuca group-hover:scale-110 motion-reduce:group-hover:scale-100",
+                        "pointer-events-none size-4 shrink-0 transition-transform duration-(--motion-fast) ease-out-muvuca group-hover:scale-110 motion-reduce:group-hover:scale-100",
                         colorClass,
                       )}
                     />
-                    <span>{label}</span>
+                    <span className="pointer-events-none">{label}</span>
                   </label>
                 );
               },
