@@ -293,7 +293,7 @@ export function ImportBookmarksDialog({
           <div className="space-y-4">
             <div className="flex items-center justify-between rounded-lg border border-primary/25 bg-primary/[0.04] p-3.5 dark:border-primary/20 dark:bg-primary/[0.06]">
               <div className="space-y-0.5">
-                <span className="font-pixel text-[11px] font-medium tracking-wider uppercase text-brand-accent">
+                <span className="text-brand-pixel uppercase text-brand-accent">
                   acervo catalogado
                 </span>
                 <p className="text-body-sm font-medium text-foreground">
