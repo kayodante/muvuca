@@ -15,6 +15,7 @@ import {
   animateSearchClear,
   type ClearSearchAnimation,
 } from "@/lib/motion/clear-search";
+import { useSpotlight } from "@/components/spotlight";
 
 const emptySubscribe = () => () => {};
 
@@ -56,26 +57,12 @@ export function LibrarySearch() {
     () => "⌘K",
   );
 
+  const { openSpotlight } = useSpotlight();
+
   if (urlQuery !== previousUrlQuery) {
     setPreviousUrlQuery(urlQuery);
     setQuery(urlQuery);
   }
-
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (
-        (event.metaKey || event.ctrlKey) &&
-        (event.key === "k" || event.key === "K")
-      ) {
-        event.preventDefault();
-        inputRef.current?.focus();
-        inputRef.current?.select();
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
 
   useEffect(
     () => () => {
@@ -250,12 +237,19 @@ export function LibrarySearch() {
           <XIcon aria-hidden="true" className="size-3.5" />
         </button>
       ) : (
-        <kbd
-          aria-hidden="true"
-          className="text-metadata pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 rounded-xl bg-secondary/70 px-2 py-0.5 font-mono text-muted-foreground shadow-light select-none"
+        <button
+          type="button"
+          onClick={() => openSpotlight()}
+          aria-label="Abrir busca rápida (Spotlight)"
+          className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          {shortcutLabel}
-        </kbd>
+          <kbd
+            aria-hidden="true"
+            className="text-metadata block rounded-xl bg-secondary/70 px-2 py-0.5 font-mono text-muted-foreground shadow-light transition-colors select-none hover:bg-secondary hover:text-foreground"
+          >
+            {shortcutLabel}
+          </kbd>
+        </button>
       )}
       {isPending && (
         <>
