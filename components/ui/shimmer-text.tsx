@@ -18,11 +18,7 @@ export function ShimmerText({
   ...props
 }: ShimmerTextProps) {
   return (
-    <span
-      className={cn("t-shimmer", className)}
-      data-text={text}
-      {...props}
-    >
+    <span className={cn("t-shimmer", className)} data-text={text} {...props}>
       {children ?? text}
     </span>
   );

@@ -210,11 +210,13 @@ export function ImportBookmarksDialog({
               <Count
                 label="Já na biblioteca"
                 value={
-                  isCheckingDuplicates
-                    ? <ShimmerText text="..." />
-                    : existingChecked
-                      ? (duplicateSummary?.alreadyInLibrary ?? 0)
-                      : "—"
+                  isCheckingDuplicates ? (
+                    <ShimmerText text="..." />
+                  ) : existingChecked ? (
+                    (duplicateSummary?.alreadyInLibrary ?? 0)
+                  ) : (
+                    "—"
+                  )
                 }
               />
               <Count
@@ -293,7 +295,7 @@ export function ImportBookmarksDialog({
           <div className="space-y-4">
             <div className="flex items-center justify-between rounded-lg border border-primary/25 bg-primary/[0.04] p-3.5 dark:border-primary/20 dark:bg-primary/[0.06]">
               <div className="space-y-0.5">
-                <span className="text-brand-pixel uppercase text-brand-accent">
+                <span className="text-brand-pixel text-brand-accent uppercase">
                   acervo catalogado
                 </span>
                 <p className="text-body-sm font-medium text-foreground">
@@ -343,7 +345,7 @@ export function ImportBookmarksDialog({
             {/* Imports never fetch anything server-side during the import
               itself -- previews are enqueued the same way a manually-created
               link is, and drain in the background afterward. */}
-            <div className="flex items-center gap-2.5 rounded-md border border-border/40 bg-muted/30 px-3 py-2 text-metadata text-muted-foreground">
+            <div className="text-metadata flex items-center gap-2.5 rounded-md border border-border/40 bg-muted/30 px-3 py-2 text-muted-foreground">
               <span className="relative flex size-2 shrink-0">
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/60 opacity-75 motion-reduce:hidden" />
                 <span className="relative inline-flex size-2 rounded-full bg-primary" />
@@ -387,7 +389,7 @@ export function ImportBookmarksDialog({
           {result && (
             <Button
               onClick={() => close(false)}
-              className="active:scale-[0.96] transition-transform duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none motion-reduce:active:scale-100"
+              className="transition-transform duration-(--motion-fast) ease-out-muvuca active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100"
             >
               Concluir
             </Button>

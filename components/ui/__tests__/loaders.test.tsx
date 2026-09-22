@@ -41,7 +41,9 @@ describe("MatrixLoader", () => {
     const gaps = dom.querySelectorAll(".t-matrix i.is-gap");
     expect(gaps).toHaveLength(4);
 
-    const statusEl = dom.querySelector('[role="status"][aria-label="Carregando dados"]');
+    const statusEl = dom.querySelector(
+      '[role="status"][aria-label="Carregando dados"]',
+    );
     expect(statusEl).not.toBeNull();
   });
 

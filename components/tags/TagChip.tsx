@@ -26,7 +26,7 @@ export function TagChip({
       <span
         aria-hidden="true"
         className={cn(
-          "size-2 shrink-0 rounded-full transition-transform duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none motion-reduce:group-hover/chip:scale-100 group-hover/chip:scale-125",
+          "size-2 shrink-0 rounded-full transition-transform duration-(--motion-fast) ease-out-muvuca group-hover/chip:scale-125 motion-reduce:transition-none motion-reduce:group-hover/chip:scale-100",
           swatchClassFor(colorToken),
         )}
       />

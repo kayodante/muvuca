@@ -14,11 +14,7 @@ export interface NumberPopInProps extends React.HTMLAttributes<HTMLSpanElement> 
  * Each character animates independently and the last two digits stagger
  * so counter changes feel alive without chaos.
  */
-export function NumberPopIn({
-  value,
-  className,
-  ...props
-}: NumberPopInProps) {
+export function NumberPopIn({ value, className, ...props }: NumberPopInProps) {
   const str = String(value);
   const containerRef = useRef<HTMLSpanElement>(null);
   const isFirstMount = useRef(true);

@@ -43,13 +43,7 @@ function useRefreshDoneFlash(isRefreshing: boolean) {
 }
 
 function MatrixIcon() {
-  return (
-    <MatrixLoader
-      variant="orbit"
-      rounded
-      aria-hidden="true"
-    />
-  );
+  return <MatrixLoader variant="orbit" rounded aria-hidden="true" />;
 }
 
 function RefreshStateIcon({
@@ -309,7 +303,12 @@ export function LibraryToolbar({
           className="text-body-sm flex items-center gap-1.5 text-muted-foreground"
           aria-live="polite"
         >
-          <MatrixLoader variant="scan" rounded className="size-3.5" aria-hidden="true" />
+          <MatrixLoader
+            variant="scan"
+            rounded
+            className="size-3.5"
+            aria-hidden="true"
+          />
           <ShimmerText text="Carregando item…" />
         </span>
       )}

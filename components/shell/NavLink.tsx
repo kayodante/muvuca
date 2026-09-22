@@ -33,7 +33,7 @@ export function NavLink({ item }: { item: NavItem }) {
       href={item.href}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "group flex h-10 items-center justify-between gap-2.5 rounded-md px-3 py-2 transition-[background-color,color,transform,box-shadow] duration-(--motion-fast) ease-out-muvuca active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none motion-reduce:active:scale-100 motion-reduce:transition-none",
+        "group flex h-10 items-center justify-between gap-2.5 rounded-md px-3 py-2 transition-[background-color,color,transform,box-shadow] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100",
         isActive
           ? "bg-ink text-surface shadow-light"
           : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",

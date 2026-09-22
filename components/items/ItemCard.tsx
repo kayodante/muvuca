@@ -243,7 +243,7 @@ export function ItemCard({
               // linha do badge não muda. O anel de foco fica no botão em si
               // (10x10), não no pseudo-elemento -- o anel acompanha o ícone,
               // a área de toque invisível é só clicável.
-              className="pointer-events-auto relative rounded-full text-muted-foreground transition-[color,transform] duration-(--motion-fast) ease-out-muvuca outline-none after:absolute after:-inset-[7px] after:content-[''] hover:text-foreground active:scale-90 motion-reduce:active:scale-100 focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+              className="pointer-events-auto relative rounded-full text-muted-foreground transition-[color,transform] duration-(--motion-fast) ease-out-muvuca outline-none after:absolute after:-inset-[7px] after:content-[''] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-90 motion-reduce:transition-none motion-reduce:active:scale-100"
             />
           }
         >

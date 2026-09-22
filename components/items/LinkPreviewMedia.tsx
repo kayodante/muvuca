@@ -88,7 +88,7 @@ export function LinkPreviewMedia({
           height={360}
           loading="lazy"
           decoding="async"
-          className="h-full w-full object-cover transition-transform duration-(--motion-slow) ease-out-muvuca motion-reduce:transition-none motion-reduce:group-hover:scale-100 group-hover:scale-[1.03]"
+          className="h-full w-full object-cover transition-transform duration-(--motion-slow) ease-out-muvuca group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
           onError={() => setBroken(true)}
         />
       </div>
