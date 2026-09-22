@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { CheckIcon, FileUpIcon } from "lucide-react";
-import { toast } from "sonner";
 import {
   findExistingBookmarkUrls,
   importBrowserBookmarks,
@@ -34,6 +33,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { toastSuccess } from "@/components/states/Toast";
 
 type ProgressState = {
   currentBatch: number;
@@ -166,7 +166,7 @@ export function ImportBookmarksDialog({
     setIsImporting(false);
     setProgress(null);
     setResult(accumulated);
-    toast.success("Favoritos importados.");
+    toastSuccess("Favoritos importados.");
     if (accumulated.itemsImported > 0) notifyPreviewQueueChanged();
   }
 

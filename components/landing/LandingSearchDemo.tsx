@@ -13,7 +13,6 @@ import {
   CommandIcon,
 } from "lucide-react";
 import { copyToClipboard } from "@/lib/clipboard";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { cn } from "@/lib/utils";
@@ -21,6 +20,7 @@ import {
   animateSearchClear,
   type ClearSearchAnimation,
 } from "@/lib/motion/clear-search";
+import { toastSuccess } from "@/components/states/Toast";
 
 interface LandingSearchDemoProps {
   onOpenCommandPalette?: () => void;
@@ -172,7 +172,7 @@ export function LandingSearchDemo({
     const ok = await copyToClipboard(item.contentPreview);
     if (ok) {
       setCopiedId(item.id);
-      toast.success("Prompt copiado.");
+      toastSuccess("Prompt copiado.");
       setTimeout(() => setCopiedId(null), 2000);
     }
   }

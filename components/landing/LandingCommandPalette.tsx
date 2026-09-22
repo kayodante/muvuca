@@ -14,8 +14,8 @@ import {
 import { DEMO_ITEMS, DEMO_TAGS, type DemoItem } from "@/lib/landing/demo-data";
 import { swatchClassFor } from "@/lib/tags/colors";
 import { copyToClipboard } from "@/lib/clipboard";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { toastSuccess } from "@/components/states/Toast";
 
 interface LandingCommandPaletteProps {
   open: boolean;
@@ -154,7 +154,7 @@ export function LandingCommandPalette({
       const ok = await copyToClipboard(item.contentPreview);
       if (ok) {
         setCopiedId(item.id);
-        toast.success("Prompt copiado para a área de transferência.");
+        toastSuccess("Prompt copiado para a área de transferência.");
         setTimeout(() => setCopiedId(null), 2000);
       }
     }

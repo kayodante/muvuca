@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 
 import { reschedulePreviewsForItems } from "@/lib/actions/previews";
 import {
@@ -11,6 +10,7 @@ import {
 } from "@/lib/events/preview-queue";
 import { PREVIEW_CLAIM_LIMIT } from "@/lib/validation/item";
 import type { ActionResult } from "@/lib/utils/result";
+import { toastError, toastInfo, toastSuccess } from "@/components/states/Toast";
 
 type DrainData = {
   processed: number;
@@ -296,15 +296,15 @@ export function usePreviewDrain(linkItemIds: string[]): {
     try {
       const result = await reschedulePreviewsForItems(linkItemIds);
       if (!result.ok) {
-        toast.error(result.message);
+        toastError(result.message);
         return;
       }
       const { rescheduled } = result.data;
       if (rescheduled === 0) {
-        toast("Nenhuma prévia pendente nesta página.");
+        toastInfo("Nenhuma prévia pendente nesta página.");
         return;
       }
-      toast.success(
+      toastSuccess(
         rescheduled === 1
           ? "1 prévia será atualizada."
           : `${rescheduled} prévias serão atualizadas.`,
@@ -314,7 +314,7 @@ export function usePreviewDrain(linkItemIds: string[]): {
       // A thrown action (network down, expired session) needs the same
       // error state as an `ok: false` result -- and never leaks the raw
       // error to the user.
-      toast.error("Não foi possível atualizar as prévias.");
+      toastError("Não foi possível atualizar as prévias.");
     } finally {
       setIsRescheduling(false);
     }

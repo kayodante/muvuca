@@ -26,9 +26,9 @@ import {
 import { TagChip } from "@/components/tags/TagChip";
 import { swatchClassFor } from "@/lib/tags/colors";
 import { copyToClipboard } from "@/lib/clipboard";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
+import { toastSuccess } from "@/components/states/Toast";
 
 interface LandingHeroProps {
   onOpenSearch?: () => void;
@@ -49,7 +49,7 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
     const ok = await copyToClipboard(item.contentPreview);
     if (ok) {
       setCopiedId(item.id);
-      toast.success("Prompt copiado.");
+      toastSuccess("Prompt copiado.");
       setTimeout(() => setCopiedId(null), 2000);
     }
   }

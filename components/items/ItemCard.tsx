@@ -12,7 +12,6 @@ import {
   MaximizeIcon,
   MoreHorizontalIcon,
 } from "lucide-react";
-import { toast } from "sonner";
 import type { LibraryItemSummary } from "@/lib/database/queries/items";
 import type { Tag } from "@/lib/database/queries/tags";
 import { copyToClipboard } from "@/lib/clipboard";
@@ -34,6 +33,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toastError, toastSuccess } from "@/components/states/Toast";
 import { LinkPreviewMedia, previewImageSrc } from "./LinkPreviewMedia";
 import { CodeSnippetPreview } from "./CodeSnippetPreview";
 import { PromptMarkdownPreview } from "./PromptMarkdownPreview";
@@ -187,9 +187,9 @@ export function ItemCard({
     if (success) {
       setCopiedContent(true);
       setTimeout(() => setCopiedContent(false), 1500);
-      toast.success(`${noun} copiado para a área de transferência.`);
+      toastSuccess(`${noun} copiado para a área de transferência.`);
     } else {
-      toast.error(
+      toastError(
         item.type === "prompt"
           ? "Não foi possível copiar o prompt."
           : "Não foi possível copiar o código.",
@@ -203,9 +203,9 @@ export function ItemCard({
     if (success) {
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 1500);
-      toast.success("Link copiado para a área de transferência.");
+      toastSuccess("Link copiado para a área de transferência.");
     } else {
-      toast.error("Não foi possível copiar o link.");
+      toastError("Não foi possível copiar o link.");
     }
   }
 

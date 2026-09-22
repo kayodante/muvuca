@@ -18,7 +18,36 @@ const eslintConfig = defineConfig([
       // quais delas rodam.
       ...jsxA11y.flatConfigs.recommended.rules,
       "@typescript-eslint/no-explicit-any": "error",
+      // O toast tem um caminho só: `components/states/Toast.tsx`. A regra
+      // existe porque sem ela o wrapper não se sustenta -- foi exatamente
+      // assim que 22 arquivos passaram a importar `sonner` direto enquanto
+      // o wrapper ficava sem nenhum consumidor de produção (AAA-214).
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "sonner",
+              message:
+                "Use toastSuccess/toastError/toastInfo de @/components/states/Toast.",
+            },
+          ],
+        },
+      ],
     },
+  },
+  {
+    // Os dois donos legítimos do import: o wrapper e a montagem do
+    // `<Toaster />`. Testes precisam do módulo real para `vi.mock` e para
+    // limpar toasts pendentes entre casos.
+    files: [
+      "components/states/Toast.tsx",
+      "components/ui/sonner.tsx",
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/*.stories.tsx",
+    ],
+    rules: { "no-restricted-imports": "off" },
   },
   globalIgnores([
     ".next/**",

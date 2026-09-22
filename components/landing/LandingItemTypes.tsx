@@ -12,9 +12,9 @@ import {
 } from "lucide-react";
 import { TagChip } from "@/components/tags/TagChip";
 import { copyToClipboard } from "@/lib/clipboard";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
+import { toastError, toastSuccess } from "@/components/states/Toast";
 
 export function LandingItemTypes() {
   const [copiedPrompt, setCopiedPrompt] = useState(false);
@@ -27,10 +27,10 @@ export function LandingItemTypes() {
     const ok = await copyToClipboard(promptContent);
     if (ok) {
       setCopiedPrompt(true);
-      toast.success("Prompt copiado para a área de transferência.");
+      toastSuccess("Prompt copiado para a área de transferência.");
       setTimeout(() => setCopiedPrompt(false), 2000);
     } else {
-      toast.error("Não foi possível copiar o prompt.");
+      toastError("Não foi possível copiar o prompt.");
     }
   }
 

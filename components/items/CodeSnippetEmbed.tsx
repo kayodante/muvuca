@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { CheckIcon, CopyIcon } from "lucide-react";
-import { toast } from "sonner";
 
 import { CODE_LANGUAGE_LABELS, type CodeLanguage } from "@/lib/code/languages";
 import { copyToClipboard } from "@/lib/clipboard";
 import { Button } from "@/components/ui/button";
+import { toastError, toastSuccess } from "@/components/states/Toast";
 
 import { useHighlightedLines } from "./useHighlightedLines";
 
@@ -77,9 +77,9 @@ export function CodeSnippetEmbed({
     if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-      toast.success("Código copiado para a área de transferência.");
+      toastSuccess("Código copiado para a área de transferência.");
     } else {
-      toast.error("Não foi possível copiar o código.");
+      toastError("Não foi possível copiar o código.");
     }
   }
 

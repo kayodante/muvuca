@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
-import { toast } from "sonner";
 
 import { deleteTag } from "@/lib/actions/tags";
 
@@ -15,6 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { toastSuccess } from "@/components/states/Toast";
 
 /**
  * Destructive confirmation, focus kept away from the destructive action
@@ -40,7 +40,7 @@ export function DeleteTagAlertDialog({
 
   useEffect(() => {
     if (state?.ok) {
-      toast.success("Tag excluída.");
+      toastSuccess("Tag excluída.");
       onOpenChange(false);
       onDeleted?.();
     }

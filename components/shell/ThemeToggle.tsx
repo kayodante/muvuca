@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { setTheme } from "@/lib/actions/theme";
 import type { Theme } from "@/lib/theme/preference";
-import { toast } from "sonner";
+import { toastError } from "@/components/states/Toast";
 
 const THEME_ORDER: Theme[] = ["system", "light", "dark"];
 
@@ -83,7 +83,7 @@ export function ThemeToggle({ theme }: { theme: Theme }) {
                 startTransition(async () => {
                   const result = await setTheme(value);
                   if (!result.ok) {
-                    toast.error(result.message);
+                    toastError(result.message);
                   }
                 })
               }

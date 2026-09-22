@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CheckIcon, CopyIcon } from "lucide-react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { toastError, toastSuccess } from "@/components/states/Toast";
 
 function copyWithExecCommand(content: string) {
   const textarea = document.createElement("textarea");
@@ -85,9 +85,9 @@ export function PromptCopyButton({
         setCopied(false);
       }, 1800);
 
-      toast.success(successMessage);
+      toastSuccess(successMessage);
     } catch {
-      toast.error(errorMessage);
+      toastError(errorMessage);
     } finally {
       setPending(false);
     }

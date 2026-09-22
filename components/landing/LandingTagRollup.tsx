@@ -17,10 +17,10 @@ import {
 import { TagChip } from "@/components/tags/TagChip";
 import { swatchClassFor } from "@/lib/tags/colors";
 import { copyToClipboard } from "@/lib/clipboard";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
+import { toastSuccess } from "@/components/states/Toast";
 
 export function LandingTagRollup() {
   const [selectedTagId, setSelectedTagId] = useState<string>("skills");
@@ -46,7 +46,7 @@ export function LandingTagRollup() {
     const ok = await copyToClipboard(content);
     if (ok) {
       setCopiedId(id);
-      toast.success("Prompt copiado.");
+      toastSuccess("Prompt copiado.");
       setTimeout(() => setCopiedId(null), 2000);
     }
   }

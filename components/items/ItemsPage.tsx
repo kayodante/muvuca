@@ -11,7 +11,6 @@ import {
   PlusIcon,
 } from "lucide-react";
 
-import { toast } from "sonner";
 import { getItemDetails } from "@/lib/actions/items";
 import { refreshItemPreview } from "@/lib/actions/previews";
 import { notifyPreviewQueueChanged } from "@/lib/events/preview-queue";
@@ -27,6 +26,7 @@ import { morph } from "@/lib/motion/view-transition";
 import { EmptyState } from "@/components/states/EmptyState";
 import { ImportBookmarksDialog } from "@/components/bookmarks/ImportBookmarksDialog";
 import { Button } from "@/components/ui/button";
+import { toastError, toastSuccess } from "@/components/states/Toast";
 
 import { DeleteItemAlertDialog } from "./DeleteItemAlertDialog";
 import { ItemCard } from "./ItemCard";
@@ -199,10 +199,10 @@ export function ItemsPage({
   async function handleRefreshPreview(itemId: string) {
     const result = await refreshItemPreview(itemId);
     if (result.ok) {
-      toast.success("Atualização da prévia solicitada.");
+      toastSuccess("Atualização da prévia solicitada.");
       notifyPreviewQueueChanged();
     } else {
-      toast.error(result.message);
+      toastError(result.message);
     }
   }
 
