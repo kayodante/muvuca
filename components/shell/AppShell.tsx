@@ -10,6 +10,10 @@ import { Button } from "@/components/ui/button";
 import { MobileNav } from "./MobileNav";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
+import {
+  SpotlightProvider,
+  MuvucaSpotlight,
+} from "@/components/spotlight";
 
 /**
  * App shell composition: fixed sidebar + topbar + fluid main region,
@@ -50,58 +54,61 @@ export function AppShell({
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground md:flex-row">
-      <aside
-        className={cn(
-          // `sticky` and `overflow-hidden` (clips the fixed-width child
-          // during the collapse animation) must live on the SAME element:
-          // an intervening ancestor with any non-visible overflow stops a
-          // descendant's `position: sticky` from tracking the page scroll.
-          "sticky top-0 hidden h-screen shrink-0 overflow-hidden transition-[width] duration-(--motion-base) ease-out-muvuca motion-reduce:transition-none md:block",
-          collapsed ? "md:w-0" : "md:w-[var(--layout-sidebar-width)]",
-        )}
-      >
-        <div className="h-full w-[var(--layout-sidebar-width)]">{sidebar}</div>
-      </aside>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar
-          mobileNav={<MobileNav>{sidebar}</MobileNav>}
-          sidebarToggle={
-            <Button
-              variant="secondary"
-              size="icon"
-              aria-label={
-                collapsed ? "Expandir barra lateral" : "Recolher barra lateral"
-              }
-              aria-expanded={!collapsed}
-              onClick={() => setCollapsed((value) => !value)}
-              className="border-0 shadow-light"
-            >
-              <PanelLeftIcon aria-hidden="true" />
-            </Button>
-          }
-        />
-        <main className="mx-auto w-full max-w-[var(--layout-content-max)] flex-1 px-4 pt-4 pb-32 sm:px-6 lg:px-8">
-          {children}
-        </main>
-        {/* Decorative bottom fade, dissolves the gallery into the canvas.
-            Sticky (not fixed) so it tracks the content column's own width
-            through the sidebar collapse. `-mt-32` cancels `h-32` so it
-            overlays the last 128px of `main` instead of adding scroll
-            height. `z-20` stays below the topbar's `z-30` (Topbar.tsx) so
-            the header always wins when both are stuck on screen. */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none sticky bottom-0 z-20 -mt-32 h-32"
+    <SpotlightProvider>
+      <div className="flex min-h-screen flex-col bg-background text-foreground md:flex-row">
+        <aside
+          className={cn(
+            // `sticky` and `overflow-hidden` (clips the fixed-width child
+            // during the collapse animation) must live on the SAME element:
+            // an intervening ancestor with any non-visible overflow stops a
+            // descendant's `position: sticky` from tracking the page scroll.
+            "sticky top-0 hidden h-screen shrink-0 overflow-hidden transition-[width] duration-(--motion-base) ease-out-muvuca motion-reduce:transition-none md:block",
+            collapsed ? "md:w-0" : "md:w-[var(--layout-sidebar-width)]",
+          )}
         >
-          <div className="absolute inset-0 bg-linear-to-t from-background via-background/40 to-transparent" />
-          {/* One masked layer standing in for a true progressive blur (which
-              needs 4-5 stacked partial-blur layers). Upgrade to stacked
-              masked layers if the ramp ever reads visibly wrong. */}
-          <div className="absolute inset-0 [mask-image:linear-gradient(to_top,black_0%,transparent_60%)] backdrop-blur-[4px]" />
+          <div className="h-full w-[var(--layout-sidebar-width)]">{sidebar}</div>
+        </aside>
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <Topbar
+            mobileNav={<MobileNav>{sidebar}</MobileNav>}
+            sidebarToggle={
+              <Button
+                variant="secondary"
+                size="icon"
+                aria-label={
+                  collapsed ? "Expandir barra lateral" : "Recolher barra lateral"
+                }
+                aria-expanded={!collapsed}
+                onClick={() => setCollapsed((value) => !value)}
+                className="border-0 shadow-light"
+              >
+                <PanelLeftIcon aria-hidden="true" />
+              </Button>
+            }
+          />
+          <main className="mx-auto w-full max-w-[var(--layout-content-max)] flex-1 px-4 pt-4 pb-32 sm:px-6 lg:px-8">
+            {children}
+          </main>
+          {/* Decorative bottom fade, dissolves the gallery into the canvas.
+              Sticky (not fixed) so it tracks the content column's own width
+              through the sidebar collapse. `-mt-32` cancels `h-32` so it
+              overlays the last 128px of `main` instead of adding scroll
+              height. `z-20` stays below the topbar's `z-30` (Topbar.tsx) so
+              the header always wins when both are stuck on screen. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none sticky bottom-0 z-20 -mt-32 h-32"
+          >
+            <div className="absolute inset-0 bg-linear-to-t from-background via-background/40 to-transparent" />
+            {/* One masked layer standing in for a true progressive blur (which
+                needs 4-5 stacked partial-blur layers). Upgrade to stacked
+                masked layers if the ramp ever reads visibly wrong. */}
+            <div className="absolute inset-0 [mask-image:linear-gradient(to_top,black_0%,transparent_60%)] backdrop-blur-[4px]" />
+          </div>
         </div>
       </div>
-    </div>
+      <MuvucaSpotlight initialTags={tags} />
+    </SpotlightProvider>
   );
 }
