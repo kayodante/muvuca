@@ -2,15 +2,27 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { replaceMock, searchParamsState } = vi.hoisted(() => ({
-  replaceMock: vi.fn(),
-  searchParamsState: { current: new URLSearchParams() },
-}));
+const { replaceMock, searchParamsState, openSpotlightMock } = vi.hoisted(
+  () => ({
+    replaceMock: vi.fn(),
+    searchParamsState: { current: new URLSearchParams() },
+    openSpotlightMock: vi.fn(),
+  }),
+);
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/items",
   useRouter: () => ({ replace: replaceMock, push: vi.fn() }),
   useSearchParams: () => searchParamsState.current,
+}));
+
+vi.mock("@/components/spotlight", () => ({
+  useSpotlight: () => ({
+    isOpen: false,
+    setIsOpen: vi.fn(),
+    openSpotlight: openSpotlightMock,
+    closeSpotlight: vi.fn(),
+  }),
 }));
 
 /**
@@ -63,26 +75,18 @@ describe("LibrarySearch", () => {
     expect(clearButton).toBeNull();
   });
 
-  it("foca e seleciona o input de busca ao pressionar o atalho global (Cmd+K / Ctrl+K)", async () => {
+  it("abre o spotlight ao clicar no botão de atalho de teclado", async () => {
     const dom = await renderLibrarySearch();
-    const input = dom.querySelector('input[type="search"]') as HTMLInputElement;
-    expect(input).not.toBeNull();
-
-    const focusSpy = vi.spyOn(input, "focus");
-    const selectSpy = vi.spyOn(input, "select");
+    const button = dom.querySelector(
+      'button[aria-label="Abrir busca rápida (Spotlight)"]',
+    ) as HTMLButtonElement;
+    expect(button).not.toBeNull();
 
     await act(async () => {
-      const event = new KeyboardEvent("keydown", {
-        key: "k",
-        metaKey: true,
-        bubbles: true,
-        cancelable: true,
-      });
-      window.dispatchEvent(event);
+      button.click();
     });
 
-    expect(focusSpy).toHaveBeenCalled();
-    expect(selectSpy).toHaveBeenCalled();
+    expect(openSpotlightMock).toHaveBeenCalled();
   });
 
   it("exibe o botão de limpar busca quando há texto digitado e limpa o valor ao clicar", async () => {
