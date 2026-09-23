@@ -4,7 +4,7 @@ import { ErrorState } from "@/components/states/ErrorState";
 
 /**
  * Error boundary for the whole `(app)` layout. Without it,
- * a transient failure in `getTagList`/`getThemePreference`/
+ * a transient failure in `getTagList`/`getUserPreferences`/
  * `getLibraryItemsCount` -- all run in `app/(app)/layout.tsx` before any
  * page renders -- bubbles past this segment straight to the generic root
  * `app/error.tsx`, showing "Algo deu errado" instead of a recoverable,
