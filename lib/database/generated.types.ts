@@ -192,6 +192,7 @@ export type Database = {
           name: string;
           name_normalized: string | null;
           parent_id: string | null;
+          slug: string;
           updated_at: string;
           user_id: string;
         };
@@ -203,6 +204,7 @@ export type Database = {
           name: string;
           name_normalized?: string | null;
           parent_id?: string | null;
+          slug?: string;
           updated_at?: string;
           user_id: string;
         };
@@ -214,6 +216,7 @@ export type Database = {
           name?: string;
           name_normalized?: string | null;
           parent_id?: string | null;
+          slug?: string;
           updated_at?: string;
           user_id?: string;
         };
@@ -383,6 +386,7 @@ export type Database = {
         Args: { p_item_id: string; p_tag_ids: string[] };
         Returns: undefined;
       };
+      slugify_tag_name: { Args: { p_name: string }; Returns: string };
       tag_ancestors: {
         Args: { p_tag_id: string };
         Returns: {
@@ -392,6 +396,27 @@ export type Database = {
         }[];
       };
       tag_descendants: { Args: { p_tag_id: string }; Returns: string[] };
+      tags_with_ancestors: {
+        Args: { p_tag_ids: string[] };
+        Returns: {
+          color_token: string;
+          created_at: string;
+          description: string | null;
+          id: string;
+          name: string;
+          name_normalized: string | null;
+          parent_id: string | null;
+          slug: string;
+          updated_at: string;
+          user_id: string;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "tags";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       update_library_item: {
         Args: {
           p_content: string;
