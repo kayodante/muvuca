@@ -108,9 +108,9 @@ export async function removeAllUserPreviewObjects(
     }
     if (!data || data.length === 0) return;
 
-    for (const folder of data) {
-      await deletePreviewObjects(supabase, userId, folder.name);
-    }
+    await Promise.all(
+      data.map((folder) => deletePreviewObjects(supabase, userId, folder.name)),
+    );
   }
 
   throw new PreviewError(
