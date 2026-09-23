@@ -3,26 +3,31 @@
 const {
   createClientMock,
   rpcMock,
-  tagsInMock,
+  tagsRpcMock,
   tagsOrderMock,
   libItemsSelectMock,
   libItemsMaybeSingleMock,
   libItemsCountMock,
   itemTagsEqMock,
 } = vi.hoisted(() => {
-  const rpc = vi.fn();
+  // search_library is awaited directly; tags_with_ancestors (getTagsByIds)
+  // chains .select().order(). `rpc` routes by name so each keeps its own mock.
+  const searchRpc = vi.fn();
   // Every row built by makeItemRow() below is type "link", so
   // getLibraryItems() always calls getPreviewsForItems() -- this mock
   // just needs to answer "no previews found" without throwing.
   const previewsIn = vi.fn().mockResolvedValue({ data: [], error: null });
   const previewsSelect = vi.fn().mockReturnValue({ in: previewsIn });
 
-  // getTagsByIds() only reaches `from("tags")` when a page row carries
-  // tag_ids -- most fixtures below have none, so this chain answers
+  // getTagsByIds() only reaches `tags_with_ancestors` when a page row
+  // carries tag_ids -- most fixtures below have none, so this chain answers
   // "no tags found" without throwing when it is touched.
   const tagsOrder = vi.fn().mockResolvedValue({ data: [], error: null });
-  const tagsIn = vi.fn().mockReturnValue({ order: tagsOrder });
-  const tagsSelect = vi.fn().mockReturnValue({ in: tagsIn });
+  const tagsSelect = vi.fn().mockReturnValue({ order: tagsOrder });
+  const tagsRpc = vi.fn().mockReturnValue({ select: tagsSelect });
+  const rpc = vi.fn((fn: string, args: unknown) =>
+    fn === "tags_with_ancestors" ? tagsRpc(fn, args) : searchRpc(fn, args),
+  );
 
   // getLibraryItemById() chains: from("library_items").select(...).eq(id).maybeSingle()
   // and from("item_tags").select(...).eq(item_id).
@@ -42,15 +47,14 @@ const {
   const itemTagsSelect = vi.fn().mockReturnValue({ eq: itemTagsEq });
 
   const from = vi.fn((table: string) => {
-    if (table === "tags") return { select: tagsSelect };
     if (table === "library_items") return { select: libItemsSelect };
     if (table === "item_tags") return { select: itemTagsSelect };
     return { select: previewsSelect };
   });
 
   return {
-    rpcMock: rpc,
-    tagsInMock: tagsIn,
+    rpcMock: searchRpc,
+    tagsRpcMock: tagsRpc,
     tagsOrderMock: tagsOrder,
     libItemsSelectMock: libItemsSelect,
     libItemsMaybeSingleMock: libItemsMaybeSingle,
@@ -243,6 +247,7 @@ describe("getLibraryItems tags aggregation", () => {
           id: "tag-a",
           parent_id: null,
           name: "A",
+          slug: "a",
           description: null,
           color_token: "lime",
           created_at: "2026-08-16T00:00:00.000Z",
@@ -252,6 +257,7 @@ describe("getLibraryItems tags aggregation", () => {
           id: "tag-b",
           parent_id: null,
           name: "B",
+          slug: "b",
           description: null,
           color_token: "lime",
           created_at: "2026-08-16T00:00:00.000Z",
@@ -265,7 +271,9 @@ describe("getLibraryItems tags aggregation", () => {
 
     // Union of tag_ids across the page, deduplicated -- not the caller's
     // whole tag list.
-    expect(tagsInMock).toHaveBeenCalledWith("id", ["tag-a", "tag-b"]);
+    expect(tagsRpcMock).toHaveBeenCalledWith("tags_with_ancestors", {
+      p_tag_ids: ["tag-a", "tag-b"],
+    });
     expect(result.tags).toEqual([
       {
         id: "tag-a",
@@ -273,6 +281,7 @@ describe("getLibraryItems tags aggregation", () => {
         name: "A",
         description: null,
         colorToken: "lime",
+        path: "a",
         createdAt: "2026-08-16T00:00:00.000Z",
         updatedAt: "2026-08-16T00:00:00.000Z",
       },
@@ -282,6 +291,7 @@ describe("getLibraryItems tags aggregation", () => {
         name: "B",
         description: null,
         colorToken: "lime",
+        path: "b",
         createdAt: "2026-08-16T00:00:00.000Z",
         updatedAt: "2026-08-16T00:00:00.000Z",
       },
@@ -295,7 +305,7 @@ describe("getLibraryItems tags aggregation", () => {
     const result = await getLibraryItems();
 
     expect(result.tags).toEqual([]);
-    expect(tagsInMock).not.toHaveBeenCalled();
+    expect(tagsRpcMock).not.toHaveBeenCalled();
   });
 });
 

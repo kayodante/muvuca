@@ -28,6 +28,7 @@ const mockTags: Tag[] = [
     colorToken: "blue",
     description: null,
     parentId: null,
+    path: "tag-1",
     createdAt: "2026-01-01",
     updatedAt: "2026-01-01",
   },

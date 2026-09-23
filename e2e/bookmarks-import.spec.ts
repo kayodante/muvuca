@@ -60,10 +60,17 @@ test("importa favoritos de um arquivo HTML e cria itens e tags", async ({
     page.getByRole("heading", { name: "Link na raiz" }),
   ).toBeVisible();
 
-  // As duas pastas viraram tags na navegação lateral.
+  // As duas pastas viraram tags na navegação lateral, com slug derivado do
+  // nome da pasta e a hierarquia na URL.
   const nav = page.getByRole("navigation", { name: "Navegação principal" });
-  await expect(nav.getByRole("link", { name: "Trabalho" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "Referências" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Trabalho" })).toHaveAttribute(
+    "href",
+    "/t/trabalho",
+  );
+  await expect(nav.getByRole("link", { name: "Referências" })).toHaveAttribute(
+    "href",
+    "/t/trabalho/referencias",
+  );
 });
 
 const PREVIEW_DRAIN_FIXTURE = path.join(

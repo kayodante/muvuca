@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 import { createChildTag, createRootTag, signIn } from "./helpers";
 
-test.describe("Rota /tags/[tagId] e navegação de tags", () => {
+test.describe("Rota /t/[...tagPath] e navegação de tags", () => {
   test("navega para a página de detalhe da tag a partir da lista de tags (/tags)", async ({
     page,
   }) => {
@@ -32,8 +32,8 @@ test.describe("Rota /tags/[tagId] e navegação de tags", () => {
     await expect(tagLink).toBeVisible();
     await tagLink.click();
 
-    // Verifica que a URL é /tags/<uuid> e que a página carrega corretamente
-    await expect(page).toHaveURL(/\/tags\/[0-9a-f-]{36}$/);
+    // A URL é o caminho amigável, derivado do nome -- nunca o UUID.
+    await expect(page).toHaveURL(/\/t\/tag-principal-\d+$/);
     await expect(
       page.getByRole("heading", { level: 1, name: tagName }),
     ).toBeVisible();
@@ -75,7 +75,7 @@ test.describe("Rota /tags/[tagId] e navegação de tags", () => {
     await sidebarTagLink.click();
 
     // Confirma que abriu a página de detalhe da tag
-    await expect(page).toHaveURL(/\/tags\/[0-9a-f-]{36}$/);
+    await expect(page).toHaveURL(/\/t\/tag-sidebar-\d+$/);
     await expect(
       page.getByRole("heading", { level: 1, name: tagName }),
     ).toBeVisible();
@@ -99,7 +99,7 @@ test.describe("Rota /tags/[tagId] e navegação de tags", () => {
       .getByRole("link", { name: childName });
     await expect(childLink).toBeVisible();
     await childLink.click();
-    await expect(page).toHaveURL(/\/tags\/[0-9a-f-]{36}$/);
+    await expect(page).toHaveURL(/\/t\/pai-\d+\/filha-\d+$/);
     await expect(
       page.getByRole("heading", { level: 1, name: childName }),
     ).toBeVisible();
@@ -114,6 +114,69 @@ test.describe("Rota /tags/[tagId] e navegação de tags", () => {
     // Confirma que voltou para o detalhe da tag pai
     await expect(
       page.getByRole("heading", { level: 1, name: parentName }),
+    ).toBeVisible();
+  });
+
+  test("URL amigável acompanha a hierarquia, o rename e o link UUID antigo", async ({
+    page,
+  }) => {
+    const email = `e2e-tags-friendly-${Date.now()}@muvuca.test`;
+    await signIn(page, email);
+
+    await createRootTag(page, "Design");
+    await createChildTag(page, "Design", "Recursos & Assets");
+    await createChildTag(page, "Recursos & Assets", "Ícones");
+
+    await page.goto("/tags");
+    const tree = page.getByRole("region", { name: "Árvore de tags" });
+    await tree.getByRole("link", { name: "Ícones" }).click();
+    await expect(page).toHaveURL(/\/t\/design\/recursos-assets\/icones$/);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Ícones" }),
+    ).toBeVisible();
+
+    const breadcrumb = page.getByRole("navigation", {
+      name: "Caminho da tag",
+    });
+    await expect(
+      breadcrumb.getByRole("link", { name: "Design" }),
+    ).toHaveAttribute("href", "/t/design");
+    await expect(
+      breadcrumb.getByRole("link", { name: "Recursos & Assets" }),
+    ).toHaveAttribute("href", "/t/design/recursos-assets");
+
+    // Nenhum link expõe o UUID; ele segue só no campo oculto `id` do
+    // diálogo de edição, que é o que a Server Action recebe.
+    await page.goto("/tags");
+    await page.getByRole("button", { name: "Ações da tag Ícones" }).click();
+    await page.getByRole("menuitem", { name: "Editar" }).click();
+    const dialog = page.getByRole("dialog", { name: "Editar tag" });
+    await expect(dialog).toBeVisible();
+    const tagId = await dialog.locator('input[name="id"]').inputValue();
+    await dialog.getByLabel("Nome").fill("Iconografia");
+    await dialog.getByRole("button", { name: "Salvar alterações" }).click();
+    await expect(page.getByText("Tag atualizada.")).toBeVisible();
+
+    await tree.getByRole("link", { name: "Iconografia" }).click();
+    await expect(page).toHaveURL(/\/t\/design\/recursos-assets\/iconografia$/);
+
+    // O link antigo por UUID redireciona para o caminho atual da tag, com um
+    // 307 de HTTP (não permanente: o slug pode mudar de novo).
+    const response = await page.goto(`/tags/${tagId}`);
+    const legacyResponse = await response
+      ?.request()
+      .redirectedFrom()
+      ?.response();
+    expect(legacyResponse?.status()).toBe(307);
+    await expect(page).toHaveURL(/\/t\/design\/recursos-assets\/iconografia$/);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Iconografia" }),
+    ).toBeVisible();
+
+    // Sem histórico de slug: o caminho anterior ao rename deixa de existir.
+    await page.goto("/t/design/recursos-assets/icones");
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Página não encontrada" }),
     ).toBeVisible();
   });
 
@@ -132,6 +195,14 @@ test.describe("Rota /tags/[tagId] e navegação de tags", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "Página não encontrada" }),
     ).toBeVisible();
+
+    // Caminho amigável inexistente e caminho malformado
+    for (const path of ["/t/nao-existe", "/t/Design", "/t/a/b/c/d/e/f/g"]) {
+      await page.goto(path);
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Página não encontrada" }),
+      ).toBeVisible();
+    }
   });
 });
 

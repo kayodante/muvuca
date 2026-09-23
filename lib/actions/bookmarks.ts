@@ -98,6 +98,7 @@ export async function importBrowserBookmarks(
   }
   revalidatePath("/library", "layout");
   revalidatePath("/tags", "layout");
+  revalidatePath("/t", "layout");
   return ok({
     itemsImported: summary.items_imported,
     tagsCreated: summary.tags_created,

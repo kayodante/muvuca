@@ -112,6 +112,23 @@ describe("updateSession (lib/supabase/proxy.ts)", () => {
     );
   });
 
+  it("protege as URLs amigáveis de tag (/t/...) sem capturar rotas vizinhas", async () => {
+    getClaimsMock.mockResolvedValue({ data: { claims: null } });
+
+    const tagRes = await updateSession(
+      new NextRequest("https://muvuca.example.com/t/design/icones"),
+    );
+    expect(tagRes.status).toBe(307);
+    expect(tagRes.headers.get("location")).toBe(
+      "https://muvuca.example.com/login",
+    );
+
+    const neighbourRes = await updateSession(
+      new NextRequest("https://muvuca.example.com/terms"),
+    );
+    expect(neighbourRes.status).toBe(200);
+  });
+
   it("não redireciona rotas públicas quando não há sessão", async () => {
     getClaimsMock.mockResolvedValue({ data: null });
 

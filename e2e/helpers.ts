@@ -142,7 +142,7 @@ export async function createRootTag(page: Page, name: string) {
 
 /**
  * Cria uma tag filha pelo menu da linha do pai, que já preenche o parentId.
- * Evita o Select "Tag pai" e evita navegar para `/tags/<id>`.
+ * Evita o Select "Tag pai" e evita navegar para a página da tag.
  */
 export async function createChildTag(
   page: Page,

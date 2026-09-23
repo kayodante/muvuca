@@ -12,7 +12,7 @@ const { routerMock, searchParamsState } = vi.hoisted(() => {
 });
 
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/tags/11111111-1111-4111-8111-111111111111",
+  usePathname: () => "/t/tecnologia",
   useRouter: () => routerMock,
   useSearchParams: () => searchParamsState.current,
 }));
@@ -64,6 +64,7 @@ describe("TagDetailView", () => {
     description: "Guias de estilo e tokens",
     colorToken: "tag-purple",
     parentId: null,
+    path: "11111111-1111-4111-8111-111111111111",
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
   };
@@ -74,6 +75,7 @@ describe("TagDetailView", () => {
     description: null,
     colorToken: "tag-blue",
     parentId: currentTag.id,
+    path: "22222222-2222-4222-8222-222222222222",
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
   };

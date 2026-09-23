@@ -30,6 +30,7 @@ const mockTags: Tag[] = [
     colorToken: "blue",
     description: null,
     parentId: null,
+    path: "dev/react",
     createdAt: "2026-01-01",
     updatedAt: "2026-01-01",
   },
@@ -306,10 +307,10 @@ describe("ItemCard", () => {
     expect(toast.error).toHaveBeenCalledWith("Não foi possível copiar o link.");
   });
 
-  it("renderiza tags associadas como links para /tags/[tagId]", async () => {
+  it("renderiza tags associadas como links para o caminho amigável da tag", async () => {
     const dom = await renderCard(mockLink);
     const tagLink = Array.from(dom.querySelectorAll("a")).find(
-      (a) => a.getAttribute("href") === "/tags/tag-1",
+      (a) => a.getAttribute("href") === "/t/dev/react",
     );
     expect(tagLink).not.toBeUndefined();
     expect(tagLink?.textContent).toContain("React");
@@ -647,6 +648,7 @@ describe("ItemCard", () => {
         colorToken: "purple",
         description: null,
         parentId: null,
+        path: "tag-2",
         createdAt: "2026-01-01",
         updatedAt: "2026-01-01",
       },
@@ -656,6 +658,7 @@ describe("ItemCard", () => {
         colorToken: "green",
         description: null,
         parentId: null,
+        path: "tag-3",
         createdAt: "2026-01-01",
         updatedAt: "2026-01-01",
       },
@@ -665,6 +668,7 @@ describe("ItemCard", () => {
         colorToken: "orange",
         description: null,
         parentId: null,
+        path: "tag-4",
         createdAt: "2026-01-01",
         updatedAt: "2026-01-01",
       },
@@ -674,6 +678,7 @@ describe("ItemCard", () => {
         colorToken: "pink",
         description: null,
         parentId: null,
+        path: "tag-5",
         createdAt: "2026-01-01",
         updatedAt: "2026-01-01",
       },
@@ -707,6 +712,7 @@ describe("ItemCard", () => {
         colorToken: "purple",
         description: null,
         parentId: null,
+        path: "tag-2",
         createdAt: "2026-01-01",
         updatedAt: "2026-01-01",
       },
@@ -716,6 +722,7 @@ describe("ItemCard", () => {
         colorToken: "green",
         description: null,
         parentId: null,
+        path: "tag-3",
         createdAt: "2026-01-01",
         updatedAt: "2026-01-01",
       },

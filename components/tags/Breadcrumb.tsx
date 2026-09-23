@@ -3,6 +3,7 @@ import { ChevronRightIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { TagAncestor } from "@/lib/database/queries/tags";
+import { getTagHref } from "@/lib/tags/routes";
 import { ptBR, type Dictionary } from "@/lib/i18n/dictionaries/pt-BR";
 
 /**
@@ -61,7 +62,7 @@ export function Breadcrumb({
           <li key={ancestor.id} className="flex min-w-0 items-center gap-1">
             <Separator />
             <Link
-              href={`/tags/${ancestor.id}`}
+              href={getTagHref(ancestor)}
               title={ancestor.name}
               dir="auto"
               className="inline-flex h-5 max-w-[12rem] items-center truncate rounded px-0.5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:max-w-xs"

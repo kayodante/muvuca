@@ -11,7 +11,7 @@ type DeleteTarget = { id: string; name: string };
 
 /**
  * Owns the create/edit/delete dialog state shared by every tag surface
- * (root tree in `/tags`, a single tag's children in `/tags/[tagId]`).
+ * (root tree in `/tags`, a single tag's children in `/t/[...tagPath]`).
  * Exposes it via a render-prop so each page keeps its own header/layout
  * while sharing one implementation of "open the editor for this tag" --
  * both the tree's own row menu and a page's "editar esta tag" button need
