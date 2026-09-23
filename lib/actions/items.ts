@@ -10,6 +10,9 @@ import {
   type LibraryItem,
 } from "@/lib/database/queries/items";
 import type { Database } from "@/lib/database/generated.types";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { getDictionary } from "@/lib/i18n/server";
+import { translateFieldErrors } from "@/lib/i18n/validation";
 import { logEvent } from "@/lib/security/logging";
 import { deletePreviewObjects } from "@/lib/storage/previews";
 import { createClient } from "@/lib/supabase/server";
@@ -49,20 +52,23 @@ function itemFormData(formData: FormData) {
   };
 }
 
-function mapItemError(error: PostgrestErrorLike): ActionResult<never> {
+function mapItemError(
+  error: PostgrestErrorLike,
+  t: Dictionary,
+): ActionResult<never> {
   if (error.code === "P0001") {
-    return fail("NOT_FOUND", "Item ou tags não estão disponíveis.");
+    return fail("NOT_FOUND", t.errors.itemOrTagsUnavailable);
   }
 
   switch (mapPostgresErrorCode(error.code)) {
     case "DUPLICATE":
-      return fail("DUPLICATE", "Esse link já está na sua biblioteca.");
+      return fail("DUPLICATE", t.errors.duplicateLink);
     case "CONSTRAINT_VIOLATION":
-      return fail("CONSTRAINT_VIOLATION", "Dados do item inválidos.");
+      return fail("CONSTRAINT_VIOLATION", t.errors.invalidItemData);
     case "INVALID_REFERENCE":
-      return fail("INVALID_REFERENCE", "Uma ou mais tags são inválidas.");
+      return fail("INVALID_REFERENCE", t.errors.invalidTagReference);
     default:
-      return fail("UNKNOWN", "Não foi possível concluir a operação.");
+      return fail("UNKNOWN", t.errors.operationFailed);
   }
 }
 
@@ -75,13 +81,14 @@ function revalidateLibrary() {
 export async function getItemDetails(
   id: string,
 ): Promise<ActionResult<LibraryItem>> {
+  const t = await getDictionary();
   const parsed = itemIdSchema.safeParse(id);
-  if (!parsed.success) return fail("VALIDATION_FAILED", "Item inválido.");
+  if (!parsed.success) return fail("VALIDATION_FAILED", t.errors.invalidItem);
 
   const user = await requireUser();
   try {
     const item = await getLibraryItemById(parsed.data);
-    if (!item) return fail("NOT_FOUND", "Item não encontrado.");
+    if (!item) return fail("NOT_FOUND", t.errors.itemNotFound);
     return ok(item);
   } catch (error) {
     logEvent({
@@ -91,7 +98,7 @@ export async function getItemDetails(
       userId: user.id,
       entityId: parsed.data,
     });
-    return fail("UNKNOWN", "Não foi possível carregar o item.");
+    return fail("UNKNOWN", t.errors.itemLoadFailed);
   }
 }
 
@@ -100,12 +107,13 @@ export async function createItem(
   _prevState: ActionResult<{ id: string }> | null,
   formData: FormData,
 ): Promise<ActionResult<{ id: string }>> {
+  const t = await getDictionary();
   const parsed = createItemSchema.safeParse(itemFormData(formData));
   if (!parsed.success) {
     return fail(
       "VALIDATION_FAILED",
-      "Verifique os campos do item.",
-      parsed.error.flatten().fieldErrors,
+      t.errors.checkItemFields,
+      translateFieldErrors(parsed.error.flatten().fieldErrors, t),
     );
   }
 
@@ -116,12 +124,12 @@ export async function createItem(
   if (parsed.data.type === "link") {
     normalizedUrl = normalizeHttpUrl(parsed.data.url);
     if (!normalizedUrl) {
-      return fail("VALIDATION_FAILED", "Informe uma URL http ou https válida.");
+      return fail("VALIDATION_FAILED", t.validation.validUrlRequired);
     }
   } else if (parsed.data.type === "code_component" && parsed.data.url) {
     normalizedUrl = normalizeHttpUrl(parsed.data.url);
     if (!normalizedUrl) {
-      return fail("VALIDATION_FAILED", "Informe uma URL http ou https válida.");
+      return fail("VALIDATION_FAILED", t.validation.validUrlRequired);
     }
   }
 
@@ -159,8 +167,8 @@ export async function createItem(
       userId: user.id,
     });
     return error
-      ? mapItemError(error)
-      : fail("UNKNOWN", "Não foi possível concluir a operação.");
+      ? mapItemError(error, t)
+      : fail("UNKNOWN", t.errors.operationFailed);
   }
 
   revalidateLibrary();
@@ -193,12 +201,13 @@ export async function updateItem(
   _prevState: ActionResult<null> | null,
   formData: FormData,
 ): Promise<ActionResult<null>> {
+  const t = await getDictionary();
   const parsed = updateItemSchema.safeParse(itemFormData(formData));
   if (!parsed.success) {
     return fail(
       "VALIDATION_FAILED",
-      "Verifique os campos do item.",
-      parsed.error.flatten().fieldErrors,
+      t.errors.checkItemFields,
+      translateFieldErrors(parsed.error.flatten().fieldErrors, t),
     );
   }
 
@@ -209,12 +218,12 @@ export async function updateItem(
   if (parsed.data.type === "link") {
     normalizedUrl = normalizeHttpUrl(parsed.data.url);
     if (!normalizedUrl) {
-      return fail("VALIDATION_FAILED", "Informe uma URL http ou https válida.");
+      return fail("VALIDATION_FAILED", t.validation.validUrlRequired);
     }
   } else if (parsed.data.type === "code_component" && parsed.data.url) {
     normalizedUrl = normalizeHttpUrl(parsed.data.url);
     if (!normalizedUrl) {
-      return fail("VALIDATION_FAILED", "Informe uma URL http ou https válida.");
+      return fail("VALIDATION_FAILED", t.validation.validUrlRequired);
     }
   }
 
@@ -253,7 +262,7 @@ export async function updateItem(
       userId: user.id,
       entityId: parsed.data.id,
     });
-    return mapItemError(error);
+    return mapItemError(error, t);
   }
 
   revalidateLibrary();
@@ -265,9 +274,10 @@ export async function deleteItem(
   _prevState: ActionResult<null> | null,
   formData: FormData,
 ): Promise<ActionResult<null>> {
+  const t = await getDictionary();
   const id = formData.get("id");
   const parsed = itemIdSchema.safeParse(id);
-  if (!parsed.success) return fail("VALIDATION_FAILED", "Item inválido.");
+  if (!parsed.success) return fail("VALIDATION_FAILED", t.errors.invalidItem);
 
   const user = await requireUser();
   const supabase = await createClient();
@@ -305,9 +315,9 @@ export async function deleteItem(
       userId: user.id,
       entityId: parsed.data,
     });
-    return mapItemError(error);
+    return mapItemError(error, t);
   }
-  if (!data) return fail("NOT_FOUND", "Item não encontrado.");
+  if (!data) return fail("NOT_FOUND", t.errors.itemNotFound);
 
   revalidateLibrary();
   return ok(null);

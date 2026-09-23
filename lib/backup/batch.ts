@@ -29,8 +29,11 @@ function sortTagsByHierarchy(tags: BackupTagPayload[]): BackupTagPayload[] {
   // Toda tag alcançável a partir de uma raiz entra em `ordered`. Sobra
   // significa ciclo -- impossível pelo trigger do banco na origem, mas o
   // arquivo pode ter sido editado à mão.
+  // Stable, untranslated key -- `lib/backup/batch.ts` is called from the
+  // browser and never imports `lib/i18n/server`. The caller
+  // (ImportBackupDialog) maps this to `t.errors.backupHierarchyInvalid`.
   if (ordered.length !== tags.length)
-    throw new BackupImportError("A hierarquia de tags do arquivo é inválida.");
+    throw new BackupImportError("backupHierarchyInvalid");
 
   return ordered;
 }

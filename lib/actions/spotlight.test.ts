@@ -1,12 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { requireUserMock, getLibraryItemsMock, getTagListMock } = vi.hoisted(
-  () => ({
-    requireUserMock: vi.fn(),
-    getLibraryItemsMock: vi.fn(),
-    getTagListMock: vi.fn(),
-  }),
-);
+import { ptBR } from "@/lib/i18n/dictionaries/pt-BR";
+
+const {
+  requireUserMock,
+  getLibraryItemsMock,
+  getTagListMock,
+  getDictionaryMock,
+} = vi.hoisted(() => ({
+  requireUserMock: vi.fn(),
+  getLibraryItemsMock: vi.fn(),
+  getTagListMock: vi.fn(),
+  getDictionaryMock: vi.fn(),
+}));
 
 vi.mock("@/lib/auth/require-user", () => ({
   requireUser: requireUserMock,
@@ -20,11 +26,14 @@ vi.mock("@/lib/database/queries/tags", () => ({
   getTagList: getTagListMock,
 }));
 
+vi.mock("@/lib/i18n/server", () => ({ getDictionary: getDictionaryMock }));
+
 import { getSpotlightInitialData, searchSpotlightItems } from "./spotlight";
 
 describe("spotlight actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getDictionaryMock.mockResolvedValue(ptBR);
   });
 
   describe("getSpotlightInitialData", () => {

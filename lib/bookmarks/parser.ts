@@ -4,6 +4,8 @@ import {
   normalizeHttpUrl,
 } from "@/lib/validation/item";
 import { TAG_NAME_MAX_LENGTH } from "@/lib/validation/tag";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
+import { dictionaries, type Dictionary } from "@/lib/i18n/dictionaries";
 import {
   MAX_BOOKMARK_FILE_SIZE,
   MAX_BOOKMARK_FOLDER_DEPTH,
@@ -37,17 +39,23 @@ function truncateAtCodeUnit(value: string, maxLength: number): string {
   return sliced;
 }
 
+/**
+ * Called from the browser (never from `lib/i18n/server`, which is
+ * server-only): `t` defaults to the pt-BR dictionary so existing callers
+ * and tests that don't pass one keep seeing Portuguese.
+ */
 export function validateBookmarkFile(
   file: File,
+  t: Dictionary = dictionaries[DEFAULT_LOCALE],
 ): { ok: true } | { ok: false; message: string } {
   if (!/\.html?$/i.test(file.name)) {
-    return { ok: false, message: "Selecione um arquivo HTML de favoritos." };
+    return { ok: false, message: t.bookmarks.errors.invalidFileType };
   }
   if (file.size === 0) {
-    return { ok: false, message: "O arquivo está vazio." };
+    return { ok: false, message: t.bookmarks.errors.emptyFile };
   }
   if (file.size > MAX_BOOKMARK_FILE_SIZE) {
-    return { ok: false, message: "O arquivo deve ter no máximo 10 MB." };
+    return { ok: false, message: t.bookmarks.errors.fileTooLarge };
   }
   return { ok: true };
 }
@@ -55,8 +63,13 @@ export function validateBookmarkFile(
 /**
  * Parses the browser export in an inert document. The document is never
  * attached or rendered; only H3 text and A[href] values are copied to DTOs.
+ * Same browser-only `t`/`locale` default as `validateBookmarkFile` above.
  */
-export function parseBookmarkHtml(html: string): BookmarkParseResult {
+export function parseBookmarkHtml(
+  html: string,
+  t: Dictionary = dictionaries[DEFAULT_LOCALE],
+  locale: Locale = DEFAULT_LOCALE,
+): BookmarkParseResult {
   const document = new DOMParser().parseFromString(html, "text/html");
   const tags: BookmarkTag[] = [];
   const items: BookmarkItem[] = [];
@@ -89,7 +102,9 @@ export function parseBookmarkHtml(html: string): BookmarkParseResult {
     }
     if (items.length >= MAX_BOOKMARKS) {
       throw new BookmarkImportError(
-        `O arquivo possui mais de ${MAX_BOOKMARKS.toLocaleString("pt-BR")} favoritos válidos.`,
+        t.bookmarks.errors.tooManyBookmarks(
+          MAX_BOOKMARKS.toLocaleString(locale),
+        ),
       );
     }
     if (seenUrls.has(normalizedUrl)) duplicateCount++;
@@ -113,7 +128,9 @@ export function parseBookmarkHtml(html: string): BookmarkParseResult {
     }
     if (tags.length >= MAX_BOOKMARK_FOLDERS) {
       throw new BookmarkImportError(
-        `O arquivo possui mais de ${MAX_BOOKMARK_FOLDERS.toLocaleString("pt-BR")} pastas.`,
+        t.bookmarks.errors.tooManyFolders(
+          MAX_BOOKMARK_FOLDERS.toLocaleString(locale),
+        ),
       );
     }
     const key = `tag_${nextTag++}`;

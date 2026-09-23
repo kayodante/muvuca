@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { signInSchema } from "@/lib/validation/auth";
 import { getEnv } from "@/lib/validation/env";
 import { DEFAULT_REDIRECT } from "@/lib/security/redirects";
+import { getDictionary } from "@/lib/i18n/server";
+import { translateFieldErrors } from "@/lib/i18n/validation";
 import { logEvent } from "@/lib/security/logging";
 import { ok, fail, type ActionResult } from "@/lib/utils/result";
 
@@ -20,6 +22,7 @@ export async function signInWithMagicLink(
   _prevState: ActionResult<null> | null,
   formData: FormData,
 ): Promise<ActionResult<null>> {
+  const t = await getDictionary();
   const parsed = signInSchema.safeParse({
     email: formData.get("email"),
     next: formData.get("next") || undefined,
@@ -28,8 +31,8 @@ export async function signInWithMagicLink(
   if (!parsed.success) {
     return fail(
       "VALIDATION_FAILED",
-      "Informe um email válido.",
-      parsed.error.flatten().fieldErrors,
+      t.errors.invalidEmail,
+      translateFieldErrors(parsed.error.flatten().fieldErrors, t),
     );
   }
 
@@ -63,6 +66,7 @@ export async function signInWithMagicLink(
 
 /** Signs the user out and redirects to `/login`. */
 export async function signOut(): Promise<ActionResult<null>> {
+  const t = await getDictionary();
   const supabase = await createClient();
   const { error } = await supabase.auth.signOut();
 
@@ -72,7 +76,7 @@ export async function signOut(): Promise<ActionResult<null>> {
       status: "failure",
       errorClass: error.name,
     });
-    return fail("UNKNOWN", "Não foi possível sair. Tente novamente.");
+    return fail("UNKNOWN", t.errors.signOutFailed);
   }
 
   redirect("/login");

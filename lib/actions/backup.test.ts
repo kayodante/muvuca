@@ -1,15 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { requireUserMock, createClientMock, rpcMock } = vi.hoisted(() => ({
-  requireUserMock: vi.fn(),
-  createClientMock: vi.fn(),
-  rpcMock: vi.fn(),
-}));
+import { ptBR } from "@/lib/i18n/dictionaries/pt-BR";
+
+const { requireUserMock, createClientMock, rpcMock, getDictionaryMock } =
+  vi.hoisted(() => ({
+    requireUserMock: vi.fn(),
+    createClientMock: vi.fn(),
+    rpcMock: vi.fn(),
+    getDictionaryMock: vi.fn(),
+  }));
 
 vi.mock("@/lib/auth/require-user", () => ({ requireUser: requireUserMock }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
 vi.mock("@/lib/security/logging", () => ({ logEvent: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("@/lib/i18n/server", () => ({ getDictionary: getDictionaryMock }));
 
 import { importLibraryBackup } from "./backup";
 
@@ -46,6 +51,7 @@ describe("importLibraryBackup", () => {
     vi.clearAllMocks();
     requireUserMock.mockResolvedValue({ id: "user-123" });
     createClientMock.mockResolvedValue({ rpc: rpcMock });
+    getDictionaryMock.mockResolvedValue(ptBR);
   });
 
   it("retorna resumo zerado imediatamente ao receber backup completamente vazio sem chamar RPC", async () => {
@@ -81,9 +87,7 @@ describe("importLibraryBackup", () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.message).toBe(
-        "O arquivo de backup precisa ser analisado novamente.",
-      );
+      expect(result.message).toBe(ptBR.errors.backupNeedsRevalidation);
     }
   });
 
@@ -179,7 +183,7 @@ describe("importLibraryBackup", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.code).toBe("UNKNOWN");
-      expect(result.message).toBe("Não foi possível concluir a restauração.");
+      expect(result.message).toBe(ptBR.errors.backupRestoreFailed);
     }
   });
 });

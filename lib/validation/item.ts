@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { CODE_LANGUAGES } from "@/lib/code/languages";
+import type { ValidationKey } from "@/lib/i18n/validation";
 
 export const ITEM_TYPES = ["link", "prompt", "code_component"] as const;
 
@@ -39,7 +40,10 @@ export const itemContentSchema = z
   .string()
   .min(1)
   .max(100_000)
-  .refine((value) => value.trim().length > 0, "O conteúdo é obrigatório.");
+  .refine(
+    (value) => value.trim().length > 0,
+    "contentRequired" satisfies ValidationKey,
+  );
 
 export function normalizeHttpUrl(value: string): string | null {
   try {
@@ -59,7 +63,7 @@ export const itemUrlSchema = z
   .max(ITEM_URL_MAX_LENGTH)
   .refine(
     (value) => normalizeHttpUrl(value) !== null,
-    "Informe uma URL http ou https válida.",
+    "validUrlRequired" satisfies ValidationKey,
   );
 
 const itemTagIdsSchema = z
@@ -69,7 +73,7 @@ const itemTagIdsSchema = z
     if (new Set(tagIds).size !== tagIds.length) {
       ctx.addIssue({
         code: "custom",
-        message: "Uma tag só pode ser associada uma vez.",
+        message: "duplicateTagAssociation" satisfies ValidationKey,
       });
     }
   });

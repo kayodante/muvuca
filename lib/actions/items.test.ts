@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ptBR } from "@/lib/i18n/dictionaries/pt-BR";
+
 const {
   createClientMock,
   requireUserMock,
@@ -11,6 +13,7 @@ const {
   afterMock,
   drainPreviewQueueMock,
   deletePreviewObjectsMock,
+  getDictionaryMock,
 } = vi.hoisted(() => ({
   createClientMock: vi.fn(),
   requireUserMock: vi.fn(),
@@ -22,6 +25,7 @@ const {
   afterMock: vi.fn(),
   drainPreviewQueueMock: vi.fn(),
   deletePreviewObjectsMock: vi.fn(),
+  getDictionaryMock: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -56,6 +60,10 @@ vi.mock("@/lib/storage/previews", () => ({
   deletePreviewObjects: deletePreviewObjectsMock,
 }));
 
+vi.mock("@/lib/i18n/server", () => ({
+  getDictionary: getDictionaryMock,
+}));
+
 import { createItem, deleteItem, getItemDetails, updateItem } from "./items";
 
 describe("items actions", () => {
@@ -77,6 +85,7 @@ describe("items actions", () => {
     // deleteItem test that doesn't care about Storage cleanup isn't
     // accidentally poisoned by an earlier test's mockRejectedValue.
     deletePreviewObjectsMock.mockResolvedValue(undefined);
+    getDictionaryMock.mockResolvedValue(ptBR);
   });
 
   describe("createItem", () => {
@@ -307,7 +316,7 @@ describe("items actions", () => {
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.code).toBe("DUPLICATE");
-        expect(result.message).toBe("Esse link já está na sua biblioteca.");
+        expect(result.message).toBe(ptBR.errors.duplicateLink);
       }
       expect(logEventMock).toHaveBeenCalledWith({
         event: "item.create_failed",
@@ -510,7 +519,7 @@ describe("items actions", () => {
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.code).toBe("NOT_FOUND");
-        expect(result.message).toBe("Item ou tags não estão disponíveis.");
+        expect(result.message).toBe(ptBR.errors.itemOrTagsUnavailable);
       }
       expect(logEventMock).toHaveBeenCalledWith({
         event: "item.update_failed",
@@ -549,7 +558,7 @@ describe("items actions", () => {
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.code).toBe("NOT_FOUND");
-        expect(result.message).toBe("Item não encontrado.");
+        expect(result.message).toBe(ptBR.errors.itemNotFound);
       }
     });
 
@@ -559,7 +568,7 @@ describe("items actions", () => {
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.code).toBe("VALIDATION_FAILED");
-        expect(result.message).toBe("Item inválido.");
+        expect(result.message).toBe(ptBR.errors.invalidItem);
       }
       expect(getLibraryItemByIdMock).not.toHaveBeenCalled();
     });
@@ -574,7 +583,7 @@ describe("items actions", () => {
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.code).toBe("UNKNOWN");
-        expect(result.message).toBe("Não foi possível carregar o item.");
+        expect(result.message).toBe(ptBR.errors.itemLoadFailed);
       }
       expect(logEventMock).toHaveBeenCalledWith({
         event: "item.detail_failed",
@@ -623,7 +632,7 @@ describe("items actions", () => {
       expect(result.ok).toBe(false);
       if (!result.ok) {
         expect(result.code).toBe("NOT_FOUND");
-        expect(result.message).toBe("Item não encontrado.");
+        expect(result.message).toBe(ptBR.errors.itemNotFound);
       }
     });
 

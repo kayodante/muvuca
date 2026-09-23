@@ -1,17 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { requireUserMock, createClientMock, logEventMock, revalidatePathMock } =
-  vi.hoisted(() => ({
-    requireUserMock: vi.fn(),
-    createClientMock: vi.fn(),
-    logEventMock: vi.fn(),
-    revalidatePathMock: vi.fn(),
-  }));
+import { ptBR } from "@/lib/i18n/dictionaries/pt-BR";
+
+const {
+  requireUserMock,
+  createClientMock,
+  logEventMock,
+  revalidatePathMock,
+  getDictionaryMock,
+} = vi.hoisted(() => ({
+  requireUserMock: vi.fn(),
+  createClientMock: vi.fn(),
+  logEventMock: vi.fn(),
+  revalidatePathMock: vi.fn(),
+  getDictionaryMock: vi.fn(),
+}));
 
 vi.mock("@/lib/auth/require-user", () => ({ requireUser: requireUserMock }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
 vi.mock("@/lib/security/logging", () => ({ logEvent: logEventMock }));
 vi.mock("next/cache", () => ({ revalidatePath: revalidatePathMock }));
+vi.mock("@/lib/i18n/server", () => ({ getDictionary: getDictionaryMock }));
 
 import { refreshItemPreview, reschedulePreviewsForItems } from "./previews";
 import { PREVIEW_SCOPE_MAX_IDS } from "@/lib/validation/item";
@@ -23,6 +32,7 @@ describe("refreshItemPreview", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireUserMock.mockResolvedValue(USER);
+    getDictionaryMock.mockResolvedValue(ptBR);
   });
 
   it("maps P0001 'preview não encontrado' to NOT_FOUND", async () => {
@@ -77,6 +87,7 @@ describe("reschedulePreviewsForItems", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireUserMock.mockResolvedValue(USER);
+    getDictionaryMock.mockResolvedValue(ptBR);
   });
 
   it("returns the rescheduled count on success", async () => {

@@ -3,6 +3,8 @@
 import { useId, useState, useTransition, type FormEvent } from "react";
 
 import { setDisplayName } from "@/lib/actions/profile";
+import { useDictionary } from "@/lib/i18n/client";
+import { translateIssue } from "@/lib/i18n/validation";
 import { displayNameSchema } from "@/lib/profile/display-name";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +22,7 @@ export function ProfileCard({
   displayName: string | null;
   fallbackName: string;
 }) {
+  const t = useDictionary();
   const [value, setValue] = useState(displayName ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -35,7 +38,7 @@ export function ProfileCard({
 
     const parsed = displayNameSchema.safeParse(value);
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Nome inválido.");
+      setError(translateIssue(parsed.error.issues[0]?.message ?? "", t));
       return;
     }
 

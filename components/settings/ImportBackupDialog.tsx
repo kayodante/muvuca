@@ -10,6 +10,7 @@ import {
 import { BackupImportError, toBackupPayload } from "@/lib/backup/batch";
 import { MAX_BACKUP_FILE_SIZE } from "@/lib/backup/types";
 import { backupFileSchema, type BackupFile } from "@/lib/backup/validation";
+import { useDictionary } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -30,6 +31,7 @@ export function ImportBackupDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useDictionary();
   const [preview, setPreview] = useState<Preview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<BackupImportSummary | null>(null);
@@ -74,8 +76,8 @@ export function ImportBackupDialog({
     } catch (caught) {
       setError(
         caught instanceof BackupImportError
-          ? caught.message
-          : "Não foi possível ler este arquivo.",
+          ? t.errors.backupHierarchyInvalid
+          : t.errors.unreadableFile,
       );
     }
   }

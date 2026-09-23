@@ -11,8 +11,9 @@ import {
   getDescendantIds,
   type FlatTag,
 } from "@/lib/tags/tree";
-import { TAG_COLOR_LABELS, TAG_SWATCH_CLASS } from "@/lib/tags/colors";
+import { TAG_SWATCH_CLASS } from "@/lib/tags/colors";
 import { TAG_COLOR_TOKENS, type TagColorToken } from "@/lib/validation/tag";
+import { useDictionary } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,7 @@ export function TagEditor({
   flatTags: FlatTag[];
   onSaved?: () => void;
 }) {
+  const t = useDictionary();
   const [createState, createFormAction, createPending] = useActionState(
     createTag,
     null,
@@ -192,7 +194,7 @@ export function TagEditor({
               {TAG_COLOR_TOKENS.map((token) => (
                 <label
                   key={token}
-                  title={TAG_COLOR_LABELS[token]}
+                  title={t.tags.colors[token]}
                   className="group relative flex cursor-pointer items-center justify-center p-0.5"
                 >
                   <input
@@ -216,7 +218,7 @@ export function TagEditor({
                     strokeWidth={3}
                     className="pointer-events-none absolute size-4 scale-75 text-white opacity-0 drop-shadow-[0_1px_1px_rgb(0_0_0/0.55)] transition-[opacity,transform] duration-(--motion-fast) ease-out-muvuca peer-checked:scale-100 peer-checked:opacity-100 motion-reduce:transition-none"
                   />
-                  <span className="sr-only">{TAG_COLOR_LABELS[token]}</span>
+                  <span className="sr-only">{t.tags.colors[token]}</span>
                 </label>
               ))}
             </div>

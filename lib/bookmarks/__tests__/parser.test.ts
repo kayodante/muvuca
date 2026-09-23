@@ -4,6 +4,7 @@ import duplicateFoldersHtml from "@/lib/bookmarks/__fixtures__/duplicate-folders
 import invalidHtml from "@/lib/bookmarks/__fixtures__/invalid.html?raw";
 import malformedHtml from "@/lib/bookmarks/__fixtures__/malformed.html?raw";
 import validHtml from "@/lib/bookmarks/__fixtures__/valid.html?raw";
+import { en } from "@/lib/i18n/dictionaries/en";
 import {
   MAX_BOOKMARK_FILE_SIZE,
   parseBookmarkHtml,
@@ -157,6 +158,21 @@ describe("bookmark parser", () => {
     expect(validateBookmarkFile(file)).toEqual({
       ok: false,
       message: "O arquivo deve ter no máximo 10 MB.",
+    });
+  });
+
+  it("uses the English dictionary passed in, instead of the pt-BR default", () => {
+    const file = new File(
+      [new Uint8Array(MAX_BOOKMARK_FILE_SIZE + 1)],
+      "x.html",
+      {
+        type: "text/html",
+      },
+    );
+
+    expect(validateBookmarkFile(file, en)).toEqual({
+      ok: false,
+      message: en.bookmarks.errors.fileTooLarge,
     });
   });
 });

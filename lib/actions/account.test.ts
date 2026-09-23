@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ptBR } from "@/lib/i18n/dictionaries/pt-BR";
+
 const {
   requireUserMock,
   createClientMock,
@@ -7,6 +9,7 @@ const {
   revalidatePathMock,
   logEventMock,
   removeAllUserPreviewObjectsMock,
+  getDictionaryMock,
 } = vi.hoisted(() => ({
   requireUserMock: vi.fn(),
   createClientMock: vi.fn(),
@@ -14,6 +17,7 @@ const {
   revalidatePathMock: vi.fn(),
   logEventMock: vi.fn(),
   removeAllUserPreviewObjectsMock: vi.fn(),
+  getDictionaryMock: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/require-user", () => ({ requireUser: requireUserMock }));
@@ -23,6 +27,7 @@ vi.mock("next/cache", () => ({ revalidatePath: revalidatePathMock }));
 vi.mock("@/lib/storage/previews", () => ({
   removeAllUserPreviewObjects: removeAllUserPreviewObjectsMock,
 }));
+vi.mock("@/lib/i18n/server", () => ({ getDictionary: getDictionaryMock }));
 
 import { resetAccount } from "./account";
 
@@ -32,6 +37,7 @@ describe("resetAccount", () => {
     requireUserMock.mockResolvedValue({ id: "user-123" });
     removeAllUserPreviewObjectsMock.mockResolvedValue(undefined);
     createClientMock.mockResolvedValue({ rpc: rpcMock });
+    getDictionaryMock.mockResolvedValue(ptBR);
   });
 
   it("exige sessão antes de chamar a RPC", async () => {
@@ -62,7 +68,7 @@ describe("resetAccount", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.code).toBe("UNKNOWN");
-      expect(result.message).toBe("Não foi possível apagar os dados da conta.");
+      expect(result.message).toBe(ptBR.errors.accountResetFailed);
     }
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });

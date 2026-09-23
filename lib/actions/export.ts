@@ -1,12 +1,14 @@
 "use server";
 
 import { requireUser } from "@/lib/auth/require-user";
+import { getDictionary } from "@/lib/i18n/server";
 import { logEvent } from "@/lib/security/logging";
 import { createClient } from "@/lib/supabase/server";
 import { fail, ok, type ActionResult } from "@/lib/utils/result";
 import { BACKUP_FORMAT_VERSION, type ExportData } from "@/lib/export/formatter";
 
 export async function exportUserLibrary(): Promise<ActionResult<ExportData>> {
+  const t = await getDictionary();
   const user = await requireUser();
   const supabase = await createClient();
 
@@ -34,7 +36,7 @@ export async function exportUserLibrary(): Promise<ActionResult<ExportData>> {
         itemTagsResult.error?.code,
       userId: user.id,
     });
-    return fail("UNKNOWN", "Falha ao gerar dados de exportação.");
+    return fail("UNKNOWN", t.errors.exportFailed);
   }
 
   const tagMap = new Map<string, string[]>();

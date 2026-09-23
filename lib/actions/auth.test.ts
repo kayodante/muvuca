@@ -1,9 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { createClientMock, signInWithOtpMock } = vi.hoisted(() => ({
-  createClientMock: vi.fn(),
-  signInWithOtpMock: vi.fn(),
-}));
+import { ptBR } from "@/lib/i18n/dictionaries/pt-BR";
+import { en } from "@/lib/i18n/dictionaries/en";
+
+const { createClientMock, signInWithOtpMock, getDictionaryMock } = vi.hoisted(
+  () => ({
+    createClientMock: vi.fn(),
+    signInWithOtpMock: vi.fn(),
+    getDictionaryMock: vi.fn(),
+  }),
+);
 
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({
@@ -13,6 +19,7 @@ vi.mock("@/lib/validation/env", () => ({
   getEnv: () => ({ NEXT_PUBLIC_APP_URL: "https://muvuca.example.com" }),
 }));
 vi.mock("@/lib/security/logging", () => ({ logEvent: vi.fn() }));
+vi.mock("@/lib/i18n/server", () => ({ getDictionary: getDictionaryMock }));
 
 import { signInWithMagicLink } from "@/lib/actions/auth";
 
@@ -23,6 +30,7 @@ describe("signInWithMagicLink", () => {
     createClientMock.mockResolvedValue({
       auth: { signInWithOtp: signInWithOtpMock },
     });
+    getDictionaryMock.mockResolvedValue(ptBR);
   });
 
   it("requests the hosted PKCE callback at the canonical origin", async () => {
@@ -65,5 +73,20 @@ describe("signInWithMagicLink", () => {
     const call = signInWithOtpMock.mock.calls[0]?.[0];
     const redirectUrl = new URL(call.options.emailRedirectTo);
     expect(redirectUrl.searchParams.get("next")).toBe("/library");
+  });
+
+  it("returns the English validation message when the dictionary is en", async () => {
+    getDictionaryMock.mockResolvedValue(en);
+    const formData = new FormData();
+    formData.set("email", "not-an-email");
+
+    const result = await signInWithMagicLink(null, formData);
+
+    expect(result).toMatchObject({
+      ok: false,
+      code: "VALIDATION_FAILED",
+      message: en.errors.invalidEmail,
+    });
+    expect(signInWithOtpMock).not.toHaveBeenCalled();
   });
 });

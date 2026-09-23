@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth/require-user";
 import { backupPayloadSchema } from "@/lib/backup/validation";
+import { getDictionary } from "@/lib/i18n/server";
 import { logEvent } from "@/lib/security/logging";
 import { createClient } from "@/lib/supabase/server";
 import { fail, ok, type ActionResult } from "@/lib/utils/result";
@@ -18,6 +19,7 @@ export type BackupImportSummary = {
 export async function importLibraryBackup(
   input: unknown,
 ): Promise<ActionResult<BackupImportSummary>> {
+  const t = await getDictionary();
   const parsed = backupPayloadSchema.safeParse(input);
   if (!parsed.success) {
     // Só os caminhos dos campos (ex.: "items.3.title") -- nunca a mensagem do
@@ -30,10 +32,7 @@ export async function importLibraryBackup(
       status: "failure",
       errorClass: `VALIDATION_FAILED:${issuePaths.join(",")}`,
     });
-    return fail(
-      "VALIDATION_FAILED",
-      "O arquivo de backup precisa ser analisado novamente.",
-    );
+    return fail("VALIDATION_FAILED", t.errors.backupNeedsRevalidation);
   }
 
   // Backup vazio é válido e não exige escritas no banco
@@ -82,7 +81,7 @@ export async function importLibraryBackup(
       errorClass: error?.code,
       userId: user.id,
     });
-    return fail("UNKNOWN", "Não foi possível concluir a restauração.");
+    return fail("UNKNOWN", t.errors.backupRestoreFailed);
   }
 
   revalidatePath("/library", "layout");

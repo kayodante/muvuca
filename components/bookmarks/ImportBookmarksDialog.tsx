@@ -19,6 +19,7 @@ import {
   BOOKMARK_BATCH_SIZE,
   type BookmarkParseResult,
 } from "@/lib/bookmarks/types";
+import { useDictionary, useLocale } from "@/lib/i18n/client";
 import { indentClassFor } from "@/lib/tags/indent";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,8 @@ export function ImportBookmarksDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useDictionary();
+  const locale = useLocale();
   const [preview, setPreview] = useState<BookmarkParseResult | null>(null);
   const [existing, setExisting] = useState<string[]>([]);
   const [existingChecked, setExistingChecked] = useState(false);
@@ -78,14 +81,14 @@ export function ImportBookmarksDialog({
 
   async function selectFile(file: File | undefined) {
     if (!file) return;
-    const valid = validateBookmarkFile(file);
+    const valid = validateBookmarkFile(file, t);
     if (!valid.ok) return setError(valid.message);
     setError(null);
     setResult(null);
     try {
-      const parsed = parseBookmarkHtml(await file.text());
+      const parsed = parseBookmarkHtml(await file.text(), t, locale);
       if (parsed.items.length === 0)
-        return setError("Nenhum favorito válido foi encontrado.");
+        return setError(t.bookmarks.errors.noValidBookmarks);
       setPreview(parsed);
       setExistingChecked(false);
       setIsCheckingDuplicates(true);
@@ -104,7 +107,7 @@ export function ImportBookmarksDialog({
       setError(
         caught instanceof BookmarkImportError
           ? caught.message
-          : "Não foi possível ler este arquivo.",
+          : t.errors.unreadableFile,
       );
     }
   }
