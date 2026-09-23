@@ -58,14 +58,14 @@ async function createItem(
   await expect(dialog).toBeHidden();
 }
 
-/** Abre `/tags/<id>` pelo link da tag na barra lateral. */
+/** Abre `/t/<caminho>` pelo link da tag na barra lateral. */
 async function openTagFromSidebar(page: Page, name: string) {
   await page
     .getByRole("navigation", { name: "Navegação principal" })
     .getByRole("link", { name, exact: true })
     .click();
 
-  await expect(page).toHaveURL(/\/tags\/[0-9a-f-]{36}$/);
+  await expect(page).toHaveURL(/\/t\/[a-z0-9-]+(?:\/[a-z0-9-]+)*$/);
 }
 
 /** Estado compartilhado pelos testes deste arquivo, montado pela interface. */
@@ -217,7 +217,7 @@ test("abrir a tag pai traz os itens das tags filhas (rollup)", async ({
   await seedLibrary(page);
 
   // O escopo por tag é a barra lateral, não um filtro da barra de filtros:
-  // clicar na tag abre `/tags/<id>`, que roda o mesmo rollup indexado.
+  // clicar na tag abre `/t/<caminho>`, que roda o mesmo rollup indexado.
   await page.goto("/library");
   await openTagFromSidebar(page, "Trabalho");
 

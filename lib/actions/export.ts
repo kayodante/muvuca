@@ -15,7 +15,7 @@ export async function exportUserLibrary(): Promise<ActionResult<ExportData>> {
   const [tagsResult, itemsResult, itemTagsResult] = await Promise.all([
     supabase
       .from("tags")
-      .select("id, name, color_token, parent_id, description, created_at")
+      .select("id, name, slug, color_token, parent_id, description, created_at")
       .order("created_at", { ascending: true }),
     supabase
       .from("library_items")
@@ -56,6 +56,7 @@ export async function exportUserLibrary(): Promise<ActionResult<ExportData>> {
       parentId: t.parent_id,
       description: t.description,
       createdAt: t.created_at,
+      slug: t.slug,
     })),
     items: (itemsResult.data ?? []).map((item) => ({
       id: item.id,

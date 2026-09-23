@@ -8,7 +8,7 @@ import { Breadcrumb } from "./Breadcrumb";
 import { ItemsPage } from "@/components/items/ItemsPage";
 
 /**
- * `/tags/[tagId]`: breadcrumb, this tag's own head (name, badge, item/subtag
+ * `/t/[...tagPath]`: breadcrumb, this tag's own head (name, badge, item/subtag
  * counts) and its indexed, deduplicated item rollup for the subtree.
  * Creating/editing/deleting tags and browsing the child tree happen on
  * `/tags`, not here.
@@ -16,7 +16,7 @@ import { ItemsPage } from "@/components/items/ItemsPage";
  * `t` is optional (default `ptBR`), same pattern as `Breadcrumb`: its own
  * unit test renders it directly through `createRoot()` (plain client
  * rendering, not the RSC pipeline), so it can't be `async` to call
- * `getDictionary()` itself -- the caller (`app/(app)/tags/[tagId]/page.tsx`,
+ * `getDictionary()` itself -- the caller (`app/(app)/t/[...tagPath]/page.tsx`,
  * already async) resolves and passes it down instead.
  */
 export function TagDetailView({

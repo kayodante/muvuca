@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { LibraryItemSummary } from "@/lib/database/queries/items";
 import type { Tag } from "@/lib/database/queries/tags";
+import { getTagHref } from "@/lib/tags/routes";
 import { copyToClipboard } from "@/lib/clipboard";
 import { normalizeHttpUrl } from "@/lib/validation/item";
 import { MORPH_CLASS, MORPH_TITLE_CLASS } from "@/lib/motion/view-transition";
@@ -521,7 +522,7 @@ export function ItemCard({
           key={tag.id}
           name={tag.name}
           colorToken={tag.colorToken}
-          href={`/tags/${tag.id}`}
+          href={getTagHref(tag)}
         />
       ))}
       {hiddenTagsLabel && (

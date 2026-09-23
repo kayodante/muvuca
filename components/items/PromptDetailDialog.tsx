@@ -7,6 +7,7 @@ import { normalizeHttpUrl } from "@/lib/validation/item";
 import { MORPH_CLASS, MORPH_TITLE_CLASS } from "@/lib/motion/view-transition";
 import { useDictionary } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
+import { getTagHref } from "@/lib/tags/routes";
 import { TagChip } from "@/components/tags/TagChip";
 import { PromptContentPanel } from "@/components/items/PromptContentPanel";
 import { PromptCopyButton } from "@/components/items/PromptCopyButton";
@@ -75,7 +76,7 @@ export function PromptDetailDialog({
                 key={tag.id}
                 name={tag.name}
                 colorToken={tag.colorToken}
-                href={`/tags/${tag.id}`}
+                href={getTagHref(tag)}
               />
             ))}
           </div>

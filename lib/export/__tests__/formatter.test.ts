@@ -7,7 +7,7 @@ import {
 } from "../formatter";
 
 const mockExportData: ExportData = {
-  version: "1.2",
+  version: "1.3",
   exportedAt: "2026-08-15T12:00:00Z",
   tags: [
     {
@@ -17,6 +17,7 @@ const mockExportData: ExportData = {
       parentId: null,
       description: null,
       createdAt: "2026-08-10T00:00:00Z",
+      slug: "design",
     },
     {
       id: "tag-2",
@@ -25,6 +26,7 @@ const mockExportData: ExportData = {
       parentId: "tag-1",
       description: null,
       createdAt: "2026-08-10T00:00:00Z",
+      slug: "ui",
     },
   ],
   items: [
@@ -64,7 +66,7 @@ describe("formatAsNetscapeBookmarks", () => {
 
   it('escapa caracteres especiais HTML (&, <, >, ") em nomes de tags, títulos e URLs', () => {
     const dataWithSpecialChars: ExportData = {
-      version: "1.2",
+      version: "1.3",
       exportedAt: "2026-08-15T12:00:00Z",
       tags: [
         {
@@ -74,6 +76,7 @@ describe("formatAsNetscapeBookmarks", () => {
           parentId: null,
           description: null,
           createdAt: "2026-08-10T00:00:00Z",
+          slug: "design-code",
         },
       ],
       items: [
@@ -100,7 +103,7 @@ describe("formatAsNetscapeBookmarks", () => {
 
   it("renderiza links sem tags na raiz do documento", () => {
     const dataWithUntagged: ExportData = {
-      version: "1.2",
+      version: "1.3",
       exportedAt: "2026-08-15T12:00:00Z",
       tags: [],
       items: [
@@ -124,7 +127,7 @@ describe("formatAsNetscapeBookmarks", () => {
 
   it("ignora itens do tipo prompt no HTML Netscape mas mantém links", () => {
     const dataWithPrompts: ExportData = {
-      version: "1.2",
+      version: "1.3",
       exportedAt: "2026-08-15T12:00:00Z",
       tags: [],
       items: [
@@ -148,7 +151,7 @@ describe("formatAsNetscapeBookmarks", () => {
 
   it("ignora itens do tipo code_component no HTML Netscape mas mantém links", () => {
     const dataWithCodeComponent: ExportData = {
-      version: "1.2",
+      version: "1.3",
       exportedAt: "2026-08-15T12:00:00Z",
       tags: [],
       items: [
@@ -173,19 +176,19 @@ describe("formatAsNetscapeBookmarks", () => {
 });
 
 describe("versões do formato de backup", () => {
-  it("grava a 1.2 como a versão atual do exportador", () => {
-    expect(BACKUP_FORMAT_VERSION).toBe("1.2");
+  it("grava a 1.3 como a versão atual do exportador", () => {
+    expect(BACKUP_FORMAT_VERSION).toBe("1.3");
   });
 
   it("continua aceitando arquivos das versões 1.0 e 1.1 na importação", () => {
-    expect(SUPPORTED_BACKUP_VERSIONS).toEqual(["1.0", "1.1", "1.2"]);
+    expect(SUPPORTED_BACKUP_VERSIONS).toEqual(["1.0", "1.1", "1.2", "1.3"]);
   });
 });
 
 describe("language no formato 1.2", () => {
   it("serializa a chave language de um code_component no JSON de backup", () => {
     const data: ExportData = {
-      version: "1.2",
+      version: "1.3",
       exportedAt: "2026-08-15T12:00:00Z",
       tags: [],
       items: [

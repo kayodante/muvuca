@@ -23,6 +23,7 @@ const mockTags: Tag[] = [
     colorToken: "purple",
     description: null,
     parentId: null,
+    path: "escrita",
     createdAt: "2026-01-01",
     updatedAt: "2026-01-01",
   },
@@ -92,6 +93,9 @@ describe("PromptDetailDialog", () => {
       "Write a sci-fi novel starting in a retro bistro on Mars.",
     );
     expect(document.body.textContent).toContain("Writing");
+    expect(
+      document.body.querySelector('a[href="/t/escrita"]')?.textContent,
+    ).toContain("Writing");
 
     const editButton = Array.from(
       document.body.querySelectorAll("button"),

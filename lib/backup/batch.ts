@@ -57,6 +57,7 @@ export function toBackupPayload(file: BackupFile): {
       colorToken: tag.colorToken,
       description: tag.description ?? null,
       createdAt: tag.createdAt ?? null,
+      slug: tag.slug ?? null,
     })),
   );
 

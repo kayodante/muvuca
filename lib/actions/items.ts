@@ -75,6 +75,7 @@ function mapItemError(
 function revalidateLibrary() {
   revalidatePath("/library", "layout");
   revalidatePath("/tags", "layout");
+  revalidatePath("/t", "layout");
 }
 
 /** Reads a full prompt only after the user asks to view or edit it. */

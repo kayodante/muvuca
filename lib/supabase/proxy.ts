@@ -54,7 +54,7 @@ export async function updateSession(request: NextRequest) {
 
   if (
     !data?.claims &&
-    /^\/(?:library|settings|tags)(?:\/|$)/.test(request.nextUrl.pathname)
+    /^\/(?:library|settings|tags|t)(?:\/|$)/.test(request.nextUrl.pathname)
   ) {
     const redirectResponse = NextResponse.redirect(
       new URL("/login", request.url),

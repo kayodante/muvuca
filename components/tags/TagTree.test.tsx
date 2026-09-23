@@ -19,6 +19,7 @@ const nodes: TagNode[] = [
   {
     id: "dev",
     parentId: null,
+    path: "dev",
     name: "Dev",
     colorToken: "lime",
     description: null,
@@ -26,6 +27,7 @@ const nodes: TagNode[] = [
       {
         id: "frontend",
         parentId: "dev",
+        path: "dev/frontend",
         name: "Frontend",
         colorToken: "cyan",
         description: null,
@@ -77,7 +79,7 @@ describe("TagTree", () => {
   it("filtrar com um ramo recolhido mantém o descendente que combina alcançável", async () => {
     const dom = await renderTagTree();
     const subtreeOf = (node: ParentNode) =>
-      node.querySelector('a[href="/tags/frontend"]')?.closest("ul");
+      node.querySelector('a[href="/t/dev/frontend"]')?.closest("ul");
 
     const toggle = dom.querySelector(
       'button[aria-label="Recolher Dev"]',
@@ -110,7 +112,7 @@ describe("TagTree", () => {
   it("limpar a busca devolve o ramo ao estado recolhido pelo usuário", async () => {
     const dom = await renderTagTree(true);
     const subtreeOf = (node: ParentNode) =>
-      node.querySelector('a[href="/tags/frontend"]')?.closest("ul");
+      node.querySelector('a[href="/t/dev/frontend"]')?.closest("ul");
 
     const toggle = dom.querySelector(
       'button[aria-label="Recolher Dev"]',

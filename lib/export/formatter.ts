@@ -7,6 +7,12 @@ export interface ExportTag {
   description: string | null;
   /** Adicionado na versão 1.1 do formato; ausente em arquivos 1.0. */
   createdAt: string;
+  /**
+   * Adicionado na versão 1.3: o slug de roteamento (`/t/...`). Na
+   * restauração é só uma dica -- o banco a mantém se ainda for forma válida
+   * do nome e estiver livre, e deriva do nome caso contrário.
+   */
+  slug: string;
 }
 
 export interface ExportItem {
@@ -39,11 +45,15 @@ export interface ExportItem {
  * round-trip export→import perdia a linguagem que alimenta o highlight.
  * Arquivos 1.0/1.1 continuam válidos -- `language` é opcional e restaura
  * como null (a chave não entra na dedupe de itens).
+ *
+ * 1.3 acrescenta `slug` em cada tag (AAA-96), para que a restauração
+ * mantenha as mesmas URLs `/t/...` sempre que possível. Arquivos 1.0-1.2
+ * continuam válidos -- sem a chave, o banco deriva o slug do nome.
  */
-export const BACKUP_FORMAT_VERSION = "1.2" as const;
+export const BACKUP_FORMAT_VERSION = "1.3" as const;
 
 /** Versões que o importador aceita ler, da mais antiga à mais nova. */
-export const SUPPORTED_BACKUP_VERSIONS = ["1.0", "1.1", "1.2"] as const;
+export const SUPPORTED_BACKUP_VERSIONS = ["1.0", "1.1", "1.2", "1.3"] as const;
 
 export interface ExportData {
   version: typeof BACKUP_FORMAT_VERSION;

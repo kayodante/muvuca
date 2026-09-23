@@ -52,6 +52,7 @@ export async function resetAccount(): Promise<ActionResult<null>> {
 
   revalidatePath("/library", "layout");
   revalidatePath("/tags", "layout");
+  revalidatePath("/t", "layout");
   revalidatePath("/settings");
 
   return ok(null);

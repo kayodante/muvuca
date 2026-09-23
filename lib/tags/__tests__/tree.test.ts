@@ -9,7 +9,14 @@ import {
 } from "@/lib/tags/tree";
 
 function tag(id: string, parentId: string | null, name = id): FlatTag {
-  return { id, parentId, name, colorToken: "lime", description: null };
+  return {
+    id,
+    parentId,
+    name,
+    colorToken: "lime",
+    description: null,
+    path: id,
+  };
 }
 
 // Skills -> Design, Dev; Design -> Figma

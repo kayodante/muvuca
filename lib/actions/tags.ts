@@ -147,6 +147,7 @@ export async function createTag(
   }
 
   revalidatePath("/tags", "layout");
+  revalidatePath("/t", "layout");
   return ok({ id: data.id });
 }
 
@@ -202,6 +203,7 @@ export async function updateTag(
   }
 
   revalidatePath("/tags", "layout");
+  revalidatePath("/t", "layout");
   return ok(null);
 }
 
@@ -250,5 +252,6 @@ export async function deleteTag(
   }
 
   revalidatePath("/tags", "layout");
+  revalidatePath("/t", "layout");
   return ok(null);
 }

@@ -10,6 +10,12 @@ export type FlatTag = {
   name: string;
   colorToken: string;
   description: string | null;
+  /**
+   * Slug path root-first ("design/recursos-assets"), derived on read from
+   * parent_id + slug -- never stored. Turn it into a link with `getTagHref`
+   * (`lib/tags/routes.ts`); every operation still goes by `id`.
+   */
+  path: string;
 };
 
 export type TagNode = FlatTag & { children: TagNode[] };

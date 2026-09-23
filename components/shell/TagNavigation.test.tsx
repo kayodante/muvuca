@@ -4,8 +4,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { FlatTag } from "@/lib/tags/tree";
 
+const { usePathnameMock } = vi.hoisted(() => ({
+  usePathnameMock: vi.fn(() => "/library"),
+}));
+
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/library",
+  usePathname: usePathnameMock,
 }));
 
 const { TagNavigation } = await import("./TagNavigation");
@@ -34,6 +38,7 @@ const tags: FlatTag[] = [
   {
     id: "design",
     parentId: null,
+    path: "design",
     name: "Design",
     colorToken: "lime",
     description: null,
@@ -41,6 +46,7 @@ const tags: FlatTag[] = [
   {
     id: "dev",
     parentId: null,
+    path: "dev",
     name: "Dev",
     colorToken: "lime",
     description: null,
@@ -48,6 +54,7 @@ const tags: FlatTag[] = [
   {
     id: "frontend",
     parentId: "dev",
+    path: "dev/frontend",
     name: "Frontend",
     colorToken: "lime",
     description: null,
@@ -59,6 +66,7 @@ const tagsWithGrandchild: FlatTag[] = [
   {
     id: "react",
     parentId: "frontend",
+    path: "dev/frontend/react",
     name: "React",
     colorToken: "lime",
     description: null,
@@ -75,7 +83,7 @@ function setInputValue(input: HTMLInputElement, value: string) {
 }
 
 function tagLinks(dom: HTMLDivElement) {
-  return Array.from(dom.querySelectorAll('a[href^="/tags/"]')).map(
+  return Array.from(dom.querySelectorAll('a[href^="/t/"]')).map(
     (link) => link.textContent,
   );
 }
@@ -132,7 +140,7 @@ describe("TagNavigation", () => {
 
     expect(tagLinks(dom)).toEqual(["Dev", "Frontend"]);
     const subtree = dom
-      .querySelector('a[href="/tags/frontend"]')
+      .querySelector('a[href="/t/dev/frontend"]')
       ?.closest("ul");
     expect(subtree?.hasAttribute("inert")).toBe(false);
   });
@@ -160,9 +168,9 @@ describe("TagNavigation", () => {
   it("renderiza uma guia por nível de ancestral, e nenhuma na raiz", async () => {
     const dom = await renderTagNavigation(tagsWithGrandchild);
 
-    const rootLink = dom.querySelector('a[href="/tags/design"]');
-    const depth1Link = dom.querySelector('a[href="/tags/frontend"]');
-    const depth2Link = dom.querySelector('a[href="/tags/react"]');
+    const rootLink = dom.querySelector('a[href="/t/design"]');
+    const depth1Link = dom.querySelector('a[href="/t/dev/frontend"]');
+    const depth2Link = dom.querySelector('a[href="/t/dev/frontend/react"]');
 
     // Each row's guides live in its own flex container, alongside its
     // chevron and link — the nested <ul> of children sits outside that
@@ -177,5 +185,19 @@ describe("TagNavigation", () => {
     expect(
       depth2Link?.parentElement?.querySelectorAll(".bg-border").length,
     ).toBe(2);
+  });
+
+  it("links each tag to its friendly path and marks the current one", async () => {
+    usePathnameMock.mockReturnValue("/t/dev/frontend");
+    const dom = await renderTagNavigation(tags);
+
+    const frontend = dom.querySelector('a[href="/t/dev/frontend"]');
+    expect(frontend?.getAttribute("aria-current")).toBe("page");
+    expect(
+      dom.querySelector('a[href="/t/dev"]')?.getAttribute("aria-current"),
+    ).toBeNull();
+    expect(dom.querySelector('a[href^="/tags/"]')).toBeNull();
+
+    usePathnameMock.mockReturnValue("/library");
   });
 });

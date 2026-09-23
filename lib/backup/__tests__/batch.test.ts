@@ -45,6 +45,30 @@ function fileWithChildBeforeParent(): BackupFile {
 }
 
 describe("toBackupPayload", () => {
+  it("leva o slug do arquivo 1.3 para o payload e manda null quando ausente", () => {
+    const { tags } = toBackupPayload(
+      parse({
+        version: "1.3",
+        exportedAt: "2026-08-16T12:00:00+00:00",
+        tags: [
+          {
+            id: ROOT,
+            name: "Dev",
+            colorToken: "lime",
+            parentId: null,
+            slug: "dev-2",
+          },
+          { id: CHILD, name: "Frontend", colorToken: "cyan", parentId: ROOT },
+        ],
+        items: [],
+      }),
+    );
+    expect(tags.map((tag) => [tag.key, tag.slug])).toEqual([
+      [ROOT, "dev-2"],
+      [CHILD, null],
+    ]);
+  });
+
   it("ordena tags com o pai antes do filho", () => {
     const { tags } = toBackupPayload(fileWithChildBeforeParent());
     expect(tags.map((tag) => tag.key)).toEqual([ROOT, CHILD]);

@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { swatchClassFor } from "@/lib/tags/colors";
 import { indentClassFor } from "@/lib/tags/indent";
 import type { TagNode } from "@/lib/tags/tree";
+import { getTagHref } from "@/lib/tags/routes";
 import { useDictionary } from "@/lib/i18n/client";
 
 import { Button } from "@/components/ui/button";
@@ -118,7 +119,7 @@ function TagTreeRow({
         )}
 
         <Link
-          href={`/tags/${node.id}`}
+          href={getTagHref(node)}
           aria-current={isActive || undefined}
           className={cn(
             "group/tagitem text-label-md flex min-w-0 flex-1 items-center gap-2 rounded px-1.5 py-1 transition-[transform,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.98] motion-reduce:active:scale-100",

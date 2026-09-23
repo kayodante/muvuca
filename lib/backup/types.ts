@@ -21,6 +21,11 @@ export type BackupTagPayload = {
   description: string | null;
   /** Ausente em arquivo 1.0; a RPC usa `now()` quando nulo (só em tag nova). */
   createdAt: string | null;
+  /**
+   * Ausente em arquivo 1.0-1.2. Só uma dica para o trigger `tags_set_slug`:
+   * vale se for forma válida do nome e estiver livre; senão, derivado.
+   */
+  slug: string | null;
 };
 
 export type BackupItemPayload = {

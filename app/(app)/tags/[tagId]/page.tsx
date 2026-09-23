@@ -1,21 +1,28 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 
-import { TagDetailView } from "@/components/tags/TagDetailView";
-import {
-  getLibraryItems,
-  getLibraryItemsCountForTag,
-} from "@/lib/database/queries/items";
-import {
-  getChildTagCount,
-  getTagAncestors,
-  getTagById,
-} from "@/lib/database/queries/tags";
-import { parseLibrarySearchParams } from "@/lib/validation/search";
-import { getDictionary } from "@/lib/i18n/server";
+import { getTagsByIds } from "@/lib/database/queries/tags";
+import { getTagHref } from "@/lib/tags/routes";
 
-/** A single tag's own detail, actions and direct children. */
-export default async function TagDetailPage({
+/**
+ * Legacy `/tags/<uuid>` links (saved before AAA-96) keep working: the UUID
+ * is still the tag's identity, so it is resolved to the tag's current slug
+ * path and redirected there, query string included.
+ *
+ * `redirect()` (307), not `permanentRedirect()`: the UUID is permanent but
+ * its destination is not -- a rename changes the slug, and a redirect the
+ * browser cached as permanent would send the old link to a 404 forever.
+ * The `/tags` index lives in the `(index)` route group so its
+ * `loading.tsx` does not wrap this page: under a Suspense boundary the
+ * response would already be streaming, and the redirect would degrade to a
+ * client-side one with status 200.
+ *
+ * A malformed id, a missing tag and another user's tag all end in the same
+ * 404 -- RLS makes the last two indistinguishable by construction. No
+ * session check here, like every other page under `(app)`: `proxy.ts`
+ * sends `/tags/*` without claims to /login before this renders.
+ */
+export default async function LegacyTagRedirectPage({
   params,
   searchParams,
 }: {
@@ -27,37 +34,19 @@ export default async function TagDetailPage({
     searchParams,
   ]);
 
-  if (!z.uuid().safeParse(tagId).success) {
-    notFound();
+  const parsedId = z.uuid().safeParse(tagId);
+  if (!parsedId.success) notFound();
+
+  const [tag] = await getTagsByIds([parsedId.data]);
+  if (!tag) notFound();
+
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(rawSearchParams)) {
+    for (const entry of [value].flat()) {
+      if (entry !== undefined) query.append(key, entry);
+    }
   }
+  const search = query.size > 0 ? `?${query}` : "";
 
-  const tag = await getTagById(tagId);
-
-  if (!tag) {
-    notFound();
-  }
-
-  const parsed = parseLibrarySearchParams(rawSearchParams);
-
-  const [childCount, ancestors, results, itemsCount, t] = await Promise.all([
-    getChildTagCount(tagId),
-    getTagAncestors(tagId),
-    getLibraryItems({ ...parsed, tag: tagId }),
-    getLibraryItemsCountForTag(tagId),
-    getDictionary(),
-  ]);
-
-  return (
-    <TagDetailView
-      tag={tag}
-      childCount={childCount}
-      tags={results.tags}
-      ancestors={ancestors}
-      items={results.items}
-      itemsCount={itemsCount}
-      nextCursor={results.nextCursor}
-      prevCursor={results.prevCursor}
-      t={t}
-    />
-  );
+  redirect(`${getTagHref(tag)}${search}`);
 }

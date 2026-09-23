@@ -13,6 +13,7 @@ import {
   type FlatTag,
   type TagNode,
 } from "@/lib/tags/tree";
+import { getTagHref } from "@/lib/tags/routes";
 import { Input } from "@/components/ui/input";
 import { useDictionary } from "@/lib/i18n/client";
 
@@ -93,7 +94,8 @@ function TagNavigationRow({
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
-  const active = pathname === `/tags/${node.id}`;
+  const href = getTagHref(node);
+  const active = pathname === href;
   // A non-empty query forces every subtree open so a deep match stays
   // reachable, without discarding the user's own collapse state -- clearing
   // the query restores whatever `expanded` already held.
@@ -156,7 +158,7 @@ function TagNavigationRow({
           <span aria-hidden="true" className="size-7 shrink-0" />
         )}
         <Link
-          href={`/tags/${node.id}`}
+          href={href}
           aria-current={active ? "page" : undefined}
           className={cn(
             // No ring offset inside the tree: the subtree clips its own

@@ -8,7 +8,7 @@ import type { ExportData } from "@/lib/export/formatter";
 // do import" divergir silenciosamente.
 function validFile(): ExportData {
   return {
-    version: "1.2",
+    version: "1.3",
     exportedAt: "2026-08-16T12:00:00+00:00",
     tags: [
       {
@@ -18,6 +18,7 @@ function validFile(): ExportData {
         parentId: null,
         description: "Ferramentas de dev",
         createdAt: "2026-08-10T00:00:00+00:00",
+        slug: "dev",
       },
       {
         id: "22222222-2222-4222-8222-222222222222",
@@ -26,6 +27,7 @@ function validFile(): ExportData {
         parentId: "11111111-1111-4111-8111-111111111111",
         description: null,
         createdAt: "2026-08-11T00:00:00+00:00",
+        slug: "frontend",
       },
     ],
     items: [
@@ -54,7 +56,7 @@ function validFile(): ExportData {
 }
 
 describe("backupFileSchema", () => {
-  it("aceita o arquivo produzido pelo exportador (versão 1.1)", () => {
+  it("aceita o arquivo produzido pelo exportador (versão 1.3)", () => {
     expect(backupFileSchema.safeParse(validFile()).success).toBe(true);
   });
 
@@ -95,6 +97,33 @@ describe("backupFileSchema", () => {
     const file = { ...validFile(), tags: [], items: [] };
     expect(backupFileSchema.safeParse(file).success).toBe(true);
   });
+
+  it("aceita arquivo 1.2 sem slug de tag (o banco deriva do nome)", () => {
+    const file = {
+      ...validFile(),
+      version: "1.2",
+      tags: validFile().tags.map((tag) => ({
+        id: tag.id,
+        name: tag.name,
+        colorToken: tag.colorToken,
+        parentId: tag.parentId,
+        description: tag.description,
+        createdAt: tag.createdAt,
+      })),
+    };
+    const parsed = backupFileSchema.safeParse(file);
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.tags[0]?.slug).toBeUndefined();
+  });
+
+  it.each(["Dev", "dév", "a--b", "a/b", ""])(
+    "rejeita slug de tag malformado no arquivo (%s)",
+    (slug) => {
+      const file = validFile();
+      file.tags[0] = { ...file.tags[0]!, slug };
+      expect(backupFileSchema.safeParse(file).success).toBe(false);
+    },
+  );
 
   it("rejeita versão desconhecida", () => {
     const file = { ...validFile(), version: "2.0" };
@@ -277,6 +306,7 @@ describe("backupPayloadSchema", () => {
           colorToken: "lime",
           description: null,
           createdAt: null,
+          slug: null,
         },
       ],
       items: [
@@ -295,6 +325,19 @@ describe("backupPayloadSchema", () => {
 
   it("aceita um payload coerente", () => {
     expect(backupPayloadSchema.safeParse(validPayload()).success).toBe(true);
+  });
+
+  it("aceita slug de tag no payload e rejeita slug malformado", () => {
+    const withSlug = (slug: string) => {
+      const payload = validPayload();
+      return {
+        ...payload,
+        tags: payload.tags.map((tag) => ({ ...tag, slug })),
+      };
+    };
+
+    expect(backupPayloadSchema.safeParse(withSlug("dev-2")).success).toBe(true);
+    expect(backupPayloadSchema.safeParse(withSlug("Dev")).success).toBe(false);
   });
 
   it("aceita um payload só com tags, sem nenhum item", () => {
