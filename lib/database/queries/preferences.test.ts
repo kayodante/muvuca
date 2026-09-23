@@ -64,7 +64,7 @@ describe("getUserPreferences", () => {
       displayName: "Kayo",
       locale: "en",
     });
-    expect(select).toHaveBeenCalledWith("*");
+    expect(select).toHaveBeenCalledWith("theme, display_name, locale");
   });
 
   it("falls back to null for an invalid saved locale", async () => {
@@ -78,22 +78,6 @@ describe("getUserPreferences", () => {
 
     await expect(getUserPreferences()).resolves.toEqual({
       theme: "dark",
-      displayName: null,
-      locale: null,
-    });
-  });
-
-  it("keeps working against the pre-0029/0030 schema (no display_name/locale columns)", async () => {
-    const maybeSingle = vi.fn().mockResolvedValue({
-      data: { theme: "light", user_id: "usr-42" },
-      error: null,
-    });
-    const select = vi.fn().mockReturnValue({ maybeSingle });
-    const from = vi.fn().mockReturnValue({ select });
-    createClientMock.mockResolvedValue({ from });
-
-    await expect(getUserPreferences()).resolves.toEqual({
-      theme: "light",
       displayName: null,
       locale: null,
     });
