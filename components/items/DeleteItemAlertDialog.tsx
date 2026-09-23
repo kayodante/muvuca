@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from "react";
 import type { LibraryItemSummary } from "@/lib/database/queries/items";
 import { deleteItem } from "@/lib/actions/items";
+import { useDictionary } from "@/lib/i18n/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,11 +23,12 @@ export function DeleteItemAlertDialog({
   item: LibraryItemSummary | null;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useDictionary();
   const [state, action, pending] = useActionState(deleteItem, null);
 
   useEffect(() => {
     if (state?.ok) {
-      toastSuccess("Item excluído.");
+      toastSuccess(t.items.deleteDialog.deleted);
       onOpenChange(false);
     }
     // `onOpenChange` may be inline and change identity with parent renders.
@@ -42,11 +44,10 @@ export function DeleteItemAlertDialog({
             dir="auto"
             className="[overflow-wrap:anywhere] break-words"
           >
-            Excluir “{item.title}”?
+            {t.items.deleteDialog.title(item.title)}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            Esta ação remove o item e suas associações com tags. Não pode ser
-            desfeita.
+            {t.items.deleteDialog.description}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {state?.ok === false && (
@@ -55,7 +56,7 @@ export function DeleteItemAlertDialog({
           </p>
         )}
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
           <form action={action}>
             <input type="hidden" name="id" value={item.id} />
             <AlertDialogAction
@@ -63,7 +64,7 @@ export function DeleteItemAlertDialog({
               variant="destructive"
               pending={pending}
             >
-              Excluir item
+              {t.items.deleteDialog.confirm}
             </AlertDialogAction>
           </form>
         </AlertDialogFooter>

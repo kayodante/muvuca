@@ -5,6 +5,7 @@ import { CheckIcon, CopyIcon } from "lucide-react";
 
 import { CODE_LANGUAGE_LABELS, type CodeLanguage } from "@/lib/code/languages";
 import { copyToClipboard } from "@/lib/clipboard";
+import { useDictionary } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
 import { toastError, toastSuccess } from "@/components/states/Toast";
 
@@ -26,10 +27,6 @@ import { useHighlightedLines } from "./useHighlightedLines";
  * `text-metadata` pela ordem de layers do Tailwind) — régua e código ficam
  * em fase a qualquer número de linhas.
  */
-function pluralize(count: number, singular: string, plural: string) {
-  return `${count.toLocaleString("pt-BR")} ${count === 1 ? singular : plural}`;
-}
-
 /**
  * Crossfade do ícone de copiar para o check de confirmação, com o par
  * empilhado na mesma célula para o botão não mudar de largura. Mesma técnica
@@ -62,6 +59,7 @@ export function CodeSnippetEmbed({
   content: string;
   language: CodeLanguage | null;
 }) {
+  const t = useDictionary();
   const lines = useHighlightedLines(content, language);
   const [copied, setCopied] = useState(false);
 
@@ -77,9 +75,9 @@ export function CodeSnippetEmbed({
     if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
-      toastSuccess("Código copiado para a área de transferência.");
+      toastSuccess(t.items.codeSnippetEmbed.codeCopied);
     } else {
-      toastError("Não foi possível copiar o código.");
+      toastError(t.items.codeSnippetEmbed.codeCopyFailed);
     }
   }
 
@@ -89,7 +87,9 @@ export function CodeSnippetEmbed({
         <div className="flex min-w-0 items-center gap-2">
           {/* Concat literal, não cn(): twMerge descartaria text-brand-pixel
               (fonte) por conflitar com text-type-code (cor). */}
-          <span className="text-brand-pixel text-type-code">code</span>
+          <span className="text-brand-pixel text-type-code">
+            {t.items.card.types.code_component.label}
+          </span>
           {language ? (
             <span className="text-metadata rounded-sm border border-border px-1.5 py-0.5 text-muted-foreground">
               {CODE_LANGUAGE_LABELS[language]}
@@ -98,15 +98,15 @@ export function CodeSnippetEmbed({
         </div>
         <div className="flex items-center gap-3">
           <span className="text-metadata text-muted-foreground">
-            {pluralize(lineCount, "linha", "linhas")} ·{" "}
-            {pluralize(charCount, "caractere", "caracteres")}
+            {t.items.codeSnippetEmbed.lineCount(lineCount)} ·{" "}
+            {t.items.codeSnippetEmbed.charCount(charCount)}
           </span>
           <Button
             type="button"
             variant="ghost"
             size="icon-sm"
             onClick={handleCopy}
-            aria-label="Copiar código"
+            aria-label={t.items.codeSnippetEmbed.copyCode}
           >
             <CopyStateIcon copied={copied} Icon={CopyIcon} />
           </Button>

@@ -13,6 +13,7 @@ import {
   type FlatTag,
 } from "@/lib/tags/tree";
 import type { Tag } from "@/lib/database/queries/tags";
+import { useDictionary } from "@/lib/i18n/client";
 import { ShimmerText } from "@/components/ui/shimmer-text";
 
 interface TagSelectFieldProps {
@@ -34,6 +35,13 @@ interface TagSelectFieldProps {
    * an accurate label here.
    */
   emptyLabel?: string;
+  /**
+   * Whether `emptyLabel` describes a loading state (renders as `ShimmerText`
+   * instead of static text). Explicit flag, not a string match on
+   * `emptyLabel` -- matching against a fixed Portuguese prefix broke the
+   * shimmer for any other locale's loading copy.
+   */
+  emptyLoading?: boolean;
 }
 
 export function TagSelectField({
@@ -46,10 +54,14 @@ export function TagSelectField({
   disabled = false,
   error,
   ariaDescribedBy,
-  placeholder = "Selecionar tags...",
+  placeholder,
   className,
-  emptyLabel = "Nenhuma tag cadastrada ainda",
+  emptyLabel,
+  emptyLoading = false,
 }: TagSelectFieldProps) {
+  const t = useDictionary();
+  const resolvedPlaceholder = placeholder ?? t.items.tagSelect.placeholder;
+  const resolvedEmptyLabel = emptyLabel ?? t.items.tagSelect.emptyLabel;
   const generatedId = useId();
   const id = explicitId ?? generatedId;
   const listboxId = `${id}-listbox`;
@@ -191,7 +203,7 @@ export function TagSelectField({
         <div
           className="flex flex-wrap gap-1.5"
           role="list"
-          aria-label="Tags selecionadas"
+          aria-label={t.items.tagSelect.selectedTagsLabel}
         >
           {selectedTags.map((tag) => (
             <span
@@ -211,7 +223,7 @@ export function TagSelectField({
                 type="button"
                 disabled={disabled}
                 onClick={() => removeTag(tag.id)}
-                aria-label={`Remover tag ${tag.name}`}
+                aria-label={t.items.tagSelect.removeTag(tag.name)}
                 className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed motion-reduce:transition-none"
               >
                 <XIcon className="size-3" />
@@ -258,17 +270,15 @@ export function TagSelectField({
           }
         >
           {tags.length === 0 ? (
-            emptyLabel.startsWith("Carregando") ? (
-              <ShimmerText text={emptyLabel} />
+            emptyLoading ? (
+              <ShimmerText text={resolvedEmptyLabel} />
             ) : (
-              emptyLabel
+              resolvedEmptyLabel
             )
           ) : selectedIds.length === 0 ? (
-            placeholder
+            resolvedPlaceholder
           ) : (
-            `${selectedIds.length} tag${
-              selectedIds.length > 1 ? "s" : ""
-            } selecionada${selectedIds.length > 1 ? "s" : ""}`
+            t.items.tagSelect.selectedCount(selectedIds.length)
           )}
         </span>
         <ChevronDownIcon
@@ -303,7 +313,7 @@ export function TagSelectField({
               // filtra nada.
               // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
-              placeholder="Buscar tags..."
+              placeholder={t.items.tagSelect.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
@@ -315,12 +325,12 @@ export function TagSelectField({
             id={listboxId}
             role="listbox"
             aria-multiselectable="true"
-            aria-label="Tags disponíveis"
+            aria-label={t.items.tagSelect.availableTagsLabel}
             className="max-h-48 overflow-y-auto p-1"
           >
             {flattenedOptions.length === 0 ? (
               <div className="px-2 py-3 text-center text-xs text-muted-foreground">
-                Nenhuma tag encontrada.
+                {t.items.tagSelect.noTagsFound}
               </div>
             ) : (
               flattenedOptions.map((tag) => {

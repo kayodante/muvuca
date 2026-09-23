@@ -14,6 +14,8 @@ import type { ItemType } from "@/lib/validation/item";
 import { createItem, updateItem } from "@/lib/actions/items";
 import { listTagsForSelect } from "@/lib/actions/tags";
 import { notifyPreviewQueueChanged } from "@/lib/events/preview-queue";
+import { useDictionary } from "@/lib/i18n/client";
+import type { Dictionary } from "@/lib/i18n/dictionaries/pt-BR";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -69,26 +71,28 @@ type TagsLoadState =
   | { status: "error"; message: string }
   | { status: "success"; tags: Tag[] };
 
-const ITEM_TYPES_CONFIG = [
-  {
-    type: "link" as const,
-    label: "Link",
-    Icon: LinkIcon,
-    colorClass: "text-type-link",
-  },
-  {
-    type: "prompt" as const,
-    label: "Prompt",
-    Icon: FileTextIcon,
-    colorClass: "text-type-prompt",
-  },
-  {
-    type: "code_component" as const,
-    label: "Componente de código",
-    Icon: CodeXmlIcon,
-    colorClass: "text-type-code",
-  },
-];
+function itemTypesConfig(t: Dictionary) {
+  return [
+    {
+      type: "link" as const,
+      label: t.items.editor.types.link,
+      Icon: LinkIcon,
+      colorClass: "text-type-link",
+    },
+    {
+      type: "prompt" as const,
+      label: t.items.editor.types.prompt,
+      Icon: FileTextIcon,
+      colorClass: "text-type-prompt",
+    },
+    {
+      type: "code_component" as const,
+      label: t.items.editor.types.code_component,
+      Icon: CodeXmlIcon,
+      colorClass: "text-type-code",
+    },
+  ];
+}
 
 export function ItemEditorDialog({
   target,
@@ -97,6 +101,7 @@ export function ItemEditorDialog({
   target: EditorTarget;
   onOpenChange: (open: boolean) => void;
 }) {
+  const t = useDictionary();
   const [createState, createAction, createPending] = useActionState(
     createItem,
     null,
@@ -154,7 +159,9 @@ export function ItemEditorDialog({
 
   useEffect(() => {
     if (state?.ok) {
-      toastSuccess(editing ? "Item atualizado." : "Item criado.");
+      toastSuccess(
+        editing ? t.items.editor.itemUpdated : t.items.editor.itemCreated,
+      );
       // Creating a link, or editing one's URL, can (re-)enqueue a
       // link_previews job server-side (trigger). Wake a drain session
       // that already found the queue empty and stopped.
@@ -173,17 +180,19 @@ export function ItemEditorDialog({
         <form action={formAction} className="flex flex-col gap-5">
           {editing && <input type="hidden" name="id" value={editing.id} />}
           <DialogHeader>
-            <DialogTitle>{editing ? "Editar item" : "Novo item"}</DialogTitle>
+            <DialogTitle>
+              {editing ? t.items.editor.editTitle : t.items.editor.createTitle}
+            </DialogTitle>
             <DialogDescription>
-              Links, prompts e componentes ficam privados na sua biblioteca.
+              {t.items.editor.dialogDescription}
             </DialogDescription>
           </DialogHeader>
 
           <fieldset
             className="grid grid-cols-1 gap-2 sm:grid-cols-3"
-            aria-label="Tipo do item"
+            aria-label={t.items.editor.typeFieldsetLabel}
           >
-            {ITEM_TYPES_CONFIG.map(
+            {itemTypesConfig(t).map(
               ({ type: itemType, label, Icon, colorClass }) => {
                 const isChecked = type === itemType;
                 return (
@@ -222,7 +231,11 @@ export function ItemEditorDialog({
             )}
           </fieldset>
 
-          <Field id="item-title" label="Título" error={fieldError("title")}>
+          <Field
+            id="item-title"
+            label={t.items.editor.fields.title}
+            error={fieldError("title")}
+          >
             <Input
               id="item-title"
               name="title"
@@ -246,7 +259,7 @@ export function ItemEditorDialog({
                 required
                 maxLength={4096}
                 defaultValue={editing?.type === "link" ? editing.url : ""}
-                placeholder="https://exemplo.com"
+                placeholder={t.items.editor.urlPlaceholder}
                 aria-describedby={
                   fieldError("url") ? "item-url-error" : undefined
                 }
@@ -258,7 +271,7 @@ export function ItemEditorDialog({
           {type === "prompt" && (
             <Field
               id="item-content"
-              label="Conteúdo"
+              label={t.items.editor.fields.content}
               error={fieldError("content")}
             >
               <Textarea
@@ -279,7 +292,7 @@ export function ItemEditorDialog({
               {/* Tabular numerals: the counter updates on every keystroke,
                   and proportional digits make it twitch as it climbs. */}
               <p className="text-body-sm text-right text-muted-foreground tabular-nums">
-                {content.length.toLocaleString("pt-BR")} / 100.000 caracteres
+                {t.items.editor.charCounter(content.length)}
               </p>
             </Field>
           )}
@@ -288,7 +301,7 @@ export function ItemEditorDialog({
             <>
               <Field
                 id="item-content"
-                label="Código"
+                label={t.items.editor.fields.code}
                 error={fieldError("content")}
               >
                 <Textarea
@@ -299,7 +312,7 @@ export function ItemEditorDialog({
                   rows={14}
                   value={content}
                   onChange={(event) => setContent(event.target.value)}
-                  placeholder="Cole o código do componente aqui..."
+                  placeholder={t.items.editor.codePlaceholder}
                   className="min-h-64 resize-y font-mono text-sm leading-6"
                   aria-describedby={
                     fieldError("content") ? "item-content-error" : undefined
@@ -307,7 +320,7 @@ export function ItemEditorDialog({
                   aria-invalid={!!fieldError("content") || undefined}
                 />
                 <p className="text-body-sm text-right text-muted-foreground tabular-nums">
-                  {content.length.toLocaleString("pt-BR")} / 100.000 caracteres
+                  {t.items.editor.charCounter(content.length)}
                 </p>
               </Field>
 
@@ -319,7 +332,7 @@ export function ItemEditorDialog({
                   "" -> null fica em `itemFormData`). Nenhum reset manual. */}
               <Field
                 id="item-language"
-                label="Linguagem (opcional)"
+                label={t.items.editor.fields.language}
                 error={fieldError("language")}
               >
                 <Select
@@ -342,10 +355,10 @@ export function ItemEditorDialog({
                         resolve o rótulo pelo mapeamento local, não pelo
                         registro dos items, que só montam quando o popup abre
                         (e no primeiro paint o popup está fechado). */}
-                    <SelectValue placeholder="Texto puro">
+                    <SelectValue placeholder={t.items.editor.plainText}>
                       {(value: string) =>
                         value === ""
-                          ? "Texto puro"
+                          ? t.items.editor.plainText
                           : isCodeLanguage(value)
                             ? CODE_LANGUAGE_LABELS[value]
                             : value
@@ -353,7 +366,7 @@ export function ItemEditorDialog({
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Texto puro</SelectItem>
+                    <SelectItem value="">{t.items.editor.plainText}</SelectItem>
                     {CODE_LANGUAGES.map((lang) => (
                       <SelectItem key={lang} value={lang}>
                         {CODE_LANGUAGE_LABELS[lang]}
@@ -365,7 +378,7 @@ export function ItemEditorDialog({
 
               <Field
                 id="item-url"
-                label="Link da fonte (opcional)"
+                label={t.items.editor.fields.sourceLink}
                 error={fieldError("url")}
               >
                 <Input
@@ -378,7 +391,7 @@ export function ItemEditorDialog({
                       ? (editing.url ?? "")
                       : ""
                   }
-                  placeholder="https://exemplo.com/componente"
+                  placeholder={t.items.editor.codeUrlPlaceholder}
                   aria-describedby={
                     fieldError("url") ? "item-url-error" : undefined
                   }
@@ -390,7 +403,7 @@ export function ItemEditorDialog({
 
           <Field
             id="item-description"
-            label="Descrição (opcional)"
+            label={t.items.editor.fields.description}
             error={fieldError("description")}
           >
             <Textarea
@@ -409,7 +422,7 @@ export function ItemEditorDialog({
 
           <Field
             id="item-tags"
-            label="Tags (opcional)"
+            label={t.items.editor.fields.tags}
             error={fieldError("tagIds")}
           >
             <TagSelectField
@@ -420,11 +433,12 @@ export function ItemEditorDialog({
               error={fieldError("tagIds")}
               emptyLabel={
                 tagsLoading
-                  ? "Carregando tags..."
+                  ? t.items.editor.tagsLoading
                   : tagsErrorMessage !== null
-                    ? "Não foi possível carregar as tags"
+                    ? t.items.editor.tagsLoadFailedLabel
                     : undefined
               }
+              emptyLoading={tagsLoading}
               ariaDescribedBy={[
                 tagsErrorMessage !== null
                   ? "item-tags-load-error"
@@ -450,7 +464,7 @@ export function ItemEditorDialog({
                   className="self-start"
                   onClick={retryLoadTags}
                 >
-                  Tentar novamente
+                  {t.common.tryAgain}
                 </Button>
               </div>
             ) : (
@@ -459,10 +473,10 @@ export function ItemEditorDialog({
                 className="text-body-sm text-muted-foreground"
               >
                 {tagsLoading
-                  ? "Carregando tags..."
+                  ? t.items.editor.tagsLoading
                   : tagsEmpty
-                    ? "Crie tags na seção Tags para organizar seus itens."
-                    : "Selecione uma ou mais tags para organizar o item."}
+                    ? t.items.editor.tagsEmptyHint
+                    : t.items.editor.tagsSelectHint}
               </p>
             )}
           </Field>
@@ -474,7 +488,7 @@ export function ItemEditorDialog({
           )}
           <DialogFooter>
             <Button type="submit" pending={pending}>
-              {editing ? "Salvar alterações" : "Criar item"}
+              {editing ? t.items.editor.saveChanges : t.items.editor.createItem}
             </Button>
           </DialogFooter>
         </form>

@@ -21,6 +21,7 @@ import { normalizeHttpUrl } from "@/lib/validation/item";
 import { Button } from "@/components/ui/button";
 import { useHighlightedLines } from "@/components/items/useHighlightedLines";
 import { LinkPreviewMedia } from "@/components/items/LinkPreviewMedia";
+import { useDictionary } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { toastError, toastSuccess } from "@/components/states/Toast";
 
@@ -33,10 +34,11 @@ export function QuickLookPreview({
   tags: (FlatTag | Tag)[];
   onClose: () => void;
 }) {
+  const t = useDictionary();
   const [copied, setCopied] = useState(false);
 
   // Associated tags
-  const associatedTags = tags.filter((t) => item.tagIds?.includes(t.id));
+  const associatedTags = tags.filter((tag) => item.tagIds?.includes(tag.id));
 
   // Extract preview values safely
   const isLink = item.type === "link";
@@ -49,21 +51,21 @@ export function QuickLookPreview({
 
   const lines = useHighlightedLines(content, language ?? null);
 
-  async function handleCopy(textToCopy: string, label: string) {
+  async function handleCopy(textToCopy: string, successMessage: string) {
     const ok = await copyToClipboard(textToCopy);
     if (ok) {
       setCopied(true);
-      toastSuccess(`${label} copiado para a área de transferência.`);
+      toastSuccess(successMessage);
       setTimeout(() => setCopied(false), 2000);
     } else {
-      toastError("Não foi possível copiar.");
+      toastError(t.spotlight.quickLook.copyGenericFailed);
     }
   }
 
   async function handleCopyContent(
     itemId: string,
     fallback: string,
-    label: string,
+    successMessage: string,
   ) {
     const fullContentPromise = getItemDetails(itemId).then((res) => {
       if (
@@ -78,10 +80,10 @@ export function QuickLookPreview({
     const ok = await copyToClipboard(fullContentPromise);
     if (ok) {
       setCopied(true);
-      toastSuccess(`${label} copiado para a área de transferência.`);
+      toastSuccess(successMessage);
       setTimeout(() => setCopied(false), 2000);
     } else {
-      toastError("Não foi possível copiar.");
+      toastError(t.spotlight.quickLook.copyGenericFailed);
     }
   }
 
@@ -97,7 +99,7 @@ export function QuickLookPreview({
   return (
     <div
       role="region"
-      aria-label="Pré-visualização do item (Quick Look)"
+      aria-label={t.spotlight.quickLook.regionLabel}
       className="flex h-full w-full flex-col border-t border-border bg-card p-4 sm:w-80 sm:border-t-0 sm:border-l sm:p-5"
     >
       {/* Header */}
@@ -119,7 +121,11 @@ export function QuickLookPreview({
             </div>
           )}
           <span className="text-brand-pixel rounded bg-muted/60 px-1.5 py-0.5 text-foreground">
-            {isLink ? "LINK" : isPrompt ? "PROMPT" : "CÓDIGO"}
+            {isLink
+              ? t.spotlight.badges.link
+              : isPrompt
+                ? t.spotlight.badges.prompt
+                : t.spotlight.badges.code}
           </span>
           {language && (
             <span className="text-metadata font-mono text-muted-foreground uppercase">
@@ -131,7 +137,7 @@ export function QuickLookPreview({
           type="button"
           onClick={onClose}
           className="rounded-md p-1 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label="Fechar pré-visualização"
+          aria-label={t.spotlight.quickLook.close}
         >
           <XIcon className="size-4" />
         </button>
@@ -227,25 +233,31 @@ export function QuickLookPreview({
                   window.open(safeUrl, "_blank", "noopener,noreferrer");
                   onClose();
                 } else {
-                  toastError("URL inválida ou insegura.");
+                  toastError(t.spotlight.quickLook.invalidUrl);
                 }
               }}
             >
-              <span>Abrir página</span>
+              <span>{t.spotlight.quickLook.openPage}</span>
               <ExternalLinkIcon className="size-3.5" />
             </Button>
             <Button
               size="sm"
               variant="secondary"
               className="w-full justify-center gap-2"
-              onClick={() => handleCopy(url, "Link")}
+              onClick={() =>
+                handleCopy(url, t.spotlight.quickLook.linkCopiedMessage)
+              }
             >
               {copied ? (
                 <CheckIcon className="size-3.5 text-primary" />
               ) : (
                 <CopyIcon className="size-3.5" />
               )}
-              <span>{copied ? "Link copiado" : "Copiar link"}</span>
+              <span>
+                {copied
+                  ? t.spotlight.quickLook.linkCopiedShort
+                  : t.spotlight.quickLook.copyLinkShort}
+              </span>
             </Button>
           </>
         )}
@@ -258,7 +270,9 @@ export function QuickLookPreview({
               handleCopyContent(
                 item.id,
                 content,
-                isPrompt ? "Prompt" : "Código",
+                isPrompt
+                  ? t.spotlight.quickLook.promptCopiedMessage
+                  : t.spotlight.quickLook.codeCopiedMessage,
               )
             }
           >
@@ -269,10 +283,10 @@ export function QuickLookPreview({
             )}
             <span>
               {copied
-                ? "Copiado!"
+                ? t.spotlight.quickLook.copiedShort
                 : isPrompt
-                  ? "Copiar prompt"
-                  : "Copiar código"}
+                  ? t.spotlight.quickLook.copyPrompt
+                  : t.spotlight.quickLook.copyCode}
             </span>
           </Button>
         )}

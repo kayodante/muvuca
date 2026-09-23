@@ -17,6 +17,8 @@ import type { Tag } from "@/lib/database/queries/tags";
 import { copyToClipboard } from "@/lib/clipboard";
 import { normalizeHttpUrl } from "@/lib/validation/item";
 import { MORPH_CLASS, MORPH_TITLE_CLASS } from "@/lib/motion/view-transition";
+import { useDictionary } from "@/lib/i18n/client";
+import type { Dictionary } from "@/lib/i18n/dictionaries/pt-BR";
 import { cn } from "@/lib/utils";
 import { TagChip } from "@/components/tags/TagChip";
 import { Button } from "@/components/ui/button";
@@ -48,28 +50,32 @@ import { SiteIdentity } from "./SiteIdentity";
  * `hint` is the accessible name of the trailing info button and the text of
  * its tooltip: the pixel face plus a 3-letter word is a weak label on its
  * own, so the type is also available as plain prose to anyone hovering,
- * focusing, or using a screen reader.
+ * focusing, or using a screen reader. Icon/hue are locale-independent, so
+ * only `label`/`hint` come from the dictionary -- built inside the
+ * component (not a module constant) since they depend on `t`.
  */
-const TYPE_META = {
-  link: {
-    label: "link",
-    hue: "text-type-link",
-    Icon: LinkIcon,
-    hint: "Um conteúdo salvo da web para acessar depois.",
-  },
-  prompt: {
-    label: "prompt",
-    hue: "text-type-prompt",
-    Icon: FileTextIcon,
-    hint: "Um prompt salvo para usar novamente com IA.",
-  },
-  code_component: {
-    label: "code",
-    hue: "text-type-code",
-    Icon: CodeXmlIcon,
-    hint: "Um código ou snippet para consultar e reutilizar.",
-  },
-} as const;
+function typeMetaFor(t: Dictionary) {
+  return {
+    link: {
+      label: t.items.card.types.link.label,
+      hue: "text-type-link",
+      Icon: LinkIcon,
+      hint: t.items.card.types.link.hint,
+    },
+    prompt: {
+      label: t.items.card.types.prompt.label,
+      hue: "text-type-prompt",
+      Icon: FileTextIcon,
+      hint: t.items.card.types.prompt.hint,
+    },
+    code_component: {
+      label: t.items.card.types.code_component.label,
+      hue: "text-type-code",
+      Icon: CodeXmlIcon,
+      hint: t.items.card.types.code_component.hint,
+    },
+  } as const;
+}
 
 /**
  * Shared by every quick action: only the badge stays visible at rest.
@@ -146,6 +152,7 @@ export function ItemCard({
    */
   onRefreshPreview: () => void;
 }) {
+  const t = useDictionary();
   const [copiedContent, setCopiedContent] = useState(false);
   const [copyingContent, setCopyingContent] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -170,7 +177,7 @@ export function ItemCard({
   // + quick actions) floats over the thumbnail instead of sitting in the
   // card body, so the whole card below it can be one anchor.
   const clickableMedia = item.type === "link" && Boolean(safeHref);
-  const typeMeta = TYPE_META[item.type];
+  const typeMeta = typeMetaFor(t)[item.type];
 
   /**
    * One handler for both bodies: prompt and code_component differ only in
@@ -180,19 +187,22 @@ export function ItemCard({
    */
   async function handleCopyContent() {
     if (item.type !== "prompt" && item.type !== "code_component") return;
-    const noun = item.type === "prompt" ? "Prompt" : "Código";
     setCopyingContent(true);
     const success = await copyToClipboard(onCopyContent());
     setCopyingContent(false);
     if (success) {
       setCopiedContent(true);
       setTimeout(() => setCopiedContent(false), 1500);
-      toastSuccess(`${noun} copiado para a área de transferência.`);
+      toastSuccess(
+        item.type === "prompt"
+          ? t.items.card.promptCopied
+          : t.items.card.codeCopied,
+      );
     } else {
       toastError(
         item.type === "prompt"
-          ? "Não foi possível copiar o prompt."
-          : "Não foi possível copiar o código.",
+          ? t.items.card.promptCopyFailed
+          : t.items.card.codeCopyFailed,
       );
     }
   }
@@ -203,9 +213,9 @@ export function ItemCard({
     if (success) {
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 1500);
-      toastSuccess("Link copiado para a área de transferência.");
+      toastSuccess(t.items.card.linkCopied);
     } else {
-      toastError("Não foi possível copiar o link.");
+      toastError(t.items.card.linkCopyFailed);
     }
   }
 
@@ -226,7 +236,7 @@ export function ItemCard({
           variant="pulse"
           rounded
           className="size-3"
-          aria-label="Carregando item"
+          aria-label={t.items.card.loadingItem}
         />
       )}
       <Tooltip>
@@ -270,7 +280,7 @@ export function ItemCard({
                 variant="ghost"
                 size="icon-sm"
                 nativeButton={false}
-                aria-label="Abrir link em nova aba"
+                aria-label={t.items.card.openLinkNewTab}
                 className={ACTION_CLASS}
                 render={
                   // O Base UI clona este anchor injetando children (o ícone) e
@@ -288,7 +298,7 @@ export function ItemCard({
           >
             <ExternalLinkIcon aria-hidden="true" />
           </TooltipTrigger>
-          <TooltipContent>Abrir link</TooltipContent>
+          <TooltipContent>{t.items.card.openLink}</TooltipContent>
         </Tooltip>
       ) : item.type === "prompt" || item.type === "code_component" ? (
         <Tooltip>
@@ -300,8 +310,8 @@ export function ItemCard({
                 size="icon-sm"
                 aria-label={
                   item.type === "prompt"
-                    ? "Ver conteúdo completo"
-                    : "Ver código completo"
+                    ? t.items.card.viewFullContent
+                    : t.items.card.viewFullCode
                 }
                 onClick={onView}
                 className={ACTION_CLASS}
@@ -312,8 +322,8 @@ export function ItemCard({
           </TooltipTrigger>
           <TooltipContent>
             {item.type === "prompt"
-              ? "Ver conteúdo completo"
-              : "Ver código completo"}
+              ? t.items.card.viewFullContent
+              : t.items.card.viewFullCode}
           </TooltipContent>
         </Tooltip>
       ) : null}
@@ -325,7 +335,7 @@ export function ItemCard({
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                aria-label="Copiar prompt"
+                aria-label={t.items.card.copyPrompt}
                 pending={copyingContent}
                 onClick={handleCopyContent}
                 className={ACTION_CLASS}
@@ -335,7 +345,7 @@ export function ItemCard({
             <CopyStateIcon copied={copiedContent} Icon={CopyIcon} />
           </TooltipTrigger>
           <TooltipContent>
-            {copiedContent ? "Copiado!" : "Copiar prompt"}
+            {copiedContent ? t.items.card.copied : t.items.card.copyPrompt}
           </TooltipContent>
         </Tooltip>
       )}
@@ -347,7 +357,7 @@ export function ItemCard({
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                aria-label="Copiar código"
+                aria-label={t.items.card.copyCode}
                 pending={copyingContent}
                 onClick={handleCopyContent}
                 className={ACTION_CLASS}
@@ -357,7 +367,7 @@ export function ItemCard({
             <CopyStateIcon copied={copiedContent} Icon={CopyIcon} />
           </TooltipTrigger>
           <TooltipContent>
-            {copiedContent ? "Copiado!" : "Copiar código"}
+            {copiedContent ? t.items.card.copied : t.items.card.copyCode}
           </TooltipContent>
         </Tooltip>
       )}
@@ -370,7 +380,7 @@ export function ItemCard({
                 type="button"
                 variant="ghost"
                 size="icon-sm"
-                aria-label="Copiar link"
+                aria-label={t.items.card.copyLink}
                 onClick={handleCopyLink}
                 className={ACTION_CLASS}
               />
@@ -382,7 +392,7 @@ export function ItemCard({
             />
           </TooltipTrigger>
           <TooltipContent>
-            {copiedLink ? "Copiado!" : "Copiar link"}
+            {copiedLink ? t.items.card.copied : t.items.card.copyLink}
           </TooltipContent>
         </Tooltip>
       )}
@@ -393,21 +403,23 @@ export function ItemCard({
           }
         >
           <MoreHorizontalIcon aria-hidden="true" />
-          <span className="sr-only">Ações de {item.title}</span>
+          <span className="sr-only">
+            {t.items.card.itemActions(item.title)}
+          </span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           {item.type === "link" && (
             <>
               <DropdownMenuItem onClick={onRefreshPreview}>
-                Atualizar prévia
+                {t.items.card.refreshPreview}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
             </>
           )}
-          <DropdownMenuItem onClick={onEdit}>Editar</DropdownMenuItem>
+          <DropdownMenuItem onClick={onEdit}>{t.common.edit}</DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem variant="destructive" onClick={onDelete}>
-            Excluir
+            {t.common.delete}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -429,7 +441,7 @@ export function ItemCard({
         />
       )}
       <span className="text-metadata min-w-0 flex-1 truncate text-muted-foreground">
-        {domain ?? "Link inválido"}
+        {domain ?? t.items.card.invalidLink}
       </span>
     </div>
   );
@@ -494,7 +506,10 @@ export function ItemCard({
   const hiddenTags = associatedTags.slice(3);
   const hiddenTagsLabel =
     hiddenTags.length > 0
-      ? `Mais ${hiddenTags.length} ${hiddenTags.length === 1 ? "tag" : "tags"}: ${hiddenTags.map((tag) => tag.name).join(", ")}`
+      ? t.items.card.hiddenTagsLabel(
+          hiddenTags.length,
+          hiddenTags.map((tag) => tag.name).join(", "),
+        )
       : null;
 
   const tagsBlock = associatedTags.length > 0 && (

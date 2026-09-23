@@ -1,5 +1,6 @@
 import { tokenizePromptContext } from "@/lib/prompt/context-tokens";
 import type { CodeLanguage } from "@/lib/code/languages";
+import { ptBR, type Dictionary } from "@/lib/i18n/dictionaries/pt-BR";
 import { CodeSnippetEmbed } from "@/components/items/CodeSnippetEmbed";
 
 /**
@@ -24,11 +25,12 @@ import { CodeSnippetEmbed } from "@/components/items/CodeSnippetEmbed";
  * DialogFooter logo abaixo e, na variante de código, o embed tem um atalho
  * em ícone no próprio header — um botão de texto aqui seria um terceiro
  * tab stop para a mesma ação.
+ *
+ * Sem "use client" nem hook de locale: os contadores de linha/caractere
+ * vêm formatados via `t`, opcional e default pt-BR (mesmo padrão do parser
+ * de bookmarks) para este componente continuar puro e os chamadores/testes
+ * que não passam `t` continuarem vendo português.
  */
-
-function pluralize(count: number, singular: string, plural: string) {
-  return `${count.toLocaleString("pt-BR")} ${count === 1 ? singular : plural}`;
-}
 
 /**
  * Um tratamento só para as quatro categorias de referência. O que importa ao
@@ -75,10 +77,12 @@ export function PromptContentPanel({
   content,
   variant,
   language,
+  t = ptBR,
 }: {
   content: string;
   variant: "prompt" | "code_component";
   language?: CodeLanguage | null;
+  t?: Dictionary;
 }) {
   if (variant === "code_component") {
     return <CodeSnippetEmbed content={content} language={language ?? null} />;
@@ -99,10 +103,12 @@ export function PromptContentPanel({
         {/* Concat literal, não cn(): twMerge trata qualquer par text-* como
             o mesmo grupo "cor de texto" e descartaria text-brand-pixel
             (fonte) em favor da cor. */}
-        <span className="text-brand-pixel text-type-prompt">prompt</span>
+        <span className="text-brand-pixel text-type-prompt">
+          {t.items.card.types.prompt.label}
+        </span>
         <span className="text-metadata text-muted-foreground">
-          {pluralize(lineCount, "linha", "linhas")} ·{" "}
-          {pluralize(charCount, "caractere", "caracteres")}
+          {t.items.promptContentPanel.lineCount(lineCount)} ·{" "}
+          {t.items.promptContentPanel.charCount(charCount)}
         </span>
       </div>
       <div className="max-h-[min(65dvh,44rem)] overflow-auto bg-secondary/30 p-4">
