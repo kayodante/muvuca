@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import packageJson from "@/package.json";
+import { UserAvatar } from "@/components/shell/UserAvatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +37,6 @@ export function SidebarUserMenu({
 }) {
   if (!userEmail) return null;
 
-  const initial = userEmail.charAt(0).toUpperCase();
   const displayName = userName || userEmail.split("@")[0] || "Usuário";
 
   return (
@@ -49,12 +49,7 @@ export function SidebarUserMenu({
           />
         }
       >
-        <span
-          aria-hidden="true"
-          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-secondary text-sm font-medium text-foreground"
-        >
-          {initial}
-        </span>
+        <UserAvatar name={displayName} />
         <div className="flex min-w-0 flex-1 flex-col">
           <span
             dir="auto"

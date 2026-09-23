@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/auth/require-user";
 import { AppShell } from "@/components/shell/AppShell";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { getTagList } from "@/lib/database/queries/tags";
-import { getThemePreference } from "@/lib/database/queries/preferences";
+import { getUserPreferences } from "@/lib/database/queries/preferences";
 import { getLibraryItemsCount } from "@/lib/database/queries/items";
 
 /**
@@ -16,17 +16,17 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const user = await requireUser();
-  const [tags, theme, itemsCount] = await Promise.all([
+  const [tags, preferences, itemsCount] = await Promise.all([
     getTagList(),
-    getThemePreference(),
+    getUserPreferences(),
     getLibraryItemsCount(),
   ]);
 
   return (
     <AppShell
-      theme={theme}
+      theme={preferences.theme}
       userEmail={user.email}
-      userName={user.name}
+      userName={preferences.displayName ?? user.name}
       signOutSlot={<SignOutButton />}
       tags={tags}
       itemsCount={itemsCount}

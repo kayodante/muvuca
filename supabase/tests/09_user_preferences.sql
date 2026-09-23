@@ -1,7 +1,7 @@
 -- Theme preferences are private, valid and persist as one row per user.
 begin;
 
-select plan(9);
+select plan(15);
 
 create temporary table fixture_ids (label text primary key, id uuid not null);
 grant select, insert, update, delete on fixture_ids to authenticated;
@@ -94,6 +94,54 @@ select is(
   (select count(*)::int from del),
   1,
   'A can delete their own preference'
+);
+
+-- display_name (0029_user_display_name.sql). Ainda como A; a linha de A
+-- foi apagada acima, então o upsert recria.
+insert into public.user_preferences (user_id, display_name)
+values ((select auth.uid()), 'Kayo Dante');
+
+select is(
+  (select theme from public.user_preferences),
+  'system',
+  'saving only a display name keeps the default theme'
+);
+
+select lives_ok(
+  $$update public.user_preferences set display_name = null where user_id = (select auth.uid())$$,
+  'display name can be cleared back to null'
+);
+
+select throws_ok(
+  $$update public.user_preferences set display_name = '' where user_id = (select auth.uid())$$,
+  '23514'::character(5),
+  null::text,
+  'empty display name is rejected (null means unset)'
+);
+
+select throws_ok(
+  $$update public.user_preferences set display_name = ' Kayo' where user_id = (select auth.uid())$$,
+  '23514'::character(5),
+  null::text,
+  'untrimmed display name is rejected'
+);
+
+select throws_ok(
+  format(
+    $sql$update public.user_preferences set display_name = %L where user_id = (select auth.uid())$sql$,
+    repeat('a', 51)
+  ),
+  '23514'::character(5),
+  null::text,
+  'display name longer than 50 characters is rejected'
+);
+
+select throws_ok(
+  $$update public.user_preferences set display_name = E'Kayo
+Dante' where user_id = (select auth.uid())$$,
+  '23514'::character(5),
+  null::text,
+  'display name with control characters is rejected'
 );
 
 select * from finish();

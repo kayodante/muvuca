@@ -1,17 +1,19 @@
 import { ExportLibraryCard } from "@/components/settings/ExportLibraryCard";
 import { ImportBackupCard } from "@/components/settings/ImportBackupCard";
+import { ProfileCard } from "@/components/settings/ProfileCard";
 import { ResetAccountCard } from "@/components/settings/ResetAccountCard";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
 import { requireUser } from "@/lib/auth/require-user";
-import { getThemePreference } from "@/lib/database/queries/preferences";
+import { getUserPreferences } from "@/lib/database/queries/preferences";
 
-/** Settings page: theme preference, library export and account session. */
+/** Settings page: profile, theme preference, library export and account session. */
 export default async function SettingsPage() {
-  const [user, theme] = await Promise.all([
+  const [user, { theme, displayName }] = await Promise.all([
     requireUser(),
-    getThemePreference(),
+    getUserPreferences(),
   ]);
+  const fallbackName = user.name || user.email?.split("@")[0] || "Usuário";
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-10 py-4 sm:py-8">
@@ -22,6 +24,18 @@ export default async function SettingsPage() {
           Ajustes da sua biblioteca e da sua sessão.
         </p>
       </header>
+
+      <section aria-labelledby="profile-heading" className="space-y-4">
+        <div>
+          <h2 id="profile-heading" className="text-headline-sm">
+            Perfil
+          </h2>
+          <p className="text-body-sm text-muted-foreground">
+            Como o Muvuca se refere a você.
+          </p>
+        </div>
+        <ProfileCard displayName={displayName} fallbackName={fallbackName} />
+      </section>
 
       <section aria-labelledby="appearance-heading" className="space-y-4">
         <div>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { fontVariables } from "@/lib/fonts";
 import { getOptionalUser } from "@/lib/auth/require-user";
-import { getThemePreference } from "@/lib/database/queries/preferences";
+import { getUserPreferences } from "@/lib/database/queries/preferences";
 import { DEFAULT_THEME } from "@/lib/theme/preference";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
@@ -20,7 +20,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const user = await getOptionalUser();
-  const theme = user ? await getThemePreference() : DEFAULT_THEME;
+  const theme = user ? (await getUserPreferences()).theme : DEFAULT_THEME;
   // "system" applies no class: app/globals.css falls back to
   // `prefers-color-scheme` for it, so there is no client-side theme flash.
   const themeClass = theme === "system" ? undefined : theme;

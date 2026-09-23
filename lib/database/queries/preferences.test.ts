@@ -8,9 +8,9 @@ const { createClientMock, logEventMock } = vi.hoisted(() => ({
 vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
 vi.mock("@/lib/security/logging", () => ({ logEvent: logEventMock }));
 
-import { getThemePreference } from "@/lib/database/queries/preferences";
+import { getUserPreferences } from "@/lib/database/queries/preferences";
 
-describe("getThemePreference", () => {
+describe("getUserPreferences", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -24,7 +24,7 @@ describe("getThemePreference", () => {
     const from = vi.fn().mockReturnValue({ select });
     createClientMock.mockResolvedValue({ from });
 
-    await expect(getThemePreference()).rejects.toMatchObject({
+    await expect(getUserPreferences()).rejects.toMatchObject({
       code: "PGRST301",
     });
 
@@ -41,8 +41,27 @@ describe("getThemePreference", () => {
     const from = vi.fn().mockReturnValue({ select });
     createClientMock.mockResolvedValue({ from });
 
-    await expect(getThemePreference()).resolves.toBe("system");
+    await expect(getUserPreferences()).resolves.toEqual({
+      theme: "system",
+      displayName: null,
+    });
 
     expect(logEventMock).not.toHaveBeenCalled();
+  });
+
+  it("returns the saved display name alongside the theme", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: { theme: "dark", display_name: "Kayo" },
+      error: null,
+    });
+    const select = vi.fn().mockReturnValue({ maybeSingle });
+    const from = vi.fn().mockReturnValue({ select });
+    createClientMock.mockResolvedValue({ from });
+
+    await expect(getUserPreferences()).resolves.toEqual({
+      theme: "dark",
+      displayName: "Kayo",
+    });
+    expect(select).toHaveBeenCalledWith("theme, display_name");
   });
 });

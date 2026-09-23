@@ -2,15 +2,20 @@ import { createClient } from "@/lib/supabase/server";
 import { logEvent } from "@/lib/security/logging";
 import { DEFAULT_THEME, themeSchema, type Theme } from "@/lib/theme/preference";
 
+export type UserPreferences = {
+  theme: Theme;
+  displayName: string | null;
+};
+
 /**
- * Reads the caller's saved theme through RLS. No row is the intentional
- * first-use state, so it resolves to the documented `system` default.
+ * Reads the caller's saved preferences through RLS. No row is the
+ * intentional first-use state: `system` theme and no display name.
  */
-export async function getThemePreference(): Promise<Theme> {
+export async function getUserPreferences(): Promise<UserPreferences> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("user_preferences")
-    .select("theme")
+    .select("theme, display_name")
     .maybeSingle();
 
   if (error) {
@@ -23,5 +28,8 @@ export async function getThemePreference(): Promise<Theme> {
   }
 
   const parsed = themeSchema.safeParse(data?.theme);
-  return parsed.success ? parsed.data : DEFAULT_THEME;
+  return {
+    theme: parsed.success ? parsed.data : DEFAULT_THEME,
+    displayName: data?.display_name ?? null,
+  };
 }
