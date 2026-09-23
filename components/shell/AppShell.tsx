@@ -6,6 +6,7 @@ import { PanelLeftIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Theme } from "@/lib/theme/preference";
 import type { FlatTag } from "@/lib/tags/tree";
+import { useDictionary } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "./MobileNav";
 import { Sidebar } from "./Sidebar";
@@ -37,6 +38,7 @@ export function AppShell({
   tags?: FlatTag[];
   itemsCount?: number;
 }) {
+  const t = useDictionary();
   const [collapsed, setCollapsed] = useState(false);
 
   const sidebar = (
@@ -77,8 +79,8 @@ export function AppShell({
                 size="icon"
                 aria-label={
                   collapsed
-                    ? "Expandir barra lateral"
-                    : "Recolher barra lateral"
+                    ? t.shell.sidebarToggle.expand
+                    : t.shell.sidebarToggle.collapse
                 }
                 aria-expanded={!collapsed}
                 onClick={() => setCollapsed((value) => !value)}

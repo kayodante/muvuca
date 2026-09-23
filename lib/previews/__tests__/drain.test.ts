@@ -1,23 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ptBR } from "@/lib/i18n/dictionaries/pt-BR";
+
 const {
   requireUserMock,
   createClientMock,
   enrichOneMock,
   logEventMock,
   putPreviewObjectMock,
+  getDictionaryMock,
 } = vi.hoisted(() => ({
   requireUserMock: vi.fn(),
   createClientMock: vi.fn(),
   enrichOneMock: vi.fn(),
   logEventMock: vi.fn(),
   putPreviewObjectMock: vi.fn(),
+  getDictionaryMock: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/require-user", () => ({ requireUser: requireUserMock }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: createClientMock }));
 vi.mock("@/lib/metadata/enrich", () => ({ enrichOne: enrichOneMock }));
 vi.mock("@/lib/security/logging", () => ({ logEvent: logEventMock }));
+vi.mock("@/lib/i18n/server", () => ({ getDictionary: getDictionaryMock }));
 vi.mock("@/lib/storage/previews", () => ({
   PREVIEW_BUCKET: "link-previews",
   previewObjectKey: (
@@ -83,6 +88,7 @@ describe("drainPreviewQueue", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireUserMock.mockResolvedValue(USER);
+    getDictionaryMock.mockResolvedValue(ptBR);
     // mockClear() (via clearAllMocks) doesn't reset implementations, only
     // recorded calls -- default to success so a test that doesn't care
     // about uploads isn't accidentally poisoned by an earlier test's

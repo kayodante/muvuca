@@ -22,6 +22,7 @@ import type { Tag } from "@/lib/database/queries/tags";
 import type { ItemType } from "@/lib/validation/item";
 import type { SearchSort } from "@/lib/validation/search";
 import { morph } from "@/lib/motion/view-transition";
+import { useDictionary } from "@/lib/i18n/client";
 
 import { EmptyState } from "@/components/states/EmptyState";
 import { ImportBookmarksDialog } from "@/components/bookmarks/ImportBookmarksDialog";
@@ -45,10 +46,10 @@ export function ItemsPage({
   tags,
   nextCursor = null,
   prevCursor = null,
-  title = "Seus itens",
+  title,
   headingLevel = "h1",
-  emptyTitle = "Sua biblioteca está vazia",
-  emptyDescription = "Salve um link, prompt ou componente para começar sua coleção.",
+  emptyTitle,
+  emptyDescription,
 }: {
   items: LibraryItemSummary[];
   tags: Tag[];
@@ -59,6 +60,11 @@ export function ItemsPage({
   emptyTitle?: string;
   emptyDescription?: string;
 }) {
+  const t = useDictionary();
+  const resolvedTitle = title ?? t.items.page.defaultTitle;
+  const resolvedEmptyTitle = emptyTitle ?? t.items.page.emptyTitle;
+  const resolvedEmptyDescription =
+    emptyDescription ?? t.items.page.emptyDescription;
   const [editorTarget, setEditorTarget] = useState<EditorTarget | null>(null);
   const [viewingItem, setViewingItem] = useState<LibraryItem | null>(null);
   // Which card currently owns the shared `view-transition-name`. Exactly one
@@ -199,7 +205,7 @@ export function ItemsPage({
   async function handleRefreshPreview(itemId: string) {
     const result = await refreshItemPreview(itemId);
     if (result.ok) {
-      toastSuccess("Atualização da prévia solicitada.");
+      toastSuccess(t.items.page.previewRefreshRequested);
       notifyPreviewQueueChanged();
     } else {
       toastError(result.message);
@@ -227,7 +233,7 @@ export function ItemsPage({
           import lives in the account menu and in the empty state. */}
       <div className="flex flex-wrap items-center justify-end gap-3">
         <Heading className="text-headline-sm mr-auto min-w-0 [overflow-wrap:anywhere]">
-          {title}
+          {resolvedTitle}
         </Heading>
 
         <LibraryToolbar
@@ -251,9 +257,10 @@ export function ItemsPage({
             variant="outline"
             size="sm"
             pending={isDetailPending}
+            pendingLabel={t.common.loading}
             onClick={() => loadItem(detailError.item, detailError.target)}
           >
-            Tentar novamente
+            {t.common.tryAgain}
           </Button>
         </div>
       )}
@@ -262,11 +269,13 @@ export function ItemsPage({
         <EmptyState
           className="mt-4"
           icon={FileTextIcon}
-          title={hasSearchFilters ? "Nenhum resultado" : emptyTitle}
+          title={
+            hasSearchFilters ? t.items.page.noResultsTitle : resolvedEmptyTitle
+          }
           description={
             hasSearchFilters
-              ? "Tente ajustar a busca ou remover um filtro."
-              : emptyDescription
+              ? t.items.page.noResultsDescription
+              : resolvedEmptyDescription
           }
           action={
             hasSearchFilters ? (
@@ -277,19 +286,19 @@ export function ItemsPage({
                 }
               >
                 <FilterXIcon aria-hidden="true" data-icon="inline-start" />
-                Limpar filtros
+                {t.items.page.clearFilters}
               </Button>
             ) : (
               <Button onClick={() => setEditorTarget({ mode: "create" })}>
                 <PlusIcon aria-hidden="true" data-icon="inline-start" />
-                Criar item
+                {t.items.editor.createItem}
               </Button>
             )
           }
           secondaryAction={
             hasSearchFilters ? undefined : (
               <Button variant="outline" onClick={() => setImportOpen(true)}>
-                Importar favoritos
+                {t.items.page.importBookmarks}
               </Button>
             )
           }
@@ -316,7 +325,7 @@ export function ItemsPage({
           </div>
           {(prevPageHref || nextPageHref) && (
             <nav
-              aria-label="Paginação"
+              aria-label={t.items.page.paginationLabel}
               className="mt-8 flex items-center justify-center gap-3"
             >
               {prevPageHref ? (
@@ -329,7 +338,7 @@ export function ItemsPage({
                     aria-hidden="true"
                     data-icon="inline-start"
                   />
-                  Página anterior
+                  {t.items.page.previousPage}
                 </Button>
               ) : (
                 <Button variant="outline" disabled>
@@ -337,7 +346,7 @@ export function ItemsPage({
                     aria-hidden="true"
                     data-icon="inline-start"
                   />
-                  Página anterior
+                  {t.items.page.previousPage}
                 </Button>
               )}
 
@@ -347,12 +356,12 @@ export function ItemsPage({
                   nativeButton={false}
                   render={<Link href={nextPageHref} />}
                 >
-                  Próxima página
+                  {t.items.page.nextPage}
                   <ChevronRightIcon aria-hidden="true" data-icon="inline-end" />
                 </Button>
               ) : (
                 <Button variant="outline" disabled>
-                  Próxima página
+                  {t.items.page.nextPage}
                   <ChevronRightIcon aria-hidden="true" data-icon="inline-end" />
                 </Button>
               )}

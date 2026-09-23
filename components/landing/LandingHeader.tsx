@@ -13,6 +13,7 @@ import {
 import { MenuIcon, SearchIcon } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { useDictionary } from "@/lib/i18n/client";
 
 interface LandingHeaderProps {
   onOpenSearch?: () => void;
@@ -20,6 +21,7 @@ interface LandingHeaderProps {
 
 export function LandingHeader({ onOpenSearch }: LandingHeaderProps) {
   const [open, setOpen] = useState(false);
+  const t = useDictionary();
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background">
@@ -34,31 +36,31 @@ export function LandingHeader({ onOpenSearch }: LandingHeaderProps) {
         {/* Desktop Nav */}
         <nav
           className="hidden items-center gap-8 md:flex"
-          aria-label="Navegação Principal"
+          aria-label={t.landing.header.navAriaLabel}
         >
           <a
             href="#visao"
             className="text-body-sm text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca hover:text-foreground motion-reduce:transition-none"
           >
-            Visão geral
+            {t.landing.nav.overview}
           </a>
           <a
             href="#tag-rollup"
             className="text-body-sm text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca hover:text-foreground motion-reduce:transition-none"
           >
-            Tags
+            {t.landing.nav.tags}
           </a>
           <a
             href="#busca"
             className="text-body-sm text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca hover:text-foreground motion-reduce:transition-none"
           >
-            Busca
+            {t.landing.nav.search}
           </a>
           <a
             href="#importacao"
             className="text-body-sm text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca hover:text-foreground motion-reduce:transition-none"
           >
-            Importação
+            {t.landing.nav.import}
           </a>
         </nav>
 
@@ -69,10 +71,10 @@ export function LandingHeader({ onOpenSearch }: LandingHeaderProps) {
               type="button"
               onClick={onOpenSearch}
               className="text-metadata flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-2.5 py-1.5 text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca hover:bg-muted/50 hover:text-foreground motion-reduce:transition-none"
-              aria-label="Abrir Spotlight"
+              aria-label={t.landing.header.openSpotlight}
             >
               <SearchIcon className="size-3.5" />
-              <span>Busca</span>
+              <span>{t.landing.nav.search}</span>
               <kbd className="text-metadata rounded border border-border bg-background px-1 font-mono">
                 ⌘K
               </kbd>
@@ -83,13 +85,13 @@ export function LandingHeader({ onOpenSearch }: LandingHeaderProps) {
             href="/login"
             className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
           >
-            Entrar
+            {t.landing.common.login}
           </Link>
           <Link
             href="/login"
             className={cn(buttonVariants({ variant: "default", size: "sm" }))}
           >
-            Começar
+            {t.landing.common.getStarted}
           </Link>
         </div>
 
@@ -100,7 +102,7 @@ export function LandingHeader({ onOpenSearch }: LandingHeaderProps) {
               variant="ghost"
               size="icon-sm"
               onClick={onOpenSearch}
-              aria-label="Abrir busca rápida"
+              aria-label={t.landing.header.openSearchMobile}
             >
               <SearchIcon className="size-4" />
             </Button>
@@ -110,7 +112,7 @@ export function LandingHeader({ onOpenSearch }: LandingHeaderProps) {
             href="/login"
             className={cn(buttonVariants({ variant: "default", size: "sm" }))}
           >
-            Começar
+            {t.landing.common.getStarted}
           </Link>
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger
@@ -118,48 +120,50 @@ export function LandingHeader({ onOpenSearch }: LandingHeaderProps) {
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  aria-label="Abrir menu de navegação"
+                  aria-label={t.landing.header.openMenu}
                 />
               }
             >
               <MenuIcon className="size-5" aria-hidden="true" />
             </SheetTrigger>
             <SheetContent side="right" className="flex flex-col gap-6 pt-10">
-              <SheetTitle className="sr-only">Menu de navegação</SheetTitle>
+              <SheetTitle className="sr-only">
+                {t.landing.header.menuTitle}
+              </SheetTitle>
               <SheetDescription className="sr-only">
-                Links e ações da landing page
+                {t.landing.header.menuDescription}
               </SheetDescription>
               <nav
                 className="flex flex-col gap-4"
-                aria-label="Navegação Mobile"
+                aria-label={t.landing.header.mobileNavAriaLabel}
               >
                 <a
                   href="#visao"
                   onClick={() => setOpen(false)}
                   className="text-headline-sm transition-colors duration-(--motion-fast) ease-out-muvuca hover:text-brand-accent motion-reduce:transition-none"
                 >
-                  Visão geral
+                  {t.landing.nav.overview}
                 </a>
                 <a
                   href="#tag-rollup"
                   onClick={() => setOpen(false)}
                   className="text-headline-sm transition-colors duration-(--motion-fast) ease-out-muvuca hover:text-brand-accent motion-reduce:transition-none"
                 >
-                  Tags
+                  {t.landing.nav.tags}
                 </a>
                 <a
                   href="#busca"
                   onClick={() => setOpen(false)}
                   className="text-headline-sm transition-colors duration-(--motion-fast) ease-out-muvuca hover:text-brand-accent motion-reduce:transition-none"
                 >
-                  Busca
+                  {t.landing.nav.search}
                 </a>
                 <a
                   href="#importacao"
                   onClick={() => setOpen(false)}
                   className="text-headline-sm transition-colors duration-(--motion-fast) ease-out-muvuca hover:text-brand-accent motion-reduce:transition-none"
                 >
-                  Importação
+                  {t.landing.nav.import}
                 </a>
               </nav>
               <div className="mt-auto flex flex-col gap-3 border-t border-border pt-6">
@@ -170,7 +174,7 @@ export function LandingHeader({ onOpenSearch }: LandingHeaderProps) {
                     "w-full",
                   )}
                 >
-                  Entrar
+                  {t.landing.common.login}
                 </Link>
                 <Link
                   href="/login"
@@ -179,7 +183,7 @@ export function LandingHeader({ onOpenSearch }: LandingHeaderProps) {
                     "w-full",
                   )}
                 >
-                  Começar
+                  {t.landing.common.getStarted}
                 </Link>
               </div>
             </SheetContent>

@@ -11,6 +11,7 @@ import { LandingItemTypes } from "@/components/landing/LandingItemTypes";
 import { LandingImport } from "@/components/landing/LandingImport";
 import { LandingCollections } from "@/components/landing/LandingCollections";
 import { LandingCommandPalette } from "@/components/landing/LandingCommandPalette";
+import { useDictionary } from "@/lib/i18n/client";
 
 interface LandingClientWrapperProps {
   /**
@@ -27,6 +28,7 @@ export function LandingClientWrapper({
   footer,
 }: LandingClientWrapperProps) {
   const [searchOpen, setSearchOpen] = useState(false);
+  const t = useDictionary();
 
   return (
     <>
@@ -35,7 +37,7 @@ export function LandingClientWrapper({
         href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:shadow-md focus:ring-2 focus:ring-ring focus:outline-none"
       >
-        Pular para o conteúdo principal
+        {t.landing.skipToContent}
       </a>
 
       <LandingHeader onOpenSearch={() => setSearchOpen(true)} />

@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ptBR } from "@/lib/i18n/dictionaries/pt-BR";
 import {
   findExistingBookmarkUrls,
   importBrowserBookmarks,
 } from "@/lib/actions/bookmarks";
 
 const mockRequireUser = vi.fn();
+const mockGetDictionary = vi.fn();
 const mockSupabase = {
   from: vi.fn(),
   rpc: vi.fn(),
@@ -27,10 +29,15 @@ vi.mock("@/lib/security/logging", () => ({
   logEvent: vi.fn(),
 }));
 
+vi.mock("@/lib/i18n/server", () => ({
+  getDictionary: () => mockGetDictionary(),
+}));
+
 describe("bookmark actions", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockRequireUser.mockResolvedValue({ id: "user_123" });
+    mockGetDictionary.mockResolvedValue(ptBR);
   });
 
   it("finds existing URLs in chunks when many URLs are passed", async () => {

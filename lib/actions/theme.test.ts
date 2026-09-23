@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ptBR } from "@/lib/i18n/dictionaries/pt-BR";
+import { en } from "@/lib/i18n/dictionaries/en";
+
 const {
   requireUserMock,
   createClientMock,
@@ -7,6 +10,7 @@ const {
   fromMock,
   revalidatePathMock,
   logEventMock,
+  getDictionaryMock,
 } = vi.hoisted(() => {
   const upsertMock = vi.fn();
   const fromMock = vi.fn(() => ({ upsert: upsertMock }));
@@ -17,6 +21,7 @@ const {
     fromMock,
     revalidatePathMock: vi.fn(),
     logEventMock: vi.fn(),
+    getDictionaryMock: vi.fn(),
   };
 });
 
@@ -32,6 +37,7 @@ vi.mock("@/lib/security/logging", () => ({
 vi.mock("next/cache", () => ({
   revalidatePath: revalidatePathMock,
 }));
+vi.mock("@/lib/i18n/server", () => ({ getDictionary: getDictionaryMock }));
 
 import { setTheme } from "./theme";
 
@@ -43,6 +49,7 @@ describe("setTheme (lib/actions/theme.ts)", () => {
       from: fromMock,
     });
     upsertMock.mockResolvedValue({ error: null });
+    getDictionaryMock.mockResolvedValue(ptBR);
   });
 
   describe("validação de schema", () => {
@@ -52,7 +59,7 @@ describe("setTheme (lib/actions/theme.ts)", () => {
       expect(result).toEqual({
         ok: false,
         code: "VALIDATION_FAILED",
-        message: "Tema inválido.",
+        message: ptBR.errors.invalidTheme,
       });
       expect(requireUserMock).not.toHaveBeenCalled();
       expect(createClientMock).not.toHaveBeenCalled();
@@ -63,17 +70,17 @@ describe("setTheme (lib/actions/theme.ts)", () => {
       expect(await setTheme(123)).toEqual({
         ok: false,
         code: "VALIDATION_FAILED",
-        message: "Tema inválido.",
+        message: ptBR.errors.invalidTheme,
       });
       expect(await setTheme(null)).toEqual({
         ok: false,
         code: "VALIDATION_FAILED",
-        message: "Tema inválido.",
+        message: ptBR.errors.invalidTheme,
       });
       expect(await setTheme({})).toEqual({
         ok: false,
         code: "VALIDATION_FAILED",
-        message: "Tema inválido.",
+        message: ptBR.errors.invalidTheme,
       });
     });
   });
@@ -129,7 +136,7 @@ describe("setTheme (lib/actions/theme.ts)", () => {
       expect(result).toEqual({
         ok: false,
         code: "UNKNOWN",
-        message: "Não foi possível atualizar a aparência.",
+        message: ptBR.errors.themeUpdateFailed,
       });
       expect(logEventMock).toHaveBeenCalledWith({
         event: "preferences.theme_update_failed",
@@ -138,6 +145,21 @@ describe("setTheme (lib/actions/theme.ts)", () => {
         errorClass: "PostgresError",
       });
       expect(revalidatePathMock).not.toHaveBeenCalled();
+    });
+
+    it("returns the English message when the dictionary is en", async () => {
+      getDictionaryMock.mockResolvedValue(en);
+      upsertMock.mockResolvedValue({
+        error: { name: "PostgresError", message: "disk full" },
+      });
+
+      const result = await setTheme("light");
+
+      expect(result).toEqual({
+        ok: false,
+        code: "UNKNOWN",
+        message: en.errors.themeUpdateFailed,
+      });
     });
   });
 });

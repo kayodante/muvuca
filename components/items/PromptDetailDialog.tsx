@@ -5,6 +5,7 @@ import type { LibraryItem } from "@/lib/database/queries/items";
 import type { Tag } from "@/lib/database/queries/tags";
 import { normalizeHttpUrl } from "@/lib/validation/item";
 import { MORPH_CLASS, MORPH_TITLE_CLASS } from "@/lib/motion/view-transition";
+import { useDictionary } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { TagChip } from "@/components/tags/TagChip";
 import { PromptContentPanel } from "@/components/items/PromptContentPanel";
@@ -32,6 +33,7 @@ export function PromptDetailDialog({
     item: Extract<LibraryItem, { type: "prompt" | "code_component" }>,
   ) => void;
 }) {
+  const t = useDictionary();
   if (!item) return null;
   const associatedTags = item.tagIds.flatMap((tagId) => {
     const tag = tags.find((candidate) => candidate.id === tagId);
@@ -87,7 +89,7 @@ export function PromptDetailDialog({
               className="inline-flex items-center gap-1.5 rounded-sm text-foreground underline-offset-4 outline-none hover:text-brand-accent hover:underline focus-visible:ring-2 focus-visible:ring-ring"
             >
               <ExternalLinkIcon aria-hidden="true" className="size-3.5" />
-              Abrir fonte original
+              {t.items.promptDetail.openSource}
             </a>
           </div>
         )}
@@ -95,6 +97,7 @@ export function PromptDetailDialog({
           content={item.content}
           variant={item.type}
           language={item.type === "code_component" ? item.language : null}
+          t={t}
         />
         <DialogFooter>
           <Button
@@ -104,22 +107,26 @@ export function PromptDetailDialog({
             onClick={() => onEdit(item)}
           >
             {item.type === "code_component"
-              ? "Editar componente"
-              : "Editar prompt"}
+              ? t.items.promptDetail.editComponent
+              : t.items.promptDetail.editPrompt}
           </Button>
           {item.type === "code_component" ? (
             <PromptCopyButton
               content={item.content}
-              label="Copiar código"
-              successMessage="Código copiado para a área de transferência."
-              errorMessage="Não foi possível copiar o código."
+              label={t.items.promptDetail.copyCode}
+              pendingLabel={t.items.promptDetail.copyingCode}
+              successLabel={t.items.promptDetail.codeCopiedLabel}
+              successMessage={t.items.promptDetail.codeCopiedMessage}
+              errorMessage={t.items.promptDetail.codeCopyFailed}
             />
           ) : (
             <PromptCopyButton
               content={item.content}
-              label="Copiar prompt"
-              successMessage="Prompt copiado para a área de transferência."
-              errorMessage="Não foi possível copiar o prompt."
+              label={t.items.promptDetail.copyPrompt}
+              pendingLabel={t.items.promptDetail.copyingPrompt}
+              successLabel={t.items.promptDetail.promptCopiedLabel}
+              successMessage={t.items.promptDetail.promptCopiedMessage}
+              errorMessage={t.items.promptDetail.promptCopyFailed}
             />
           )}
         </DialogFooter>

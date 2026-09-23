@@ -2,14 +2,16 @@ import {
   LibraryGridSkeleton,
   LibraryToolbarSkeleton,
 } from "@/components/items/LibraryGridSkeleton";
+import { getDictionary } from "@/lib/i18n/server";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function LibraryLoading() {
+export default async function LibraryLoading() {
+  const t = await getDictionary();
   return (
     <div
       className="flex flex-col gap-6"
       role="status"
-      aria-label="Carregando biblioteca"
+      aria-label={t.shell.loading.library}
     >
       <section className="flex flex-wrap items-end justify-between gap-4">
         <div>

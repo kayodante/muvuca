@@ -6,6 +6,7 @@ import {
   type LibraryItemSummary,
 } from "@/lib/database/queries/items";
 import { getTagList, type Tag } from "@/lib/database/queries/tags";
+import { getDictionary } from "@/lib/i18n/server";
 import { fail, ok, type ActionResult } from "@/lib/utils/result";
 
 export type SpotlightData = {
@@ -20,6 +21,7 @@ export type SpotlightData = {
 export async function getSpotlightInitialData(): Promise<
   ActionResult<SpotlightData>
 > {
+  const t = await getDictionary();
   try {
     await requireUser();
     const [libraryPage, tags] = await Promise.all([
@@ -32,10 +34,7 @@ export async function getSpotlightInitialData(): Promise<
       tags,
     });
   } catch {
-    return fail(
-      "UNKNOWN",
-      "Não foi possível carregar os dados para a busca rápida.",
-    );
+    return fail("UNKNOWN", t.errors.spotlightLoadFailed);
   }
 }
 
@@ -47,6 +46,7 @@ export async function searchSpotlightItems(
   query: string,
   tagId?: string | null,
 ): Promise<ActionResult<SpotlightData>> {
+  const t = await getDictionary();
   try {
     await requireUser();
     const normalizedQuery = query.trim();
@@ -64,6 +64,6 @@ export async function searchSpotlightItems(
       tags,
     });
   } catch {
-    return fail("UNKNOWN", "Erro ao pesquisar itens na busca rápida.");
+    return fail("UNKNOWN", t.errors.spotlightSearchFailed);
   }
 }

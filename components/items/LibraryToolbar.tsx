@@ -4,6 +4,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CheckIcon, ChevronDownIcon, RefreshCwIcon } from "lucide-react";
 import type { ItemType } from "@/lib/validation/item";
 import { SEARCH_SORTS, type SearchSort } from "@/lib/validation/search";
+import { useDictionary } from "@/lib/i18n/client";
+import type { Dictionary } from "@/lib/i18n/dictionaries/pt-BR";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -130,20 +132,18 @@ function TextSwap({ text }: { text: string }) {
   );
 }
 
-const SORT_LABELS: Record<SearchSort, string> = {
-  newest: "Mais recentes",
-  oldest: "Mais antigos",
-  title_asc: "Título A–Z",
-  title_desc: "Título Z–A",
-  updated: "Atualizados recentemente",
-};
+function sortLabels(t: Dictionary): Record<SearchSort, string> {
+  return t.items.toolbar.sortLabels;
+}
 
-const TYPE_TABS: { value: ItemType | null; label: string }[] = [
-  { value: null, label: "Tudo" },
-  { value: "link", label: "Link" },
-  { value: "prompt", label: "Prompt" },
-  { value: "code_component", label: "Code" },
-];
+function typeTabs(t: Dictionary): { value: ItemType | null; label: string }[] {
+  return [
+    { value: null, label: t.items.toolbar.typeTabs.all },
+    { value: "link", label: t.items.toolbar.typeTabs.link },
+    { value: "prompt", label: t.items.toolbar.typeTabs.prompt },
+    { value: "code_component", label: t.items.toolbar.typeTabs.code },
+  ];
+}
 
 interface LibraryToolbarProps {
   type: ItemType | null;
@@ -172,6 +172,7 @@ export function LibraryToolbar({
   onRefreshPreviews,
   onFilterChange,
 }: LibraryToolbarProps) {
+  const t = useDictionary();
   const { done: isDone, markRequested } =
     useRefreshDoneFlash(isRefreshingPreviews);
   const refreshState = isRefreshingPreviews
@@ -211,9 +212,11 @@ export function LibraryToolbar({
     };
   }, [type]);
 
+  const labels = sortLabels(t);
+
   return (
     <section
-      aria-label="Filtros e ordenação"
+      aria-label={t.items.toolbar.sectionLabel}
       className="flex flex-wrap items-center gap-3"
     >
       {canRefreshPreviews && (
@@ -236,10 +239,10 @@ export function LibraryToolbar({
           <TextSwap
             text={
               refreshState === "refreshing"
-                ? "Atualizando"
+                ? t.items.toolbar.refreshing
                 : refreshState === "done"
-                  ? "Atualizado"
-                  : "Atualizar pré-visualizações"
+                  ? t.items.toolbar.refreshed
+                  : t.items.toolbar.refreshPreviews
             }
           />
         </Button>
@@ -247,12 +250,12 @@ export function LibraryToolbar({
 
       <div
         role="group"
-        aria-label="Filtrar por tipo"
+        aria-label={t.items.toolbar.typeFilterLabel}
         ref={tabsRef}
         className="t-tabs"
       >
         <span ref={pillRef} className="t-tabs-pill" aria-hidden="true" />
-        {TYPE_TABS.map((tab) => (
+        {typeTabs(t).map((tab) => (
           <button
             key={tab.label}
             type="button"
@@ -272,12 +275,12 @@ export function LibraryToolbar({
             <Button
               variant="outline"
               size="sm"
-              aria-label="Ordenar itens"
+              aria-label={t.items.toolbar.sortAriaLabel}
               className="h-8 rounded-md border-0 bg-background px-3 py-1.5 shadow-light"
             />
           }
         >
-          {SORT_LABELS[sort]}
+          {labels[sort]}
           <ChevronDownIcon aria-hidden="true" data-icon="inline-end" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -289,7 +292,7 @@ export function LibraryToolbar({
                 onFilterChange({ sort: option === "newest" ? null : option })
               }
             >
-              <span className="flex-1">{SORT_LABELS[option]}</span>
+              <span className="flex-1">{labels[option]}</span>
               {option === sort && (
                 <CheckIcon aria-hidden="true" className="text-primary" />
               )}
@@ -309,7 +312,7 @@ export function LibraryToolbar({
             className="size-3.5"
             aria-hidden="true"
           />
-          <ShimmerText text="Carregando item…" />
+          <ShimmerText text={t.items.toolbar.loadingItem} />
         </span>
       )}
     </section>

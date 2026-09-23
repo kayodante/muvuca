@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Link2Off } from "lucide-react";
 import type { PreviewSummary } from "@/lib/database/queries/previews";
+import { useDictionary } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { getDomainMonogram } from "./SiteIdentity";
 
@@ -48,6 +49,7 @@ export function LinkPreviewMedia({
   domain: string;
   preview: PreviewSummary | null;
 }) {
+  const t = useDictionary();
   const [broken, setBroken] = useState(false);
   const pending = !broken && preview?.status === "pending";
   const [revealed, setRevealed] = useState(!pending);
@@ -97,7 +99,7 @@ export function LinkPreviewMedia({
       BROKEN_LINK_ERROR_CODES.has(preview.errorCode) ? (
       <div
         aria-hidden="true"
-        title="Link indisponível"
+        title={t.items.card.brokenLink}
         className="flex h-full w-full items-center justify-center bg-secondary/40"
       >
         <Link2Off className="size-6 text-muted-foreground" />
@@ -124,11 +126,12 @@ export function LinkPreviewMedia({
 }
 
 function PreviewFallback({ domain }: { domain: string }) {
+  const t = useDictionary();
   const { letter, swatchClass, textClass } = getDomainMonogram(domain);
   return (
     <div
       aria-hidden="true"
-      title="Prévia indisponível"
+      title={t.items.card.previewUnavailable}
       className="flex h-full w-full items-center justify-center bg-secondary/40"
     >
       <span

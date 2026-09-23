@@ -70,9 +70,10 @@ describe("bookmark validation schemas", () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0]?.message).toBe(
-        "Hierarquia de pastas inválida.",
-      );
+      // The raw Zod issue carries the `validation` dictionary key, not
+      // translated text -- callers translate it via `translateIssue`/
+      // `translateFieldErrors` (lib/i18n/validation.ts).
+      expect(result.error.issues[0]?.message).toBe("invalidFolderHierarchy");
     }
   });
 

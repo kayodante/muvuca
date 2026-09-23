@@ -3,6 +3,8 @@
 import { useId, useState, useTransition, type FormEvent } from "react";
 
 import { setDisplayName } from "@/lib/actions/profile";
+import { useDictionary } from "@/lib/i18n/client";
+import { translateIssue } from "@/lib/i18n/validation";
 import { displayNameSchema } from "@/lib/profile/display-name";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +22,7 @@ export function ProfileCard({
   displayName: string | null;
   fallbackName: string;
 }) {
+  const t = useDictionary();
   const [value, setValue] = useState(displayName ?? "");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -35,7 +38,7 @@ export function ProfileCard({
 
     const parsed = displayNameSchema.safeParse(value);
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Nome inválido.");
+      setError(translateIssue(parsed.error.issues[0]?.message ?? "", t));
       return;
     }
 
@@ -47,7 +50,9 @@ export function ProfileCard({
         return;
       }
       setValue(result.data ?? "");
-      toastSuccess(result.data ? "Nome salvo." : "Nome removido.");
+      toastSuccess(
+        result.data ? t.settings.profile.saved : t.settings.profile.removed,
+      );
     });
   }
 
@@ -63,7 +68,7 @@ export function ProfileCard({
         />
         <div className="min-w-0 flex-1 space-y-1.5">
           <label htmlFor={inputId} className="text-label-md">
-            Como quer ser chamado
+            {t.settings.profile.nameLabel}
           </label>
           <Input
             id={inputId}
@@ -83,8 +88,7 @@ export function ProfileCard({
       </div>
 
       <p id={hintId} className="text-body-sm text-muted-foreground">
-        Aparece no menu da conta. Deixe em branco para usar{" "}
-        <span dir="auto">{fallbackName}</span>.
+        {t.settings.profile.hint} <span dir="auto">{fallbackName}</span>.
       </p>
 
       {error && (
@@ -98,9 +102,10 @@ export function ProfileCard({
         size="sm"
         className="self-start"
         pending={isPending}
+        pendingLabel={t.settings.profile.saving}
         disabled={unchanged}
       >
-        Salvar
+        {t.settings.profile.save}
       </Button>
     </form>
   );

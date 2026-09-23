@@ -18,8 +18,8 @@ import {
   FilterIcon,
 } from "lucide-react";
 import {
-  DEMO_ITEMS,
-  DEMO_TAGS,
+  demoItems,
+  demoTags,
   getItemsForTag,
   type DemoItem,
 } from "@/lib/landing/demo-data";
@@ -29,18 +29,22 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { toastSuccess } from "@/components/states/Toast";
+import { useDictionary } from "@/lib/i18n/client";
 
 interface LandingHeroProps {
   onOpenSearch?: () => void;
 }
 
 export function LandingHero({ onOpenSearch }: LandingHeroProps) {
+  const t = useDictionary();
+  const DEMO_ITEMS = demoItems(t);
+  const DEMO_TAGS = demoTags(t);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const displayedItems = selectedTagId
-    ? getItemsForTag(selectedTagId)
+    ? getItemsForTag(selectedTagId, DEMO_TAGS, DEMO_ITEMS)
     : DEMO_ITEMS.slice(0, 4);
 
   async function handleCopyPrompt(item: DemoItem, e: React.MouseEvent) {
@@ -49,7 +53,7 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
     const ok = await copyToClipboard(item.contentPreview);
     if (ok) {
       setCopiedId(item.id);
-      toastSuccess("Prompt copiado.");
+      toastSuccess(t.landing.demo.promptCopied);
       setTimeout(() => setCopiedId(null), 2000);
     }
   }
@@ -82,12 +86,11 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
           className="mx-auto max-w-4xl text-center"
         >
           <h1 className="text-display t-stagger-line t-stagger-line--1 leading-[0.98] font-[560] tracking-[-0.035em] text-balance text-foreground sm:text-[clamp(2.75rem,5.5vw,4.75rem)]">
-            Organize a muvuca que você salva na internet.
+            {t.landing.hero.title}
           </h1>
 
           <p className="text-body-lg t-stagger-line t-stagger-line--2 mx-auto mt-6 max-w-2xl text-balance text-muted-foreground">
-            Links e prompts organizados numa biblioteca visual feita para você
-            encontrar de novo o que decidiu guardar.
+            {t.landing.hero.subtitle}
           </p>
 
           <div className="t-stagger-line t-stagger-line--3 mt-8 flex flex-wrap items-center justify-center gap-4">
@@ -98,7 +101,7 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
                 "gap-2 px-6 shadow-sm",
               )}
             >
-              Começar
+              {t.landing.common.getStarted}
               <ArrowRightIcon className="size-4" aria-hidden="true" />
             </Link>
             <a
@@ -108,7 +111,7 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
                 "gap-2 px-6",
               )}
             >
-              Ver como funciona
+              {t.landing.common.seeHow}
               <ChevronDownIcon
                 className="size-4 text-muted-foreground"
                 aria-hidden="true"
@@ -142,11 +145,13 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
                 type="button"
                 onClick={onOpenSearch}
                 className="text-body-sm flex h-9 w-full max-w-sm items-center justify-between rounded-lg border border-border bg-background px-3 text-muted-foreground shadow-xs transition-colors duration-(--motion-fast) ease-out-muvuca hover:bg-muted/40"
-                aria-label="Abrir busca rápida da demonstração"
+                aria-label={t.landing.hero.openSearchAria}
               >
                 <div className="flex items-center gap-2">
                   <SearchIcon className="size-3.5" aria-hidden="true" />
-                  <span className="truncate">Buscar na biblioteca...</span>
+                  <span className="truncate">
+                    {t.landing.hero.searchPlaceholder}
+                  </span>
                 </div>
                 <kbd className="text-metadata hidden rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-muted-foreground sm:inline-block">
                   ⌘ K
@@ -164,7 +169,7 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
                     ? "bg-secondary text-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
-                aria-label="Visualização em grade"
+                aria-label={t.landing.hero.gridView}
               >
                 <LayoutGridIcon className="size-4" />
               </button>
@@ -176,7 +181,7 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
                     ? "bg-secondary text-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
-                aria-label="Visualização em lista"
+                aria-label={t.landing.hero.listView}
               >
                 <ListIcon className="size-4" />
               </button>
@@ -189,7 +194,7 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
             <aside className="hidden border-r border-border bg-background/50 p-4 lg:block">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-metadata font-semibold text-muted-foreground uppercase">
-                  Tags
+                  {t.landing.nav.tags}
                 </span>
                 {selectedTagId && (
                   <button
@@ -197,7 +202,7 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
                     onClick={() => setSelectedTagId(null)}
                     className="text-metadata text-xs text-brand-accent hover:underline"
                   >
-                    Limpar
+                    {t.landing.hero.clearFilter}
                   </button>
                 )}
               </div>
@@ -214,7 +219,7 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
                 >
                   <div className="flex items-center gap-2">
                     <span className="size-2 rounded-full bg-primary" />
-                    <span>Todos os itens</span>
+                    <span>{t.landing.hero.allItems}</span>
                   </div>
                   <span className="text-metadata font-mono text-muted-foreground">
                     {DEMO_ITEMS.length}
@@ -263,14 +268,13 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className="text-headline-sm font-medium">
-                    Biblioteca
+                    {t.landing.common.library}
                   </span>
                   <span className="text-metadata font-mono text-muted-foreground">
-                    ({displayedItems.length}{" "}
-                    {displayedItems.length === 1
-                      ? "item exibido"
-                      : "itens exibidos"}
-                    {selectedTagId ? " pelo filtro" : ""})
+                    {t.landing.hero.itemsShown(
+                      displayedItems.length,
+                      Boolean(selectedTagId),
+                    )}
                   </span>
                 </div>
 
@@ -278,8 +282,10 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
                   <div className="flex items-center gap-1.5 rounded-md border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-brand-accent">
                     <FilterIcon className="size-3" />
                     <span>
-                      Filtro ativo:{" "}
-                      {DEMO_TAGS.find((t) => t.id === selectedTagId)?.name}
+                      {t.landing.hero.activeFilter(
+                        DEMO_TAGS.find((tag) => tag.id === selectedTagId)
+                          ?.name ?? "",
+                      )}
                     </span>
                   </div>
                 )}
@@ -313,7 +319,9 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
                                 />
                               )}
                               <span className="text-metadata font-mono text-muted-foreground">
-                                {item.type === "link" ? domain : "PROMPT"}
+                                {item.type === "link"
+                                  ? domain
+                                  : t.landing.demo.promptBadge}
                               </span>
                             </div>
 
@@ -323,7 +331,9 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="p-1 text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca hover:text-foreground motion-reduce:transition-none"
-                                aria-label={`Abrir ${item.title} em nova aba`}
+                                aria-label={t.landing.demo.openItemNewTab(
+                                  item.title,
+                                )}
                               >
                                 <ExternalLinkIcon
                                   className="size-3.5"
@@ -338,20 +348,20 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
                                 size="xs"
                                 onClick={(e) => handleCopyPrompt(item, e)}
                                 className="h-6 gap-1 px-1.5 text-xs"
-                                aria-label="Copiar prompt"
+                                aria-label={t.landing.demo.copyPrompt}
                               >
                                 {copiedId === item.id ? (
                                   <>
                                     <CheckIcon className="size-3 text-brand-accent" />
                                     <span className="text-metadata text-brand-accent">
-                                      Copiado
+                                      {t.landing.demo.copied}
                                     </span>
                                   </>
                                 ) : (
                                   <>
                                     <CopyIcon className="size-3" />
                                     <span className="text-metadata">
-                                      Copiar
+                                      {t.landing.demo.copy}
                                     </span>
                                   </>
                                 )}
@@ -380,7 +390,9 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
 
                         <div className="mt-4 flex flex-wrap gap-1.5 pt-2">
                           {item.tagIds.slice(0, 3).map((tagId) => {
-                            const tag = DEMO_TAGS.find((t) => t.id === tagId);
+                            const tag = DEMO_TAGS.find(
+                              (tag) => tag.id === tagId,
+                            );
                             return tag ? (
                               <TagChip
                                 key={tag.id}
@@ -420,7 +432,9 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
                                 {item.title}
                               </h4>
                               <span className="text-metadata shrink-0 font-mono text-muted-foreground">
-                                {item.type === "link" ? domain : "PROMPT"}
+                                {item.type === "link"
+                                  ? domain
+                                  : t.landing.demo.promptBadge}
                               </span>
                             </div>
                           </div>
@@ -429,7 +443,9 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
                         <div className="flex shrink-0 items-center gap-3 pl-2">
                           <div className="hidden items-center gap-1 sm:flex">
                             {item.tagIds.slice(0, 2).map((tagId) => {
-                              const tag = DEMO_TAGS.find((t) => t.id === tagId);
+                              const tag = DEMO_TAGS.find(
+                                (tag) => tag.id === tagId,
+                              );
                               return tag ? (
                                 <TagChip
                                   key={tag.id}
@@ -446,7 +462,7 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
                               target="_blank"
                               rel="noopener noreferrer"
                               className="p-1 text-muted-foreground hover:text-foreground"
-                              aria-label={`Abrir ${item.title}`}
+                              aria-label={t.landing.demo.openItem(item.title)}
                             >
                               <ExternalLinkIcon className="size-3.5" />
                             </a>
@@ -463,7 +479,9 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
                               ) : (
                                 <CopyIcon className="size-3" />
                               )}
-                              <span className="text-metadata">Copiar</span>
+                              <span className="text-metadata">
+                                {t.landing.demo.copy}
+                              </span>
                             </Button>
                           ) : null}
                         </div>

@@ -1,9 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { requireUserMock, createClientMock } = vi.hoisted(() => ({
-  requireUserMock: vi.fn(),
-  createClientMock: vi.fn(),
-}));
+import { ptBR } from "@/lib/i18n/dictionaries/pt-BR";
+
+const { requireUserMock, createClientMock, getDictionaryMock } = vi.hoisted(
+  () => ({
+    requireUserMock: vi.fn(),
+    createClientMock: vi.fn(),
+    getDictionaryMock: vi.fn(),
+  }),
+);
 
 vi.mock("@/lib/auth/require-user", () => ({
   requireUser: requireUserMock,
@@ -17,6 +22,8 @@ vi.mock("@/lib/security/logging", () => ({
   logEvent: vi.fn(),
 }));
 
+vi.mock("@/lib/i18n/server", () => ({ getDictionary: getDictionaryMock }));
+
 import { exportUserLibrary } from "./export";
 
 describe("exportUserLibrary", () => {
@@ -26,6 +33,7 @@ describe("exportUserLibrary", () => {
       id: "user-123",
       email: "user@example.com",
     });
+    getDictionaryMock.mockResolvedValue(ptBR);
   });
 
   it("retorna estrutura completa de ExportData com tags e items mapeados", async () => {
@@ -265,7 +273,7 @@ describe("exportUserLibrary", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.code).toBe("UNKNOWN");
-      expect(result.message).toBe("Falha ao gerar dados de exportação.");
+      expect(result.message).toBe(ptBR.errors.exportFailed);
     }
   });
 });

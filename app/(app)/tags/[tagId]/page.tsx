@@ -12,6 +12,7 @@ import {
   getTagById,
 } from "@/lib/database/queries/tags";
 import { parseLibrarySearchParams } from "@/lib/validation/search";
+import { getDictionary } from "@/lib/i18n/server";
 
 /** A single tag's own detail, actions and direct children. */
 export default async function TagDetailPage({
@@ -38,11 +39,12 @@ export default async function TagDetailPage({
 
   const parsed = parseLibrarySearchParams(rawSearchParams);
 
-  const [childCount, ancestors, results, itemsCount] = await Promise.all([
+  const [childCount, ancestors, results, itemsCount, t] = await Promise.all([
     getChildTagCount(tagId),
     getTagAncestors(tagId),
     getLibraryItems({ ...parsed, tag: tagId }),
     getLibraryItemsCountForTag(tagId),
+    getDictionary(),
   ]);
 
   return (
@@ -55,6 +57,7 @@ export default async function TagDetailPage({
       itemsCount={itemsCount}
       nextCursor={results.nextCursor}
       prevCursor={results.prevCursor}
+      t={t}
     />
   );
 }

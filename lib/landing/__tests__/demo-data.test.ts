@@ -1,12 +1,16 @@
 import { describe, it, expect } from "vitest";
 import {
-  DEMO_TAGS,
-  DEMO_ITEMS,
+  demoTags,
+  demoItems,
   getItemsForTag,
   getDescendantTagIds,
 } from "@/lib/landing/demo-data";
+import { ptBR } from "@/lib/i18n/dictionaries/pt-BR";
 
 describe("Landing Page Demo Data", () => {
+  const DEMO_TAGS = demoTags(ptBR);
+  const DEMO_ITEMS = demoItems(ptBR);
+
   it("contains valid tags hierarchy with colors and counters", () => {
     expect(DEMO_TAGS.length).toBeGreaterThan(0);
     const skillsTag = DEMO_TAGS.find((t) => t.id === "skills");
@@ -16,7 +20,7 @@ describe("Landing Page Demo Data", () => {
   });
 
   it("calculates descendant tags correctly", () => {
-    const skillsDescendants = getDescendantTagIds("skills");
+    const skillsDescendants = getDescendantTagIds("skills", DEMO_TAGS);
     expect(skillsDescendants).toContain("skills");
     expect(skillsDescendants).toContain("design");
     expect(skillsDescendants).toContain("branding");
@@ -25,7 +29,7 @@ describe("Landing Page Demo Data", () => {
   });
 
   it("aggregates descendant items without duplicates when parent tag is selected (Tag Rollup)", () => {
-    const skillsItems = getItemsForTag("skills");
+    const skillsItems = getItemsForTag("skills", DEMO_TAGS, DEMO_ITEMS);
     expect(skillsItems.length).toBeGreaterThan(0);
     const itemIds = skillsItems.map((i) => i.id);
     const uniqueIds = new Set(itemIds);

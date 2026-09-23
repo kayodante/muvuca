@@ -2,6 +2,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ItemCard } from "./ItemCard";
+import { LocaleProvider } from "@/lib/i18n/client";
 import type { LibraryItemSummary } from "@/lib/database/queries/items";
 import type { Tag } from "@/lib/database/queries/tags";
 
@@ -730,5 +731,44 @@ describe("ItemCard", () => {
       span.textContent?.startsWith("+"),
     );
     expect(overflowSpan).toBeUndefined();
+  });
+
+  it('renders in English inside a LocaleProvider locale="en"', async () => {
+    container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+
+    await act(async () => {
+      root?.render(
+        <LocaleProvider locale="en">
+          <ItemCard
+            item={mockLink}
+            tags={mockTags}
+            morphing={false}
+            onEdit={vi.fn()}
+            onDelete={vi.fn()}
+            onView={vi.fn()}
+            onCopyContent={() => Promise.resolve(FULL_STORED_BODY)}
+            onRefreshPreview={vi.fn()}
+          />
+        </LocaleProvider>,
+      );
+    });
+
+    expect(
+      container.querySelector('a[aria-label="Open link in new tab"]'),
+    ).not.toBeNull();
+
+    const menuButton = Array.from(container.querySelectorAll("button")).find(
+      (btn) => btn.textContent?.includes(`Actions for ${mockLink.title}`),
+    ) as HTMLButtonElement;
+    await act(async () => {
+      menuButton.click();
+    });
+
+    const editItem = Array.from(
+      document.body.querySelectorAll('[role="menuitem"]'),
+    ).find((el) => el.textContent === "Edit");
+    expect(editItem).not.toBeUndefined();
   });
 });

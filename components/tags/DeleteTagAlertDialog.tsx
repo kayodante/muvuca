@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from "react";
 
 import { deleteTag } from "@/lib/actions/tags";
+import { useDictionary } from "@/lib/i18n/client";
 
 import {
   AlertDialog,
@@ -36,11 +37,12 @@ export function DeleteTagAlertDialog({
   tag: { id: string; name: string } | null;
   onDeleted?: () => void;
 }) {
+  const t = useDictionary();
   const [state, formAction, pending] = useActionState(deleteTag, null);
 
   useEffect(() => {
     if (state?.ok) {
-      toastSuccess("Tag excluída.");
+      toastSuccess(t.tags.deleteDialog.deleted);
       onOpenChange(false);
       onDeleted?.();
     }
@@ -59,16 +61,13 @@ export function DeleteTagAlertDialog({
             dir="auto"
             className="[overflow-wrap:anywhere] break-words"
           >
-            Excluir “{tag.name}”?
+            {t.tags.deleteDialog.title(tag.name)}
           </AlertDialogTitle>
           <AlertDialogDescription
             dir="auto"
             className="[overflow-wrap:anywhere] break-words"
           >
-            As tags filhas diretas passam a ficar sob a tag pai de “{tag.name}”
-            (ou viram tags raiz, se “{tag.name}” já era raiz). Os itens
-            associados não são excluídos -- apenas perdem a associação com esta
-            tag.
+            {t.tags.deleteDialog.description(tag.name)}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {state?.ok === false && (
@@ -77,15 +76,16 @@ export function DeleteTagAlertDialog({
           </p>
         )}
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
           <form action={formAction}>
             <input type="hidden" name="id" value={tag.id} />
             <AlertDialogAction
               type="submit"
               variant="destructive"
               pending={pending}
+              pendingLabel={t.tags.deleteDialog.deleting}
             >
-              Excluir tag
+              {t.tags.deleteDialog.confirm}
             </AlertDialogAction>
           </form>
         </AlertDialogFooter>

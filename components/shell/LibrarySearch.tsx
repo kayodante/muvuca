@@ -15,6 +15,7 @@ import {
   animateSearchClear,
   type ClearSearchAnimation,
 } from "@/lib/motion/clear-search";
+import { useDictionary } from "@/lib/i18n/client";
 import { useSpotlight } from "@/components/spotlight";
 
 const emptySubscribe = () => () => {};
@@ -36,6 +37,7 @@ function getShortcutLabel() {
 
 /** Keeps the structural shell search in the URL without a full navigation. */
 export function LibrarySearch() {
+  const t = useDictionary();
   const pathname = usePathname();
   const router = useRouter();
   const params = useSearchParams();
@@ -202,8 +204,8 @@ export function LibrarySearch() {
         maxLength={240}
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        placeholder="Buscar na biblioteca"
-        aria-label="Buscar na biblioteca"
+        placeholder={t.shell.search.placeholder}
+        aria-label={t.shell.search.placeholder}
         className="border-0 bg-background pr-14 pl-9 shadow-light dark:bg-background [&::-webkit-search-cancel-button]:hidden"
       />
       <div
@@ -216,7 +218,7 @@ export function LibrarySearch() {
         className="t-clear-placeholder pr-14 pl-9"
         aria-hidden="true"
       >
-        Buscar na biblioteca
+        {t.shell.search.placeholder}
       </div>
       <div ref={glowRef} className="t-clear-glow" aria-hidden="true" />
       {query ? (
@@ -231,7 +233,7 @@ export function LibrarySearch() {
               event.preventDefault();
           }}
           onClick={handleClear}
-          aria-label="Limpar busca"
+          aria-label={t.shell.search.clear}
           className="t-clear-btn absolute top-1/2 right-2.5 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none"
         >
           <XIcon aria-hidden="true" className="size-3.5" />
@@ -240,7 +242,7 @@ export function LibrarySearch() {
         <button
           type="button"
           onClick={() => openSpotlight()}
-          aria-label="Abrir busca rápida (Spotlight)"
+          aria-label={t.shell.search.openSpotlight}
           className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <kbd
@@ -260,7 +262,7 @@ export function LibrarySearch() {
             aria-hidden="true"
             className="absolute inset-x-0 bottom-0 h-px rounded-full bg-primary motion-safe:animate-search-sweep"
           />
-          <span className="sr-only">Pesquisando…</span>
+          <span className="sr-only">{t.shell.search.searching}</span>
         </>
       )}
     </div>

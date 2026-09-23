@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth/require-user";
+import { getDictionary } from "@/lib/i18n/server";
+import { translateIssue } from "@/lib/i18n/validation";
 import { logEvent } from "@/lib/security/logging";
 import { createClient } from "@/lib/supabase/server";
 import { fail, ok, type ActionResult } from "@/lib/utils/result";
@@ -14,11 +16,12 @@ import { displayNameSchema } from "@/lib/profile/display-name";
 export async function setDisplayName(
   displayName: unknown,
 ): Promise<ActionResult<string | null>> {
+  const t = await getDictionary();
   const parsed = displayNameSchema.safeParse(displayName);
   if (!parsed.success) {
     return fail(
       "VALIDATION_FAILED",
-      parsed.error.issues[0]?.message ?? "Nome inválido.",
+      translateIssue(parsed.error.issues[0]?.message ?? "", t),
     );
   }
 
@@ -38,7 +41,7 @@ export async function setDisplayName(
       userId: user.id,
       errorClass: error.name,
     });
-    return fail("UNKNOWN", "Não foi possível salvar seu nome.");
+    return fail("UNKNOWN", t.errors.displayNameSaveFailed);
   }
 
   logEvent({

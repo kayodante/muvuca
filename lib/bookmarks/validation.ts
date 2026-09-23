@@ -11,6 +11,7 @@ import {
   itemUrlSchema,
 } from "@/lib/validation/item";
 import { tagNameSchema } from "@/lib/validation/tag";
+import type { ValidationKey } from "@/lib/i18n/validation";
 
 const keySchema = z
   .string()
@@ -31,7 +32,7 @@ export const bookmarkItemSchema = z
     tagKey: keySchema.nullable(),
   })
   .refine(({ url, normalizedUrl }) => normalizeHttpUrl(url) === normalizedUrl, {
-    message: "URL normalizada inválida.",
+    message: "invalidNormalizedUrl" satisfies ValidationKey,
   });
 
 export const bookmarkImportSchema = z
@@ -48,19 +49,22 @@ export const bookmarkImportSchema = z
   .superRefine(({ tags, items }, ctx) => {
     const keys = new Set(tags.map((tag) => tag.key));
     if (keys.size !== tags.length)
-      ctx.addIssue({ code: "custom", message: "Pastas repetidas." });
+      ctx.addIssue({
+        code: "custom",
+        message: "duplicateFolders" satisfies ValidationKey,
+      });
     for (const tag of tags) {
       if (tag.parentKey && !keys.has(tag.parentKey))
         ctx.addIssue({
           code: "custom",
-          message: "Hierarquia de pastas inválida.",
+          message: "invalidFolderHierarchy" satisfies ValidationKey,
         });
     }
     for (const item of items) {
       if (item.tagKey && !keys.has(item.tagKey))
         ctx.addIssue({
           code: "custom",
-          message: "Pasta do favorito inválida.",
+          message: "invalidBookmarkFolder" satisfies ValidationKey,
         });
     }
   });

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth/require-user";
+import { getDictionary } from "@/lib/i18n/server";
 import { logEvent } from "@/lib/security/logging";
 import { createClient } from "@/lib/supabase/server";
 import { chunkArray } from "@/lib/bookmarks/batch";
@@ -23,8 +24,10 @@ const DUPLICATE_CHECK_CHUNK_SIZE = 200;
 export async function findExistingBookmarkUrls(
   urls: string[],
 ): Promise<ActionResult<string[]>> {
+  const t = await getDictionary();
   const parsed = bookmarkUrlsSchema.safeParse(urls);
-  if (!parsed.success) return fail("VALIDATION_FAILED", "Favoritos inválidos.");
+  if (!parsed.success)
+    return fail("VALIDATION_FAILED", t.errors.invalidBookmarks);
   const user = await requireUser();
   const supabase = await createClient();
 
@@ -45,7 +48,7 @@ export async function findExistingBookmarkUrls(
         errorClass: error.code,
         userId: user.id,
       });
-      return fail("UNKNOWN", "Não foi possível analisar duplicatas.");
+      return fail("UNKNOWN", t.errors.duplicateCheckFailed);
     }
 
     if (data) {
@@ -61,6 +64,7 @@ export async function findExistingBookmarkUrls(
 export async function importBrowserBookmarks(
   input: unknown,
 ): Promise<ActionResult<BookmarkImportSummary>> {
+  const t = await getDictionary();
   const parsed = bookmarkImportSchema.safeParse(input);
   if (!parsed.success) {
     // Field paths only (e.g. "items.3.title") -- never the Zod message or
@@ -74,10 +78,7 @@ export async function importBrowserBookmarks(
       status: "failure",
       errorClass: `VALIDATION_FAILED:${issuePaths.join(",")}`,
     });
-    return fail(
-      "VALIDATION_FAILED",
-      "A importação precisa ser analisada novamente.",
-    );
+    return fail("VALIDATION_FAILED", t.errors.importNeedsRevalidation);
   }
   const user = await requireUser();
   const supabase = await createClient();
@@ -93,7 +94,7 @@ export async function importBrowserBookmarks(
       errorClass: error?.code,
       userId: user.id,
     });
-    return fail("UNKNOWN", "Não foi possível concluir a importação.");
+    return fail("UNKNOWN", t.errors.bookmarkImportFailed);
   }
   revalidatePath("/library", "layout");
   revalidatePath("/tags", "layout");

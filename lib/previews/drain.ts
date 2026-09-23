@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth/require-user";
 import type { Database } from "@/lib/database/generated.types";
+import { getDictionary } from "@/lib/i18n/server";
 import { enrichOne, type EnrichOutcome } from "@/lib/metadata/enrich";
 import { logEvent } from "@/lib/security/logging";
 import {
@@ -322,11 +323,12 @@ export async function drainPreviewQueue(
   // `itemIds` omitted -> scope stays null, preserving the global sweep an
   // older client bundle still relies on. `itemIds` present (even `[]`) ->
   // validated and passed through as an explicit scope.
+  const t = await getDictionary();
   let scope: string[] | null = null;
   if (opts.itemIds !== undefined) {
     const parsedScope = previewScopeSchema.safeParse(opts.itemIds);
     if (!parsedScope.success) {
-      return fail("VALIDATION_FAILED", "Escopo de prévias inválido.");
+      return fail("VALIDATION_FAILED", t.errors.invalidPreviewScope);
     }
     scope = parsedScope.data;
   }
@@ -359,7 +361,7 @@ export async function drainPreviewQueue(
       userId: user.id,
       durationMs: Date.now() - claimStartedAt,
     });
-    return fail("UNKNOWN", "Não foi possível buscar jobs de preview.");
+    return fail("UNKNOWN", t.errors.previewJobsLoadFailed);
   }
 
   logEvent({

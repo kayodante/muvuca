@@ -11,11 +11,12 @@ import {
   XIcon,
   CornerDownLeftIcon,
 } from "lucide-react";
-import { DEMO_ITEMS, DEMO_TAGS, type DemoItem } from "@/lib/landing/demo-data";
+import { demoItems, demoTags, type DemoItem } from "@/lib/landing/demo-data";
 import { swatchClassFor } from "@/lib/tags/colors";
 import { copyToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 import { toastSuccess } from "@/components/states/Toast";
+import { useDictionary } from "@/lib/i18n/client";
 
 interface LandingCommandPaletteProps {
   open: boolean;
@@ -26,6 +27,9 @@ export function LandingCommandPalette({
   open,
   onOpenChange,
 }: LandingCommandPaletteProps) {
+  const t = useDictionary();
+  const DEMO_ITEMS = demoItems(t);
+  const DEMO_TAGS = demoTags(t);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedTagFilter, setSelectedTagFilter] = useState<string | null>(
@@ -120,7 +124,7 @@ export function LandingCommandPalette({
     }
 
     return list;
-  }, [query, selectedTagFilter]);
+  }, [query, selectedTagFilter, DEMO_ITEMS]);
 
   // Clamp selected index during render
   const safeSelectedIndex =
@@ -154,7 +158,7 @@ export function LandingCommandPalette({
       const ok = await copyToClipboard(item.contentPreview);
       if (ok) {
         setCopiedId(item.id);
-        toastSuccess("Prompt copiado para a área de transferência.");
+        toastSuccess(t.items.card.promptCopied);
         setTimeout(() => setCopiedId(null), 2000);
       }
     }
@@ -185,7 +189,7 @@ export function LandingCommandPalette({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Busca rápida na biblioteca de demonstração"
+        aria-label={t.landing.commandPalette.dialogAriaLabel}
         className={cn(
           "t-modal relative flex w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-border bg-card text-foreground shadow-2xl",
           closing ? "is-closing" : entered ? "is-open" : undefined,
@@ -213,9 +217,9 @@ export function LandingCommandPalette({
               setSelectedIndex(0);
             }}
             onKeyDown={handleInputKeyDown}
-            placeholder="Buscar links, prompts, domínios ou tags..."
+            placeholder={t.landing.commandPalette.placeholder}
             className="text-body-md w-full bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
-            aria-label="Digitar busca"
+            aria-label={t.landing.commandPalette.inputAriaLabel}
           />
 
           <div className="flex items-center gap-2">
@@ -226,7 +230,7 @@ export function LandingCommandPalette({
               type="button"
               onClick={() => onOpenChange(false)}
               className="rounded-md p-1 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="Fechar busca rápida"
+              aria-label={t.landing.commandPalette.closeAria}
             >
               <XIcon className="size-4" />
             </button>
@@ -236,7 +240,7 @@ export function LandingCommandPalette({
         {/* Tag quick filters */}
         <div className="text-metadata flex items-center gap-1.5 overflow-x-auto border-b border-border bg-muted/10 px-4 py-2">
           <span className="mr-1 shrink-0 text-muted-foreground">
-            Filtrar por tag:
+            {t.landing.commandPalette.filterByTagLabel}
           </span>
           <button
             type="button"
@@ -250,7 +254,7 @@ export function LandingCommandPalette({
                 : "text-muted-foreground hover:bg-muted"
             }`}
           >
-            Todas ({DEMO_ITEMS.length})
+            {t.landing.commandPalette.allTags(DEMO_ITEMS.length)}
           </button>
           {DEMO_TAGS.slice(0, 5).map((tag) => {
             const isSelected = selectedTagFilter === tag.id;
@@ -290,7 +294,7 @@ export function LandingCommandPalette({
         >
           {filteredItems.length === 0 ? (
             <div className="text-body-sm py-12 text-center text-muted-foreground">
-              Nenhum item encontrado para &quot;{query}&quot;.
+              {t.landing.commandPalette.noResults(query)}
             </div>
           ) : (
             filteredItems.map((item, idx) => {
@@ -344,7 +348,9 @@ export function LandingCommandPalette({
                           {item.title}
                         </span>
                         <span className="text-metadata shrink-0 font-mono text-muted-foreground">
-                          {item.type === "link" ? domain : "PROMPT"}
+                          {item.type === "link"
+                            ? domain
+                            : t.landing.demo.promptBadge}
                         </span>
                       </div>
                       <p className="text-metadata truncate text-muted-foreground">
@@ -356,7 +362,7 @@ export function LandingCommandPalette({
                   <div className="flex shrink-0 items-center gap-2 pl-3">
                     {item.type === "link" ? (
                       <span className="text-metadata hidden items-center gap-1 text-muted-foreground group-hover:text-foreground sm:inline-flex">
-                        <span>Abrir</span>
+                        <span>{t.landing.commandPalette.open}</span>
                         <ExternalLinkIcon className="size-3" />
                       </span>
                     ) : (
@@ -367,17 +373,17 @@ export function LandingCommandPalette({
                           handleAction(item);
                         }}
                         className="text-metadata inline-flex items-center gap-1 rounded-md bg-muted/60 px-2 py-1 text-foreground transition-colors duration-(--motion-fast) ease-out-muvuca group-hover:bg-primary group-hover:text-primary-foreground motion-reduce:transition-none"
-                        aria-label="Copiar prompt"
+                        aria-label={t.landing.demo.copyPrompt}
                       >
                         {copiedId === item.id ? (
                           <>
                             <CheckIcon className="size-3" />
-                            <span>Copiado</span>
+                            <span>{t.landing.demo.copied}</span>
                           </>
                         ) : (
                           <>
                             <CopyIcon className="size-3" />
-                            <span>Copiar</span>
+                            <span>{t.landing.demo.copy}</span>
                           </>
                         )}
                       </button>
@@ -405,25 +411,24 @@ export function LandingCommandPalette({
               <kbd className="rounded border border-border bg-background px-1.5 py-0.5 font-mono">
                 ↓
               </kbd>{" "}
-              navegar
+              {t.landing.commandPalette.navigateHint}
             </span>
             <span>
               <kbd className="rounded border border-border bg-background px-1.5 py-0.5 font-mono">
                 ↵
               </kbd>{" "}
-              selecionar
+              {t.landing.commandPalette.selectHint}
             </span>
             <span>
               <kbd className="rounded border border-border bg-background px-1.5 py-0.5 font-mono">
                 esc
               </kbd>{" "}
-              fechar
+              {t.landing.commandPalette.closeHint}
             </span>
           </div>
 
           <span className="font-mono">
-            {filteredItems.length}{" "}
-            {filteredItems.length === 1 ? "item" : "itens"}
+            {t.landing.commandPalette.itemCount(filteredItems.length)}
           </span>
         </div>
       </div>

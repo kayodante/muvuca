@@ -5,6 +5,8 @@ import { TagChip } from "@/components/tags/TagChip";
 import type { TagColorToken } from "@/lib/validation/tag";
 import { cn } from "@/lib/utils";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
+import { useDictionary } from "@/lib/i18n/client";
+import type { Dictionary } from "@/lib/i18n/dictionaries/pt-BR";
 
 interface CollectionExample {
   title: string;
@@ -13,77 +15,41 @@ interface CollectionExample {
   description: string;
 }
 
+// Colors are a structural/design decision, not copy; kept alongside the
+// translated text (`t.landing.collections.items.<key>`) by matching index.
+const COLLECTION_COLORS = {
+  skills: ["violet", "blue", "emerald"],
+  design: ["teal", "pink", "cyan"],
+  prompts: ["emerald", "amber", "lime"],
+  wishlist: ["orange", "stone", "pink"],
+  videos: ["blue", "teal", "purple"],
+  articles: ["stone", "cyan", "amber"],
+} satisfies Record<string, TagColorToken[]>;
+
+function collectionsData(t: Dictionary): CollectionExample[] {
+  const items = t.landing.collections.items;
+  return (Object.keys(COLLECTION_COLORS) as (keyof typeof items)[]).map(
+    (key) => {
+      const item = items[key];
+      const colors = COLLECTION_COLORS[key];
+      return {
+        title: item.title,
+        countHint: item.countHint,
+        description: item.description,
+        tags: item.tags.map((name, i) => ({
+          name,
+          color: colors[i]!,
+        })),
+      };
+    },
+  );
+}
+
 export function LandingCollections() {
+  const t = useDictionary();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  const collections: CollectionExample[] = [
-    {
-      title: "Skills & Engenharia",
-      countHint: "128 itens",
-      tags: [
-        { name: "Front-end", color: "violet" },
-        { name: "Next.js", color: "blue" },
-        { name: "Segurança", color: "emerald" },
-      ],
-      description:
-        "Artigos técnicos, documentações e snippets essenciais para o fluxo diário de código.",
-    },
-    {
-      title: "Design & Direção de Arte",
-      countHint: "94 itens",
-      tags: [
-        { name: "Tipografia", color: "teal" },
-        { name: "Branding", color: "pink" },
-        { name: "Design System", color: "cyan" },
-      ],
-      description:
-        "Referências visuais, catálogos editoriais e componentes de alta fidelidade.",
-    },
-    {
-      title: "Prompts de IA",
-      countHint: "42 itens",
-      tags: [
-        { name: "Code Review", color: "emerald" },
-        { name: "Redação", color: "amber" },
-        { name: "Refatoração", color: "lime" },
-      ],
-      description:
-        "Instruções de sistema, templates de agentes e comandos reutilizáveis prontos para copiar.",
-    },
-    {
-      title: "Lista de Desejos & Wishlist",
-      countHint: "31 itens",
-      tags: [
-        { name: "Livros", color: "orange" },
-        { name: "Hardware", color: "stone" },
-        { name: "Presentes", color: "pink" },
-      ],
-      description:
-        "Itens de compra e recomendações sem a bagunça de listas em múltiplos blocos de notas.",
-    },
-    {
-      title: "Vídeos & Aulas",
-      countHint: "56 itens",
-      tags: [
-        { name: "Palestras", color: "blue" },
-        { name: "Tutoriais", color: "teal" },
-        { name: "Podcasts", color: "purple" },
-      ],
-      description:
-        "Gravações que você quer assistir com calma no fim de semana.",
-    },
-    {
-      title: "Artigos & Ensaios",
-      countHint: "67 itens",
-      tags: [
-        { name: "Filosofia", color: "stone" },
-        { name: "Produto", color: "cyan" },
-        { name: "História da Web", color: "amber" },
-      ],
-      description:
-        "Textos longos e ensaios guardados para consulta futura e pesquisa.",
-    },
-  ];
+  const collections = collectionsData(t);
 
   return (
     <section
@@ -93,11 +59,10 @@ export function LandingCollections() {
       <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
         <ScrollReveal variant="stagger" className="max-w-[52ch]">
           <h2 className="text-display t-stagger-line t-stagger-line--1 leading-[1.05] font-[560] tracking-[-0.03em] text-foreground sm:text-[clamp(2.5rem,3.5vw,3rem)]">
-            Você organiza cada coleção do seu jeito.
+            {t.landing.collections.title}
           </h2>
           <p className="text-body-lg t-stagger-line t-stagger-line--2 mt-5 leading-relaxed text-pretty text-muted-foreground">
-            Crie a taxonomia que faz sentido para você e agrupe qualquer tipo de
-            interesse. O Muvuca se molda ao seu acervo pessoal.
+            {t.landing.collections.subtitle}
           </p>
         </ScrollReveal>
 

@@ -3,6 +3,7 @@
 import { useId, useState, useTransition } from "react";
 
 import { resetAccount } from "@/lib/actions/account";
+import { useDictionary } from "@/lib/i18n/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,9 +19,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toastSuccess } from "@/components/states/Toast";
 
-const CONFIRM_PHRASE = "APAGAR";
-
 export function ResetAccountCard() {
+  const t = useDictionary();
+  const CONFIRM_PHRASE = t.settings.danger.resetAccount.confirmPhrase;
   const [open, setOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +46,7 @@ export function ResetAccountCard() {
         setError(result.message);
         return;
       }
-      toastSuccess("Sua conta foi zerada.");
+      toastSuccess(t.settings.danger.resetAccount.success);
       close(false);
     });
   }
@@ -53,10 +54,11 @@ export function ResetAccountCard() {
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-destructive/40 bg-card p-4 sm:p-5">
       <div className="space-y-1">
-        <p className="text-label-md">Começar do zero</p>
+        <p className="text-label-md">
+          {t.settings.danger.resetAccount.cardHeading}
+        </p>
         <p className="text-body-sm text-muted-foreground">
-          Apaga permanentemente todos os seus links, prompts e tags. Sua conta
-          fica como se tivesse acabado de ser criada.
+          {t.settings.danger.resetAccount.cardDescription}
         </p>
       </div>
 
@@ -66,21 +68,23 @@ export function ResetAccountCard() {
             <Button variant="destructive" size="sm" className="self-start" />
           }
         >
-          Começar do zero
+          {t.settings.danger.resetAccount.cardHeading}
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Apagar todos os dados?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t.settings.danger.resetAccount.confirmTitle}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação remove todos os seus links, prompts, tags e
-              preferências. Não pode ser desfeita. Digite{" "}
-              <strong>{CONFIRM_PHRASE}</strong> para confirmar.
+              {t.settings.danger.resetAccount.confirmDescriptionPrefix}{" "}
+              <strong>{CONFIRM_PHRASE}</strong>{" "}
+              {t.settings.danger.resetAccount.confirmDescriptionSuffix}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
           <div className="space-y-1.5">
             <label htmlFor={inputId} className="sr-only">
-              Digite {CONFIRM_PHRASE} para confirmar
+              {t.settings.danger.resetAccount.confirmInputLabel(CONFIRM_PHRASE)}
             </label>
             <Input
               id={inputId}
@@ -98,15 +102,18 @@ export function ResetAccountCard() {
           )}
 
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isPending}>
+              {t.common.cancel}
+            </AlertDialogCancel>
             <AlertDialogAction
               type="button"
               variant="destructive"
               pending={isPending}
+              pendingLabel={t.settings.danger.resetAccount.deleting}
               disabled={confirmText !== CONFIRM_PHRASE}
               onClick={confirm}
             >
-              Apagar tudo
+              {t.settings.danger.resetAccount.confirmButton}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

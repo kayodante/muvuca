@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { MAX_BACKUP_ITEMS, MAX_BACKUP_TAGS } from "./types";
 import { SUPPORTED_BACKUP_VERSIONS } from "@/lib/export/formatter";
+import type { ValidationKey } from "@/lib/i18n/validation";
 import {
   codeLanguageSchema,
   itemContentSchema,
@@ -23,7 +24,10 @@ const timestampSchema = z.iso.datetime({ offset: true });
 const tagIdsSchema = z
   .array(z.uuid())
   .max(100)
-  .refine((ids) => new Set(ids).size === ids.length, "Tags repetidas no item.");
+  .refine(
+    (ids) => new Set(ids).size === ids.length,
+    "duplicateItemTags" satisfies ValidationKey,
+  );
 
 const backupFileTagSchema = z.object({
   id: z.uuid(),
@@ -82,17 +86,20 @@ export const backupFileSchema = z
   .superRefine(({ tags, items }, ctx) => {
     const ids = new Set(tags.map((tag) => tag.id));
     if (ids.size !== tags.length)
-      ctx.addIssue({ code: "custom", message: "Tags repetidas no arquivo." });
+      ctx.addIssue({
+        code: "custom",
+        message: "duplicateFileTags" satisfies ValidationKey,
+      });
     for (const tag of tags) {
       if (tag.parentId === tag.id)
         ctx.addIssue({
           code: "custom",
-          message: "Uma tag não pode ser pai de si mesma.",
+          message: "tagSelfParentInFile" satisfies ValidationKey,
         });
       if (tag.parentId && !ids.has(tag.parentId))
         ctx.addIssue({
           code: "custom",
-          message: "Hierarquia de tags inválida.",
+          message: "invalidTagHierarchy" satisfies ValidationKey,
         });
     }
     for (const item of items) {
@@ -100,7 +107,7 @@ export const backupFileSchema = z
         if (!ids.has(tagId))
           ctx.addIssue({
             code: "custom",
-            message: "Item referencia uma tag inexistente.",
+            message: "itemReferencesMissingTag" satisfies ValidationKey,
           });
       }
     }
@@ -160,17 +167,23 @@ export const backupPayloadSchema = z
   .superRefine(({ tags, items }, ctx) => {
     const keys = new Set(tags.map((tag) => tag.key));
     if (keys.size !== tags.length)
-      ctx.addIssue({ code: "custom", message: "Tags repetidas no payload." });
+      ctx.addIssue({
+        code: "custom",
+        message: "duplicatePayloadTags" satisfies ValidationKey,
+      });
     for (const tag of tags) {
       if (tag.parentKey && !keys.has(tag.parentKey))
         ctx.addIssue({
           code: "custom",
-          message: "Hierarquia de tags inválida.",
+          message: "invalidTagHierarchy" satisfies ValidationKey,
         });
     }
     for (const item of items) {
       if (item.type === "link" && !normalizeHttpUrl(item.url)) {
-        ctx.addIssue({ code: "custom", message: "URL do link é inválida." });
+        ctx.addIssue({
+          code: "custom",
+          message: "invalidLinkUrl" satisfies ValidationKey,
+        });
       }
       if (
         item.type === "code_component" &&
@@ -179,14 +192,14 @@ export const backupPayloadSchema = z
       ) {
         ctx.addIssue({
           code: "custom",
-          message: "URL do code component é inválida.",
+          message: "invalidCodeComponentUrl" satisfies ValidationKey,
         });
       }
       for (const key of item.tagKeys) {
         if (!keys.has(key))
           ctx.addIssue({
             code: "custom",
-            message: "Tag do item ausente no payload.",
+            message: "missingItemTagInPayload" satisfies ValidationKey,
           });
       }
     }

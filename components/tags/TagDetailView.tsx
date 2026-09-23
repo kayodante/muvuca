@@ -2,6 +2,7 @@ import { swatchClassFor } from "@/lib/tags/colors";
 import { cn } from "@/lib/utils";
 import type { Tag, TagAncestor } from "@/lib/database/queries/tags";
 import type { LibraryItemSummary } from "@/lib/database/queries/items";
+import { ptBR, type Dictionary } from "@/lib/i18n/dictionaries/pt-BR";
 import { Breadcrumb } from "./Breadcrumb";
 
 import { ItemsPage } from "@/components/items/ItemsPage";
@@ -11,6 +12,12 @@ import { ItemsPage } from "@/components/items/ItemsPage";
  * counts) and its indexed, deduplicated item rollup for the subtree.
  * Creating/editing/deleting tags and browsing the child tree happen on
  * `/tags`, not here.
+ *
+ * `t` is optional (default `ptBR`), same pattern as `Breadcrumb`: its own
+ * unit test renders it directly through `createRoot()` (plain client
+ * rendering, not the RSC pipeline), so it can't be `async` to call
+ * `getDictionary()` itself -- the caller (`app/(app)/tags/[tagId]/page.tsx`,
+ * already async) resolves and passes it down instead.
  */
 export function TagDetailView({
   tag,
@@ -21,6 +28,7 @@ export function TagDetailView({
   itemsCount,
   nextCursor,
   prevCursor = null,
+  t = ptBR,
 }: {
   tag: Tag;
   childCount: number;
@@ -30,18 +38,19 @@ export function TagDetailView({
   itemsCount: number;
   nextCursor: string | null;
   prevCursor?: string | null;
+  t?: Dictionary;
 }) {
   return (
     // Figma 78:3675 & 43:989: breadcrumb integrado no cabeçalho e barra da seção a 16px.
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-4 rounded-2xl bg-background p-1 pl-6 shadow-light sm:h-[90px] sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 flex-col justify-center py-2">
-          <Breadcrumb ancestors={ancestors} currentName={tag.name} />
+          <Breadcrumb ancestors={ancestors} currentName={tag.name} t={t} />
           <h1
             dir="auto"
             className="text-headline-md flex min-w-0 flex-wrap items-center gap-4 py-1 [overflow-wrap:anywhere]"
           >
-            Sua Muvuca em
+            {t.tags.detail.headingPrefix}
             <span className="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-secondary px-3 py-1 shadow-light">
               <span
                 aria-hidden="true"
@@ -60,13 +69,17 @@ export function TagDetailView({
             <span className="font-pixel text-[32px] leading-none text-foreground">
               {itemsCount}
             </span>
-            <span className="text-body-sm text-muted-foreground">itens</span>
+            <span className="text-body-sm text-muted-foreground">
+              {t.tags.detail.itemsLabel}
+            </span>
           </div>
           <div className="flex h-[82px] w-[108px] shrink-0 flex-col items-center justify-center gap-1 rounded-xl bg-linear-to-b from-secondary to-card p-4 shadow-light">
             <span className="font-pixel text-[32px] leading-none text-foreground">
               {childCount}
             </span>
-            <span className="text-body-sm text-muted-foreground">subtags</span>
+            <span className="text-body-sm text-muted-foreground">
+              {t.tags.detail.subtagsLabel}
+            </span>
           </div>
         </div>
       </div>
@@ -86,8 +99,8 @@ export function TagDetailView({
         nextCursor={nextCursor}
         prevCursor={prevCursor}
         headingLevel="h2"
-        emptyTitle="Nenhum item nesta tag"
-        emptyDescription="Itens associados a esta tag e às tags filhas aparecem aqui."
+        emptyTitle={t.tags.detail.emptyItemsTitle}
+        emptyDescription={t.tags.detail.emptyItemsDescription}
       />
     </div>
   );

@@ -4,6 +4,7 @@ import * as React from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 
 import { cn } from "@/lib/utils";
+import { useDictionary } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
 import { XIcon } from "lucide-react";
 
@@ -47,6 +48,7 @@ function DialogContent({
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean;
 }) {
+  const t = useDictionary();
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -71,7 +73,7 @@ function DialogContent({
             }
           >
             <XIcon />
-            <span className="sr-only">Fechar</span>
+            <span className="sr-only">{t.common.close}</span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Popup>

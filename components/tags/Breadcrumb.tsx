@@ -3,6 +3,7 @@ import { ChevronRightIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { TagAncestor } from "@/lib/database/queries/tags";
+import { ptBR, type Dictionary } from "@/lib/i18n/dictionaries/pt-BR";
 
 /**
  * Ancestry without becoming a second heavy nav.
@@ -10,13 +11,20 @@ import type { TagAncestor } from "@/lib/database/queries/tags";
  * viewport (not just mobile) -- the max tree depth is 6, so this can only
  * ever hide root-adjacent levels, never the immediate parent or the current
  * tag, and it keeps the trail from wrapping onto multiple lines.
+ *
+ * `t` is optional (default `ptBR`), not `useDictionary()`: this stays a
+ * plain, provider-free component like `PromptContentPanel`, so its own
+ * caller (`TagDetailView`, also provider-free) can pass the dictionary it
+ * already resolved instead of standing up a client boundary just for this.
  */
 export function Breadcrumb({
   ancestors,
   currentName,
+  t = ptBR,
 }: {
   ancestors: TagAncestor[];
   currentName: string;
+  t?: Dictionary;
 }) {
   const MAX_VISIBLE_ANCESTORS = 3;
   const collapsed = ancestors.length > MAX_VISIBLE_ANCESTORS;
@@ -28,14 +36,14 @@ export function Breadcrumb({
     : [];
 
   return (
-    <nav aria-label="Caminho da tag" className="min-w-0">
+    <nav aria-label={t.tags.breadcrumb.ariaLabel} className="min-w-0">
       <ol className="flex min-w-0 flex-wrap items-center gap-1 text-xs text-muted-foreground">
         <li>
           <Link
             href="/tags"
             className="inline-flex h-5 items-center rounded px-0.5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
-            Tags
+            {t.tags.breadcrumb.root}
           </Link>
         </li>
         {collapsed && (
@@ -43,7 +51,9 @@ export function Breadcrumb({
             <Separator />
             <span aria-hidden="true">…</span>
             <span className="sr-only">
-              Tags intermediárias: {hidden.map((tag) => tag.name).join(", ")}
+              {t.tags.breadcrumb.hiddenAncestors(
+                hidden.map((tag) => tag.name).join(", "),
+              )}
             </span>
           </li>
         )}

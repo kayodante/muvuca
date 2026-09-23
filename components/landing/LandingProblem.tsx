@@ -17,6 +17,8 @@ import {
 import { TagChip } from "@/components/tags/TagChip";
 import { cn } from "@/lib/utils";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
+import { useDictionary } from "@/lib/i18n/client";
+import type { Dictionary } from "@/lib/i18n/dictionaries/pt-BR";
 
 interface ProblemStep {
   id: string;
@@ -25,38 +27,18 @@ interface ProblemStep {
   description: string;
 }
 
-const PROBLEM_STEPS: ProblemStep[] = [
-  {
-    id: "scattered",
-    icon: LayersIcon,
-    title: "Favoritos espalhados",
-    description:
-      "Links acabam presos em dezenas de abas, notas e ferramentas diferentes, sem um ponto central para recuperar tudo depois.",
-  },
-  {
-    id: "rigid",
-    icon: FolderXIcon,
-    title: "Pastas que não acompanham sua cabeça",
-    description:
-      "Uma referência técnica ou visual quase sempre faz sentido em mais de um contexto. Pastas tradicionais obrigam você a escolher apenas uma gaveta.",
-  },
-  {
-    id: "lost",
-    icon: SearchXIcon,
-    title: "O esforço de busca supera o conteúdo",
-    description:
-      "Quando a biblioteca cresce, lembrar em qual pasta ou dispositivo você guardou dá mais trabalho do que encontrar o que precisa.",
-  },
-  {
-    id: "solution",
-    icon: TargetIcon,
-    title: "Recuperação imediata em qualquer contexto",
-    description:
-      "Tags hierárquicas e agregação automática (rollup) alimentam uma busca instantânea que varre título, descrição e prompts em milissegundos.",
-  },
-];
+function problemSteps(t: Dictionary): ProblemStep[] {
+  const s = t.landing.problem.steps;
+  return [
+    { id: "scattered", icon: LayersIcon, ...s.scattered },
+    { id: "rigid", icon: FolderXIcon, ...s.rigid },
+    { id: "lost", icon: SearchXIcon, ...s.lost },
+    { id: "solution", icon: TargetIcon, ...s.solution },
+  ];
+}
 
-function ProblemVisualScattered() {
+function ProblemVisualScattered({ t }: { t: Dictionary }) {
+  const v = t.landing.problem.visuals.scattered;
   return (
     <div className="flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-xs">
       {/* Mock browser tabs header */}
@@ -68,7 +50,7 @@ function ProblemVisualScattered() {
         </div>
         <div className="flex items-center gap-1">
           <span className="text-metadata font-mono text-muted-foreground">
-            28 abas abertas
+            {v.tabsOpen}
           </span>
           <span className="rounded bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
             +14
@@ -84,10 +66,10 @@ function ProblemVisualScattered() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-metadata font-mono text-muted-foreground">
-              Notas do celular
+              {v.mobileNotes}
             </p>
             <p className="text-body-sm truncate font-medium text-foreground">
-              System Prompt: Code Review
+              {v.codeReviewTitle}
             </p>
           </div>
         </div>
@@ -98,10 +80,10 @@ function ProblemVisualScattered() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-metadata font-mono text-muted-foreground">
-              Abas do navegador (desktop)
+              {v.desktopTabs}
             </p>
             <p className="text-body-sm truncate font-medium text-foreground">
-              Linear UI Patterns & Architecture
+              {v.uiPatternsTitle}
             </p>
           </div>
         </div>
@@ -112,10 +94,10 @@ function ProblemVisualScattered() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-metadata font-mono text-muted-foreground">
-              Favoritos / Outros
+              {v.bookmarksOther}
             </p>
             <p className="text-body-sm truncate font-medium text-foreground">
-              Tailwind CSS v4 Documentation
+              {v.tailwindDocsTitle}
             </p>
           </div>
         </div>
@@ -123,69 +105,68 @@ function ProblemVisualScattered() {
 
       <div className="text-metadata flex items-center gap-2 border-t border-border/40 pt-3 font-mono text-muted-foreground">
         <AlertCircleIcon className="size-3.5 shrink-0 text-warning" />
-        <span>Fragmentado em 3 dispositivos diferentes</span>
+        <span>{v.fragmented}</span>
       </div>
     </div>
   );
 }
 
-function ProblemVisualRigid() {
+function ProblemVisualRigid({ t }: { t: Dictionary }) {
+  const v = t.landing.problem.visuals.rigid;
   return (
     <div className="flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-xs">
       <div className="flex items-center justify-between border-b border-border/60 pb-3">
         <span className="text-metadata font-mono text-muted-foreground uppercase">
-          Árvore Rígida Tradicional
+          {v.treeLabel}
         </span>
         <span className="rounded bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive">
-          1 pasta por item
+          {v.oneFolderPerItem}
         </span>
       </div>
 
       {/* Rigid tree mock */}
       <div className="my-4 space-y-1.5 font-mono text-xs">
         <div className="flex items-center gap-2 text-muted-foreground">
-          <span>📁 Favoritos</span>
+          <span>{v.bookmarksRoot}</span>
         </div>
         <div className="flex items-center gap-2 pl-4 text-muted-foreground">
-          <span>├── 📁 Trabalho</span>
+          <span>{v.work}</span>
         </div>
         <div className="flex items-center gap-2 pl-8 text-muted-foreground">
-          <span>│ └── 📁 Design</span>
+          <span>{v.design}</span>
         </div>
         <div className="flex items-center justify-between rounded-md border border-border bg-background p-2 pl-12 font-sans font-medium text-foreground">
-          <span className="truncate">📄 Design System & Tokens</span>
+          <span className="truncate">{v.designSystemTitle}</span>
           <span className="text-metadata font-mono text-[10px] text-muted-foreground">
-            Preso em Design
+            {v.stuckInDesign}
           </span>
         </div>
         <div className="flex items-center gap-2 pl-4 text-muted-foreground">
-          <span>└── 📁 Pessoal</span>
+          <span>{v.personal}</span>
         </div>
         <div className="flex items-center gap-2 pl-8 text-muted-foreground">
-          <span> └── 📁 Engenharia Front-end</span>
+          <span>{v.frontendEngineering}</span>
         </div>
       </div>
 
       <div className="text-body-sm flex items-start gap-2 rounded-lg border border-border/40 bg-muted/20 p-2.5 text-xs text-muted-foreground">
         <AlertCircleIcon className="mt-0.5 size-3.5 shrink-0 text-warning" />
-        <p>
-          Este link é design e código ao mesmo tempo, mas a pasta só aceita um
-          dos dois.
-        </p>
+        <p>{v.caption}</p>
       </div>
     </div>
   );
 }
 
-function ProblemVisualLost() {
+function ProblemVisualLost({ t }: { t: Dictionary }) {
+  const v = t.landing.problem.visuals.lost;
   return (
     <div className="flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-xs">
       <div className="flex items-center justify-between border-b border-border/60 pb-3">
         <span className="text-metadata font-mono text-muted-foreground uppercase">
-          Tentativa de Busca
+          {v.searchAttempt}
         </span>
         <span className="rounded bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive">
-          Sem correspondência
+          {v.noMatch}
         </span>
       </div>
 
@@ -194,7 +175,7 @@ function ProblemVisualLost() {
         <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
           <SearchXIcon className="size-4 shrink-0 text-muted-foreground" />
           <span className="text-body-sm font-mono text-xs text-foreground">
-            &quot;prompt refatoração typescript&quot;
+            {v.queryExample}
           </span>
         </div>
 
@@ -202,17 +183,17 @@ function ProblemVisualLost() {
         <div className="space-y-2 rounded-lg border border-dashed border-border/70 bg-muted/10 p-3">
           <div className="flex items-center justify-between opacity-50">
             <span className="text-body-sm truncate font-mono text-xs text-muted-foreground">
-              Sem título (1), https://gist.github.com/...
+              {v.untitledGist}
             </span>
           </div>
           <div className="flex items-center justify-between opacity-50">
             <span className="text-body-sm truncate font-mono text-xs text-muted-foreground">
-              Link salvo em 12/04/2024
+              {v.linkSavedOn}
             </span>
           </div>
           <div className="flex items-center justify-between opacity-50">
             <span className="text-body-sm truncate font-mono text-xs text-muted-foreground">
-              Nova aba - Ferramenta IA
+              {v.newTabAiTool}
             </span>
           </div>
         </div>
@@ -220,15 +201,15 @@ function ProblemVisualLost() {
 
       <div className="text-metadata flex items-center gap-2 border-t border-border/40 pt-3 font-mono text-muted-foreground">
         <SearchXIcon className="size-3.5 shrink-0 text-destructive" />
-        <span>
-          O prompt está salvo em algum lugar, mas inacessível pela busca.
-        </span>
+        <span>{v.caption}</span>
       </div>
     </div>
   );
 }
 
-function ProblemVisualMuvuca() {
+function ProblemVisualMuvuca({ t }: { t: Dictionary }) {
+  const v = t.landing.problem.visuals.muvuca;
+  const demo = t.landing.demo;
   return (
     <div className="flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-xs">
       <div className="flex items-center justify-between border-b border-border/60 pb-3">
@@ -237,11 +218,11 @@ function ProblemVisualMuvuca() {
             Muvuca
           </span>
           <span className="rounded-md bg-primary/20 px-2 py-0.5 text-xs font-semibold text-brand-accent">
-            Tag Rollup Ativo
+            {v.tagRollupActive}
           </span>
         </div>
         <span className="text-metadata font-mono text-muted-foreground">
-          Recuperação instantânea
+          {v.instantRetrieval}
         </span>
       </div>
 
@@ -250,10 +231,10 @@ function ProblemVisualMuvuca() {
         <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-background px-3 py-2 shadow-2xs">
           <SearchIcon className="size-4 shrink-0 text-brand-accent" />
           <span className="text-body-sm font-medium text-foreground">
-            refatoração
+            {v.searchQuery}
           </span>
           <span className="text-metadata ml-auto rounded bg-muted/60 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
-            3 itens encontrados
+            {v.itemsFound(3)}
           </span>
         </div>
 
@@ -261,29 +242,27 @@ function ProblemVisualMuvuca() {
         <div className="rounded-lg border border-border bg-background p-3">
           <div className="flex items-center justify-between gap-2">
             <span className="text-metadata font-mono text-muted-foreground">
-              PROMPT
+              {demo.promptBadge}
             </span>
             <span className="text-metadata flex items-center gap-1 font-mono text-[11px] text-brand-accent">
               <CheckIcon className="size-3" />
-              Pronto para copiar
+              {v.readyToCopy}
             </span>
           </div>
           <h4 className="text-headline-sm mt-1 text-xs font-semibold text-foreground">
-            System Prompt: Senior Code Reviewer
+            {demo.items.item2.title}
           </h4>
           <div className="mt-2 flex flex-wrap gap-1">
-            <TagChip name="Skills" colorToken="lime" />
-            <TagChip name="Desenvolvimento" colorToken="blue" />
-            <TagChip name="IA" colorToken="emerald" />
+            <TagChip name={demo.tags.skills} colorToken="lime" />
+            <TagChip name={demo.tags.desenvolvimento} colorToken="blue" />
+            <TagChip name={v.iaTagShort} colorToken="emerald" />
           </div>
         </div>
       </div>
 
       <div className="text-metadata flex items-center gap-2 border-t border-border/40 pt-3 font-mono text-brand-accent">
         <TagIcon className="size-3.5 shrink-0" />
-        <span>
-          Encontrado por qualquer uma das tags filhas ou pela tag pai.
-        </span>
+        <span>{v.caption}</span>
       </div>
     </div>
   );
@@ -297,6 +276,8 @@ const VISUAL_COMPONENTS = [
 ];
 
 export function LandingProblem() {
+  const t = useDictionary();
+  const PROBLEM_STEPS = problemSteps(t);
   const [activeStep, setActiveStep] = useState(0);
   const [visualState, setVisualState] = useState({ step: 0, open: true });
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -354,12 +335,10 @@ export function LandingProblem() {
           className="mx-auto max-w-2xl text-center"
         >
           <h2 className="text-headline-lg t-stagger-line t-stagger-line--1 leading-tight font-[560] tracking-tight text-balance text-foreground">
-            O trabalho real começa quando você esquece onde guardou e precisa
-            achar de novo.
+            {t.landing.problem.title}
           </h2>
           <p className="text-body-lg t-stagger-line t-stagger-line--2 mt-4 leading-relaxed text-balance text-muted-foreground">
-            A maioria das ferramentas de bookmarking trata seus links como uma
-            lista infinita e desordenada.
+            {t.landing.problem.subtitle}
           </p>
         </ScrollReveal>
 
@@ -417,7 +396,7 @@ export function LandingProblem() {
           {/* Right Column: Sticky preview container */}
           <div className="sticky top-28 overflow-hidden">
             <div className="t-panel-slide" data-open={visualState.open}>
-              <ActiveVisual />
+              <ActiveVisual t={t} />
             </div>
           </div>
         </div>
@@ -451,7 +430,7 @@ export function LandingProblem() {
                 </div>
 
                 <div className="pt-1">
-                  <Visual />
+                  <Visual t={t} />
                 </div>
               </div>
             );

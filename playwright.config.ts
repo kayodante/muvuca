@@ -41,6 +41,10 @@ export default defineConfig({
     // `NEXT_PUBLIC_APP_URL` handed to the server below.
     baseURL: E2E_APP_URL,
     trace: "on-first-retry",
+    // Pinned so `Accept-Language` resolves to Portuguese (lib/i18n/config.ts):
+    // Playwright's Chromium otherwise sends `en-US`, which now flips the UI
+    // to English and breaks every existing assertion of Portuguese copy.
+    locale: "pt-BR",
   },
   projects: [
     {

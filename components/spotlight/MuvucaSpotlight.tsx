@@ -41,6 +41,7 @@ import {
   searchSpotlightItems,
 } from "@/lib/actions/spotlight";
 import { setTheme } from "@/lib/actions/theme";
+import { useDictionary } from "@/lib/i18n/client";
 import { useSpotlight } from "./SpotlightContext";
 import { QuickLookPreview } from "./QuickLookPreview";
 import { cn } from "@/lib/utils";
@@ -71,6 +72,7 @@ export function MuvucaSpotlight({
   onOpenChange: controlledOnOpenChange,
   initialTags = [],
 }: MuvucaSpotlightProps) {
+  const t = useDictionary();
   const router = useRouter();
   const context = useSpotlight();
 
@@ -262,18 +264,10 @@ export function MuvucaSpotlight({
       {
         id: "action-create-item",
         kind: "action",
-        title: "Criar novo item",
-        description: "Adicionar link, prompt ou código à biblioteca",
+        title: t.spotlight.quickActions.createItem.title,
+        description: t.spotlight.quickActions.createItem.description,
         icon: PlusIcon,
-        keywords: [
-          "novo",
-          "criar",
-          "adicionar",
-          "salvar",
-          "link",
-          "prompt",
-          "code",
-        ],
+        keywords: t.spotlight.quickActions.createItem.keywords,
         run: () => {
           onOpenChange(false);
           router.push("/library?create=1");
@@ -282,10 +276,10 @@ export function MuvucaSpotlight({
       {
         id: "action-goto-library",
         kind: "action",
-        title: "Ir para Biblioteca",
-        description: "Visualizar e navegar por todos os itens salvos",
+        title: t.spotlight.quickActions.goToLibrary.title,
+        description: t.spotlight.quickActions.goToLibrary.description,
         icon: LibraryIcon,
-        keywords: ["biblioteca", "itens", "todos", "home", "galeria"],
+        keywords: t.spotlight.quickActions.goToLibrary.keywords,
         run: () => {
           onOpenChange(false);
           router.push("/library");
@@ -294,10 +288,10 @@ export function MuvucaSpotlight({
       {
         id: "action-goto-tags",
         kind: "action",
-        title: "Gerenciar tags",
-        description: "Organizar hierarquia e cores das tags",
+        title: t.spotlight.quickActions.manageTags.title,
+        description: t.spotlight.quickActions.manageTags.description,
         icon: TagIcon,
-        keywords: ["tag", "tags", "etiquetas", "categorias"],
+        keywords: t.spotlight.quickActions.manageTags.keywords,
         run: () => {
           onOpenChange(false);
           router.push("/tags");
@@ -306,10 +300,10 @@ export function MuvucaSpotlight({
       {
         id: "action-goto-settings",
         kind: "action",
-        title: "Configurações",
-        description: "Exportar dados, backup e preferências da conta",
+        title: t.spotlight.quickActions.settings.title,
+        description: t.spotlight.quickActions.settings.description,
         icon: SettingsIcon,
-        keywords: ["configurações", "ajustes", "backup", "exportar", "conta"],
+        keywords: t.spotlight.quickActions.settings.keywords,
         run: () => {
           onOpenChange(false);
           router.push("/settings");
@@ -318,18 +312,10 @@ export function MuvucaSpotlight({
       {
         id: "action-toggle-theme",
         kind: "action",
-        title: "Alternar tema (Claro / Escuro / Sistema)",
-        description: "Mudar a aparência da interface",
+        title: t.spotlight.quickActions.toggleTheme.title,
+        description: t.spotlight.quickActions.toggleTheme.description,
         icon: SunMoonIcon,
-        keywords: [
-          "tema",
-          "escuro",
-          "claro",
-          "dark",
-          "light",
-          "aparência",
-          "modo",
-        ],
+        keywords: t.spotlight.quickActions.toggleTheme.keywords,
         run: () => {
           const isDark =
             document.documentElement.classList.contains("dark") ||
@@ -338,7 +324,9 @@ export function MuvucaSpotlight({
           void setTheme(next).then((res) => {
             if (res.ok) {
               toastSuccess(
-                `Tema alterado para ${next === "dark" ? "escuro" : "claro"}.`,
+                next === "dark"
+                  ? t.spotlight.themeChangedDark
+                  : t.spotlight.themeChangedLight,
               );
             }
           });
@@ -346,7 +334,7 @@ export function MuvucaSpotlight({
         },
       },
     ],
-    [router, onOpenChange],
+    [router, onOpenChange, t],
   );
 
   // Filter actions and items
@@ -409,7 +397,7 @@ export function MuvucaSpotlight({
         window.open(safeUrl, "_blank", "noopener,noreferrer");
         onOpenChange(false);
       } else {
-        toastError("URL inválida ou insegura.");
+        toastError(t.spotlight.invalidUrl);
       }
     } else if (item.type === "prompt" || item.type === "code_component") {
       const fallback = item.contentPreview ?? "";
@@ -427,12 +415,12 @@ export function MuvucaSpotlight({
         setCopiedId(item.id);
         toastSuccess(
           item.type === "prompt"
-            ? "Prompt copiado para a área de transferência."
-            : "Código copiado para a área de transferência.",
+            ? t.spotlight.promptCopiedMessage
+            : t.spotlight.codeCopiedMessage,
         );
         setTimeout(() => setCopiedId(null), 2000);
       } else {
-        toastError("Não foi possível copiar o conteúdo.");
+        toastError(t.spotlight.copyContentFailed);
       }
     }
   }
@@ -482,7 +470,7 @@ export function MuvucaSpotlight({
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Muvuca Spotlight — Busca rápida"
+        aria-label={t.spotlight.dialogLabel}
         className={cn(
           "t-modal relative flex w-full flex-col overflow-hidden rounded-xl border border-border bg-card text-foreground shadow-2xl transition-[max-width] duration-(--motion-fast) ease-out-muvuca sm:flex-row",
           quickLookOpen && currentItem ? "max-w-4xl" : "max-w-2xl",
@@ -520,9 +508,9 @@ export function MuvucaSpotlight({
                 setSelectedIndex(0);
               }}
               onKeyDown={handleInputKeyDown}
-              placeholder="Buscar links, prompts, código ou ações..."
+              placeholder={t.spotlight.searchPlaceholder}
               className="text-body-md w-full bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
-              aria-label="Digitar busca"
+              aria-label={t.spotlight.searchInputLabel}
             />
 
             <div className="flex items-center gap-2">
@@ -533,7 +521,7 @@ export function MuvucaSpotlight({
                 type="button"
                 onClick={() => onOpenChange(false)}
                 className="rounded-md p-1 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label="Fechar busca rápida"
+                aria-label={t.spotlight.closeSpotlight}
               >
                 <XIcon className="size-4" />
               </button>
@@ -544,7 +532,7 @@ export function MuvucaSpotlight({
           {tags.length > 0 && (
             <div className="text-metadata flex items-center gap-1.5 overflow-x-auto border-b border-border bg-muted/10 px-4 py-2">
               <span className="mr-1 shrink-0 text-muted-foreground">
-                Filtrar por tag:
+                {t.spotlight.filterByTag}
               </span>
               <button
                 type="button"
@@ -558,7 +546,7 @@ export function MuvucaSpotlight({
                     : "text-muted-foreground hover:bg-muted"
                 }`}
               >
-                Todas
+                {t.spotlight.allTag}
               </button>
               {tags.slice(0, 8).map((tag) => {
                 const isSelected = selectedTagFilter === tag.id;
@@ -599,7 +587,7 @@ export function MuvucaSpotlight({
           >
             {flatOptions.length === 0 ? (
               <div className="text-body-sm py-12 text-center text-muted-foreground">
-                Nenhum resultado encontrado para &quot;{query}&quot;.
+                {t.spotlight.noResults(query)}
               </div>
             ) : (
               flatOptions.map((option, idx) => {
@@ -644,7 +632,7 @@ export function MuvucaSpotlight({
                       </div>
                       <div className="flex shrink-0 items-center gap-2 pl-3">
                         <span className="text-metadata hidden text-muted-foreground group-hover:text-foreground sm:inline">
-                          Executar
+                          {t.spotlight.execute}
                         </span>
                         {isSelected && (
                           <CornerDownLeftIcon
@@ -719,7 +707,7 @@ export function MuvucaSpotlight({
                             {isLink
                               ? domain
                               : isPrompt
-                                ? "PROMPT"
+                                ? t.spotlight.badges.prompt
                                 : item.language || "CODE"}
                           </span>
                         </div>
@@ -744,15 +732,15 @@ export function MuvucaSpotlight({
                           "rounded p-1 text-muted-foreground transition-colors hover:text-foreground",
                           quickLookOpen && isSelected && "text-primary",
                         )}
-                        aria-label="Espiar item (Quick Look)"
-                        title="Espiar item (Espaço)"
+                        aria-label={t.spotlight.quickLookAria}
+                        title={t.spotlight.quickLookTitle}
                       >
                         <EyeIcon className="size-3.5" />
                       </button>
 
                       {isLink ? (
                         <span className="text-metadata hidden items-center gap-1 text-muted-foreground group-hover:text-foreground sm:inline-flex">
-                          <span>Abrir</span>
+                          <span>{t.spotlight.open}</span>
                           <ExternalLinkIcon className="size-3" />
                         </span>
                       ) : (
@@ -764,18 +752,20 @@ export function MuvucaSpotlight({
                           }}
                           className="text-metadata inline-flex items-center gap-1 rounded-md bg-muted/60 px-2 py-1 text-foreground transition-colors duration-(--motion-fast) ease-out-muvuca group-hover:bg-primary group-hover:text-primary-foreground motion-reduce:transition-none"
                           aria-label={
-                            isPrompt ? "Copiar prompt" : "Copiar código"
+                            isPrompt
+                              ? t.items.card.copyPrompt
+                              : t.items.card.copyCode
                           }
                         >
                           {copiedId === item.id ? (
                             <>
                               <CheckIcon className="size-3" />
-                              <span>Copiado</span>
+                              <span>{t.spotlight.copiedShort}</span>
                             </>
                           ) : (
                             <>
                               <CopyIcon className="size-3" />
-                              <span>Copiar</span>
+                              <span>{t.spotlight.copyShort}</span>
                             </>
                           )}
                         </button>
@@ -803,31 +793,30 @@ export function MuvucaSpotlight({
                 <kbd className="rounded border border-border bg-background px-1.5 py-0.5 font-mono">
                   ↓
                 </kbd>{" "}
-                navegar
+                {t.spotlight.navigate}
               </span>
               <span>
                 <kbd className="rounded border border-border bg-background px-1.5 py-0.5 font-mono">
                   ↵
                 </kbd>{" "}
-                selecionar
+                {t.spotlight.select}
               </span>
               <span className="hidden sm:inline">
                 <kbd className="rounded border border-border bg-background px-1.5 py-0.5 font-mono">
-                  espaço
+                  {t.spotlight.spaceKey}
                 </kbd>{" "}
-                espiar
+                {t.spotlight.peek}
               </span>
               <span>
                 <kbd className="rounded border border-border bg-background px-1.5 py-0.5 font-mono">
                   esc
                 </kbd>{" "}
-                fechar
+                {t.spotlight.close}
               </span>
             </div>
 
             <span className="font-mono">
-              {flatOptions.length}{" "}
-              {flatOptions.length === 1 ? "resultado" : "resultados"}
+              {t.spotlight.resultCount(flatOptions.length)}
             </span>
           </div>
         </div>

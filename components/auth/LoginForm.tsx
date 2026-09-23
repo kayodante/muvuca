@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { CheckIcon } from "lucide-react";
 import { signInWithMagicLink } from "@/lib/actions/auth";
+import { useDictionary } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -11,6 +12,7 @@ import { Input } from "@/components/ui/input";
  * estados dividem o mesmo card: formulário e confirmação de link enviado.
  */
 export function LoginForm({ next }: { next: string }) {
+  const t = useDictionary();
   const [state, formAction, pending] = useActionState(
     signInWithMagicLink,
     null,
@@ -41,11 +43,14 @@ export function LoginForm({ next }: { next: string }) {
               aria-live="polite"
               className="flex flex-col gap-3"
             >
-              <p className="text-brand-pixel text-brand-accent">LINK ENVIADO</p>
-              <h1 className="text-headline-lg">Verifique seu email</h1>
+              <p className="text-brand-pixel text-brand-accent">
+                {t.auth.login.linkSentBadge}
+              </p>
+              <h1 className="text-headline-lg">
+                {t.auth.login.checkEmailTitle}
+              </h1>
               <p className="text-body-md text-muted-foreground">
-                Se esse email tiver uma conta, enviamos um link de acesso.
-                Confira sua caixa de entrada.
+                {t.auth.login.checkEmailBody}
               </p>
             </div>
             <Button
@@ -54,24 +59,21 @@ export function LoginForm({ next }: { next: string }) {
               className="w-full"
               onClick={() => setRestarted(true)}
             >
-              Usar outro email
+              {t.auth.login.useAnotherEmail}
             </Button>
             <p className="text-metadata text-muted-foreground">
-              Não recebeu? Verifique a pasta de spam. O Muvuca ainda não está
-              aceitando novas contas, então emails sem cadastro não recebem
-              link.
+              {t.auth.login.resendHint}
             </p>
           </>
         ) : (
           <>
             <div className="flex flex-col gap-3">
               <p className="text-brand-pixel text-brand-accent">
-                BIBLIOTECA PESSOAL
+                {t.auth.login.personalLibraryBadge}
               </p>
               <h1 className="text-headline-lg">Muvuca</h1>
               <p className="text-body-md text-muted-foreground">
-                Salve links e prompts, organize por tags aninhadas e reencontre
-                tudo em segundos.
+                {t.auth.login.pitch}
               </p>
             </div>
             <form
@@ -84,14 +86,14 @@ export function LoginForm({ next }: { next: string }) {
               <input type="hidden" name="next" value={next} />
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="email" className="text-label-md">
-                  Email
+                  {t.auth.login.emailLabel}
                 </label>
                 <Input
                   id="email"
                   name="email"
                   type="email"
                   maxLength={320}
-                  placeholder="voce@email.com"
+                  placeholder={t.auth.login.emailPlaceholder}
                   autoComplete="email"
                   required
                   aria-describedby={
@@ -114,14 +116,13 @@ export function LoginForm({ next }: { next: string }) {
                 type="submit"
                 className="w-full"
                 pending={pending}
-                pendingLabel="Enviando link de acesso"
+                pendingLabel={t.auth.login.sendingLink}
               >
-                Enviar link de acesso
+                {t.auth.login.sendLink}
               </Button>
             </form>
             <p className="text-metadata text-muted-foreground">
-              Sem senha — enviamos um link de acesso por email. O Muvuca ainda
-              não está aceitando novas contas.
+              {t.auth.login.passwordlessHint}
             </p>
           </>
         )}

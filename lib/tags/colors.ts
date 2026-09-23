@@ -37,37 +37,9 @@ export const TAG_SWATCH_CLASS: Record<TagColorToken, string> = {
   stone: "bg-tag-stone",
 };
 
-export const TAG_COLOR_LABELS: Record<TagColorToken, string> = {
-  lime: "Lima",
-  chartreuse: "Chartreuse",
-  yellow: "Amarelo",
-  amber: "Âmbar",
-  orange: "Laranja",
-  peach: "Pêssego",
-  terracotta: "Terracota",
-  brown: "Marrom",
-  red: "Vermelho",
-  rose: "Rosé",
-  coral: "Coral",
-  pink: "Rosa",
-  fuchsia: "Fúcsia",
-  purple: "Roxo",
-  lavender: "Lavanda",
-  violet: "Violeta",
-  indigo: "Índigo",
-  periwinkle: "Pervinca",
-  blue: "Azul",
-  sky: "Celeste",
-  cyan: "Ciano",
-  aqua: "Água",
-  teal: "Verde-azulado",
-  emerald: "Esmeralda",
-  mint: "Menta",
-  green: "Verde",
-  slate: "Ardósia",
-  zinc: "Zinco",
-  stone: "Pedra",
-};
+// Nomes de cor exibidos ao usuário (tooltip + accessible name do seletor)
+// vivem em `t.tags.colors` (lib/i18n/dictionaries) -- não aqui, para
+// seguirem o idioma da interface.
 
 /**
  * Looks up a swatch class from a `color_token` value read back from the

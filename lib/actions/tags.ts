@@ -10,6 +10,9 @@ import {
   deleteTagSchema,
   updateTagSchema,
 } from "@/lib/validation/tag";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
+import { getDictionary } from "@/lib/i18n/server";
+import { translateFieldErrors } from "@/lib/i18n/validation";
 import { logEvent } from "@/lib/security/logging";
 import {
   ok,
@@ -22,33 +25,55 @@ import {
 type PostgrestErrorLike = { code?: string; message: string };
 
 /**
- * Maps a tag-mutation failure to a stable, user-facing result. `P0001` is
- * Postgres's default SQLSTATE for a bare `raise exception` -- the hierarchy
- * trigger (0008_tag_hierarchy.sql) and `delete_tag_reparent_children`
- * (0009_tag_rpc.sql) only ever raise plain, product-authored Portuguese
- * sentences that way, so surfacing that message directly is safe: it is
- * source-controlled application text, not an internal Postgres detail.
+ * `P0001` is Postgres's default SQLSTATE for a bare `raise exception` -- the
+ * hierarchy trigger (0008_tag_hierarchy.sql) and
+ * `delete_tag_reparent_children` (0009/0015_tag_rpc.sql) only ever raise one
+ * of these fixed Portuguese sentences that way. Exact-matched here against a
+ * translated key instead of surfacing `error.message` directly, so the raw
+ * Postgres string (source-controlled today, but still an internal detail)
+ * never reaches the client and the result is locale-correct. An unrecognized
+ * P0001 sentence (a future migration, a typo) falls back to the generic
+ * translated error rather than leaking untranslated text.
  */
-function mapTagError(error: PostgrestErrorLike): ActionResult<never> {
+const TAG_P0001_MESSAGES: Record<string, keyof Dictionary["errors"]> = {
+  "a tag não pode ser pai de si mesma": "tagSelfParent",
+  "esta alteração criaria um ciclo na hierarquia de tags": "tagCycle",
+  "a hierarquia de tags excede a profundidade máxima de 6 níveis":
+    "tagMaxDepth",
+  "esta alteração excederia a profundidade máxima de 6 níveis para tags descendentes":
+    "tagDescendantMaxDepth",
+  "tag não encontrada": "tagNotFound",
+};
+
+function translateTagP0001(message: string, t: Dictionary): string {
+  const key = TAG_P0001_MESSAGES[message];
+  return t.errors[key ?? "unknown"];
+}
+
+/** Maps a tag-mutation failure to a stable, user-facing result. */
+function mapTagError(
+  error: PostgrestErrorLike,
+  t: Dictionary,
+): ActionResult<never> {
   if (error.code === "P0001") {
-    return fail("CONSTRAINT_VIOLATION", error.message);
+    return fail("CONSTRAINT_VIOLATION", translateTagP0001(error.message, t));
   }
 
   const code = mapPostgresErrorCode(error.code);
 
   switch (code) {
     case "DUPLICATE":
-      return fail("DUPLICATE", "Já existe uma tag com esse nome nesse nível.", {
-        name: ["Esse nome já está em uso nesse nível da hierarquia."],
+      return fail("DUPLICATE", t.errors.duplicateTagName, {
+        name: [t.errors.duplicateTagNameField],
       });
     case "INVALID_REFERENCE":
-      return fail("INVALID_REFERENCE", "Tag pai inválida.");
+      return fail("INVALID_REFERENCE", t.errors.invalidParentTag);
     case "CONSTRAINT_VIOLATION":
-      return fail("CONSTRAINT_VIOLATION", "Dados da tag inválidos.");
+      return fail("CONSTRAINT_VIOLATION", t.errors.invalidTagData);
     case "NOT_FOUND":
-      return fail("NOT_FOUND", "Tag não encontrada.");
+      return fail("NOT_FOUND", t.errors.tagNotFound);
     default:
-      return fail("UNKNOWN", "Não foi possível concluir a operação.");
+      return fail("UNKNOWN", t.errors.operationFailed);
   }
 }
 
@@ -64,6 +89,7 @@ function parseTagFormData(formData: FormData) {
 
 /** Reads the full tag tree only when the item editor's tag picker opens. */
 export async function listTagsForSelect(): Promise<ActionResult<Tag[]>> {
+  const t = await getDictionary();
   const user = await requireUser();
   try {
     const tags = await getTagList();
@@ -75,7 +101,7 @@ export async function listTagsForSelect(): Promise<ActionResult<Tag[]>> {
       errorClass: error instanceof Error ? error.name : "UnknownError",
       userId: user.id,
     });
-    return fail("UNKNOWN", "Não foi possível carregar as tags.");
+    return fail("UNKNOWN", t.errors.tagsLoadFailed);
   }
 }
 
@@ -84,13 +110,14 @@ export async function createTag(
   _prevState: ActionResult<{ id: string }> | null,
   formData: FormData,
 ): Promise<ActionResult<{ id: string }>> {
+  const t = await getDictionary();
   const parsed = createTagSchema.safeParse(parseTagFormData(formData));
 
   if (!parsed.success) {
     return fail(
       "VALIDATION_FAILED",
-      "Verifique os campos da tag.",
-      parsed.error.flatten().fieldErrors,
+      t.errors.checkTagFields,
+      translateFieldErrors(parsed.error.flatten().fieldErrors, t),
     );
   }
 
@@ -116,7 +143,7 @@ export async function createTag(
       errorClass: error.code,
       userId: user.id,
     });
-    return mapTagError(error);
+    return mapTagError(error, t);
   }
 
   revalidatePath("/tags", "layout");
@@ -133,13 +160,14 @@ export async function updateTag(
   _prevState: ActionResult<null> | null,
   formData: FormData,
 ): Promise<ActionResult<null>> {
+  const t = await getDictionary();
   const parsed = updateTagSchema.safeParse(parseTagFormData(formData));
 
   if (!parsed.success) {
     return fail(
       "VALIDATION_FAILED",
-      "Verifique os campos da tag.",
-      parsed.error.flatten().fieldErrors,
+      t.errors.checkTagFields,
+      translateFieldErrors(parsed.error.flatten().fieldErrors, t),
     );
   }
 
@@ -166,11 +194,11 @@ export async function updateTag(
       userId: user.id,
       entityId: parsed.data.id,
     });
-    return mapTagError(error);
+    return mapTagError(error, t);
   }
 
   if (!data) {
-    return fail("NOT_FOUND", "Tag não encontrada.");
+    return fail("NOT_FOUND", t.errors.tagNotFound);
   }
 
   revalidatePath("/tags", "layout");
@@ -187,10 +215,11 @@ export async function deleteTag(
   _prevState: ActionResult<null> | null,
   formData: FormData,
 ): Promise<ActionResult<null>> {
+  const t = await getDictionary();
   const parsed = deleteTagSchema.safeParse({ id: formData.get("id") });
 
   if (!parsed.success) {
-    return fail("VALIDATION_FAILED", "Tag inválida.");
+    return fail("VALIDATION_FAILED", t.errors.invalidTag);
   }
 
   const user = await requireUser();
@@ -209,11 +238,15 @@ export async function deleteTag(
       entityId: parsed.data.id,
     });
 
+    // delete_tag_reparent_children only ever raises P0001 for one reason
+    // (the tag itself wasn't found), so the code stays fixed at NOT_FOUND
+    // while the message is still translated through the shared exact-match
+    // table for consistency with mapTagError.
     if (error.code === "P0001") {
-      return fail("NOT_FOUND", "Tag não encontrada.");
+      return fail("NOT_FOUND", translateTagP0001(error.message, t));
     }
 
-    return mapTagError(error);
+    return mapTagError(error, t);
   }
 
   revalidatePath("/tags", "layout");

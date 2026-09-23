@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requireUser } from "@/lib/auth/require-user";
+import { getDictionary } from "@/lib/i18n/server";
 import { logEvent } from "@/lib/security/logging";
 import { removeAllUserPreviewObjects } from "@/lib/storage/previews";
 import { createClient } from "@/lib/supabase/server";
@@ -14,6 +15,7 @@ import { fail, ok, type ActionResult } from "@/lib/utils/result";
  * criada. auth.users não é tocado -- a sessão continua válida.
  */
 export async function resetAccount(): Promise<ActionResult<null>> {
+  const t = await getDictionary();
   const user = await requireUser();
   const supabase = await createClient();
 
@@ -43,7 +45,7 @@ export async function resetAccount(): Promise<ActionResult<null>> {
       errorClass: error.code,
       userId: user.id,
     });
-    return fail("UNKNOWN", "Não foi possível apagar os dados da conta.");
+    return fail("UNKNOWN", t.errors.accountResetFailed);
   }
 
   logEvent({ event: "account.reset", status: "success", userId: user.id });

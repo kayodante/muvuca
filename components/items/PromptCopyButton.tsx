@@ -48,19 +48,19 @@ function CopyStateIcon({
 
 export function PromptCopyButton({
   content,
-  label = "Copiar conteúdo",
+  label,
   pendingLabel,
   successLabel,
-  successMessage = "Conteúdo copiado.",
-  errorMessage = "Não foi possível copiar o conteúdo.",
+  successMessage,
+  errorMessage,
   className,
 }: {
   content: string;
-  label?: string;
-  pendingLabel?: string;
-  successLabel?: string;
-  successMessage?: string;
-  errorMessage?: string;
+  label: string;
+  pendingLabel: string;
+  successLabel: string;
+  successMessage: string;
+  errorMessage: string;
   className?: string;
 }) {
   const [pending, setPending] = useState(false);
@@ -93,20 +93,6 @@ export function PromptCopyButton({
     }
   }
 
-  const resolvedPendingLabel =
-    pendingLabel ??
-    (label.startsWith("Copiar")
-      ? label.replace(/^Copiar/, "Copiando")
-      : "Copiando conteúdo");
-
-  const resolvedSuccessLabel =
-    successLabel ??
-    (label.toLowerCase().includes("código")
-      ? "Código copiado!"
-      : label.toLowerCase().includes("prompt")
-        ? "Prompt copiado!"
-        : "Copiado!");
-
   return (
     // Copying is what a saved prompt or code component is for, so it carries the primary
     // weight in the detail dialog; editing is the secondary path.
@@ -115,7 +101,7 @@ export function PromptCopyButton({
       size="sm"
       pending={pending}
       pendingIndicator="matrix"
-      pendingLabel={resolvedPendingLabel}
+      pendingLabel={pendingLabel}
       onClick={copyContent}
       className={cn(
         "relative transition-[border-color,background-color,color,transform] duration-(--motion-fast) ease-out-muvuca active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100",
@@ -125,9 +111,7 @@ export function PromptCopyButton({
       )}
     >
       <CopyStateIcon copied={copied} />
-      <span className="tabular-nums">
-        {copied ? resolvedSuccessLabel : label}
-      </span>
+      <span className="tabular-nums">{copied ? successLabel : label}</span>
     </Button>
   );
 }

@@ -1,11 +1,13 @@
+import { getDictionary } from "@/lib/i18n/server";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function TagsLoading() {
+export default async function TagsLoading() {
+  const t = await getDictionary();
   return (
     <div
       className="flex flex-col gap-6"
       role="status"
-      aria-label="Carregando tags"
+      aria-label={t.shell.loading.tags}
     >
       <div className="flex items-center justify-between gap-3">
         <Skeleton className="h-8 w-24" />

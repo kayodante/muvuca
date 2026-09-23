@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { ptBR } from "@/lib/i18n/dictionaries/pt-BR";
+import { en } from "@/lib/i18n/dictionaries/en";
+
 const {
   createClientMock,
   requireUserMock,
@@ -8,6 +11,7 @@ const {
   rpcMock,
   fromMock,
   getTagListMock,
+  getDictionaryMock,
 } = vi.hoisted(() => ({
   createClientMock: vi.fn(),
   requireUserMock: vi.fn(),
@@ -16,6 +20,7 @@ const {
   rpcMock: vi.fn(),
   fromMock: vi.fn(),
   getTagListMock: vi.fn(),
+  getDictionaryMock: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -38,6 +43,8 @@ vi.mock("@/lib/database/queries/tags", () => ({
   getTagList: getTagListMock,
 }));
 
+vi.mock("@/lib/i18n/server", () => ({ getDictionary: getDictionaryMock }));
+
 import {
   createTag,
   deleteTag,
@@ -55,6 +62,7 @@ describe("deleteTag", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireUserMock.mockResolvedValue(dummyUser);
+    getDictionaryMock.mockResolvedValue(ptBR);
     rpcMock.mockResolvedValue({ error: null });
     createClientMock.mockResolvedValue({
       rpc: rpcMock,
@@ -85,7 +93,7 @@ describe("deleteTag", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.code).toBe("VALIDATION_FAILED");
-      expect(result.message).toBe("Tag inválida.");
+      expect(result.message).toBe(ptBR.errors.invalidTag);
     }
     expect(rpcMock).not.toHaveBeenCalled();
     expect(revalidatePathMock).not.toHaveBeenCalled();
@@ -104,7 +112,7 @@ describe("deleteTag", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.code).toBe("NOT_FOUND");
-      expect(result.message).toBe("Tag não encontrada.");
+      expect(result.message).toBe(ptBR.errors.tagNotFound);
     }
     expect(logEventMock).toHaveBeenCalledWith({
       event: "tag.delete_failed",
@@ -113,6 +121,24 @@ describe("deleteTag", () => {
       userId: dummyUser.id,
       entityId: validTagId,
     });
+  });
+
+  it("maps the same P0001 exception to the English message when the dictionary is en", async () => {
+    getDictionaryMock.mockResolvedValue(en);
+    rpcMock.mockResolvedValue({
+      error: { code: "P0001", message: "tag não encontrada" },
+    });
+
+    const formData = new FormData();
+    formData.set("id", validTagId);
+
+    const result = await deleteTag(null, formData);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe("NOT_FOUND");
+      expect(result.message).toBe(en.errors.tagNotFound);
+    }
   });
 
   it("maps generic database error and logs event", async () => {
@@ -128,7 +154,7 @@ describe("deleteTag", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.code).toBe("UNKNOWN");
-      expect(result.message).toBe("Não foi possível concluir a operação.");
+      expect(result.message).toBe(ptBR.errors.operationFailed);
     }
     expect(logEventMock).toHaveBeenCalledWith({
       event: "tag.delete_failed",
@@ -149,6 +175,7 @@ describe("createTag", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireUserMock.mockResolvedValue(dummyUser);
+    getDictionaryMock.mockResolvedValue(ptBR);
   });
 
   it("returns VALIDATION_FAILED if name is empty", async () => {
@@ -226,6 +253,7 @@ describe("updateTag", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireUserMock.mockResolvedValue(dummyUser);
+    getDictionaryMock.mockResolvedValue(ptBR);
   });
 
   it("updates tag successfully and revalidates path", async () => {
@@ -280,6 +308,7 @@ describe("listTagsForSelect", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     requireUserMock.mockResolvedValue(dummyUser);
+    getDictionaryMock.mockResolvedValue(ptBR);
   });
 
   it("returns the caller's full tag list on success", async () => {
@@ -310,7 +339,7 @@ describe("listTagsForSelect", () => {
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.code).toBe("UNKNOWN");
-      expect(result.message).toBe("Não foi possível carregar as tags.");
+      expect(result.message).toBe(ptBR.errors.tagsLoadFailed);
     }
     expect(logEventMock).toHaveBeenCalledWith({
       event: "tags.select_list_failed",

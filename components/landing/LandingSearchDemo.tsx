@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { DEMO_ITEMS, type DemoItem } from "@/lib/landing/demo-data";
+import { demoItems, type DemoItem } from "@/lib/landing/demo-data";
 import {
   SearchIcon,
   LinkIcon,
@@ -21,6 +21,7 @@ import {
   type ClearSearchAnimation,
 } from "@/lib/motion/clear-search";
 import { toastSuccess } from "@/components/states/Toast";
+import { useDictionary } from "@/lib/i18n/client";
 
 interface LandingSearchDemoProps {
   onOpenCommandPalette?: () => void;
@@ -29,6 +30,8 @@ interface LandingSearchDemoProps {
 export function LandingSearchDemo({
   onOpenCommandPalette,
 }: LandingSearchDemoProps) {
+  const t = useDictionary();
+  const DEMO_ITEMS = demoItems(t);
   const [query, setQuery] = useState("design");
   const [mirroredQuery, setMirroredQuery] = useState("design");
   const [isClearing, setIsClearing] = useState(false);
@@ -172,7 +175,7 @@ export function LandingSearchDemo({
     const ok = await copyToClipboard(item.contentPreview);
     if (ok) {
       setCopiedId(item.id);
-      toastSuccess("Prompt copiado.");
+      toastSuccess(t.landing.demo.promptCopied);
       setTimeout(() => setCopiedId(null), 2000);
     }
   }
@@ -204,12 +207,10 @@ export function LandingSearchDemo({
       <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
         <ScrollReveal variant="stagger" className="max-w-[52ch]">
           <h2 className="text-headline-lg t-stagger-line t-stagger-line--1 leading-tight font-[560] tracking-tight text-foreground">
-            Você não precisa lembrar onde salvou.
+            {t.landing.searchDemo.title}
           </h2>
           <p className="text-body-lg t-stagger-line t-stagger-line--2 mt-4 leading-relaxed text-pretty text-muted-foreground">
-            Pesquise por título, domínio, descrição ou conteúdo e combine a
-            busca com suas tags para reduzir rapidamente a biblioteca ao que
-            importa.
+            {t.landing.searchDemo.subtitle}
           </p>
         </ScrollReveal>
 
@@ -233,7 +234,7 @@ export function LandingSearchDemo({
               value={query}
               onChange={(event) => setSearchQuery(event.target.value)}
               className="text-body-md relative z-10 w-full bg-transparent py-2 text-foreground outline-none"
-              aria-label="Demonstração interativa de busca"
+              aria-label={t.landing.searchDemo.inputAriaLabel}
             />
             <div
               ref={mirrorRef}
@@ -247,7 +248,7 @@ export function LandingSearchDemo({
               aria-hidden="true"
               className="t-clear-placeholder text-body-md pr-12 pl-11 text-muted-foreground"
             >
-              Buscar por título, domínio, descrição ou prompt...
+              {t.landing.searchDemo.placeholder}
             </div>
             <div ref={glowRef} aria-hidden="true" className="t-clear-glow" />
             {query && !isClearing && (
@@ -265,7 +266,7 @@ export function LandingSearchDemo({
                 }}
                 onClick={clearSearch}
                 className="t-clear-btn relative z-10 mr-1 flex size-6 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
-                aria-label="Limpar busca"
+                aria-label={t.shell.search.clear}
               >
                 <XIcon className="size-4" />
               </button>
@@ -278,7 +279,7 @@ export function LandingSearchDemo({
           {/* Quick query suggestion chips */}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="text-metadata text-muted-foreground">
-              Testar consultas:
+              {t.landing.searchDemo.tryQueries}
             </span>
             {quickQueries.map((term) => (
               <button
@@ -302,7 +303,7 @@ export function LandingSearchDemo({
                 className="text-metadata ml-auto hidden items-center gap-1 text-brand-accent hover:underline sm:inline-flex"
               >
                 <CommandIcon className="size-3" />
-                <span>Abrir Spotlight (⌘K)</span>
+                <span>{t.landing.searchDemo.openSpotlightShortcut}</span>
               </button>
             )}
           </div>
@@ -310,15 +311,12 @@ export function LandingSearchDemo({
           {/* Results List */}
           <div className="mt-6 flex flex-col gap-3">
             <div className="text-metadata font-mono text-muted-foreground">
-              {results.length}{" "}
-              {results.length === 1
-                ? "resultado encontrado"
-                : "resultados encontrados"}
+              {t.landing.searchDemo.resultsCount(results.length)}
             </div>
 
             {results.length === 0 ? (
               <div className="text-body-sm rounded-lg border border-border bg-card p-8 text-center text-muted-foreground">
-                Nenhum item corresponde à busca &quot;{query}&quot;.
+                {t.landing.searchDemo.noResults(query)}
               </div>
             ) : (
               results.map((item) => {
@@ -366,7 +364,7 @@ export function LandingSearchDemo({
                           target="_blank"
                           rel="noopener noreferrer"
                           className="p-1 text-muted-foreground hover:text-foreground"
-                          aria-label={`Abrir ${item.title}`}
+                          aria-label={t.landing.demo.openItem(item.title)}
                         >
                           <ExternalLinkIcon className="size-3.5" />
                         </a>
@@ -377,14 +375,16 @@ export function LandingSearchDemo({
                           size="xs"
                           onClick={() => handleCopy(item)}
                           className="h-7 gap-1 px-2"
-                          aria-label="Copiar prompt"
+                          aria-label={t.landing.demo.copyPrompt}
                         >
                           {copiedId === item.id ? (
                             <CheckIcon className="size-3 text-brand-accent" />
                           ) : (
                             <CopyIcon className="size-3" />
                           )}
-                          <span className="text-metadata">Copiar</span>
+                          <span className="text-metadata">
+                            {t.landing.demo.copy}
+                          </span>
                         </Button>
                       ) : null}
                     </div>

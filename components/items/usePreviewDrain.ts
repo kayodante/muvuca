@@ -11,6 +11,7 @@ import {
 import { PREVIEW_CLAIM_LIMIT } from "@/lib/validation/item";
 import type { ActionResult } from "@/lib/utils/result";
 import { toastError, toastInfo, toastSuccess } from "@/components/states/Toast";
+import { useDictionary } from "@/lib/i18n/client";
 
 type DrainData = {
   processed: number;
@@ -42,6 +43,7 @@ const GLOBAL_DRAIN_ROUND_CAP = 50;
  * `if (!result.ok) return` -- exactly like a thrown Server Action used to.
  */
 async function fetchDrainPreviewQueue(
+  failMessage: string,
   opts: { itemIds?: string[] } = {},
 ): Promise<ActionResult<DrainData>> {
   try {
@@ -54,7 +56,7 @@ async function fetchDrainPreviewQueue(
       return {
         ok: false,
         code: "UNKNOWN",
-        message: "Não foi possível drenar as prévias.",
+        message: failMessage,
       };
     }
     return (await response.json()) as ActionResult<DrainData>;
@@ -62,7 +64,7 @@ async function fetchDrainPreviewQueue(
     return {
       ok: false,
       code: "UNKNOWN",
-      message: "Não foi possível drenar as prévias.",
+      message: failMessage,
     };
   }
 }
@@ -135,6 +137,7 @@ export function usePreviewDrain(linkItemIds: string[]): {
   refreshVisible: () => void;
   isDraining: boolean;
 } {
+  const t = useDictionary();
   const router = useRouter();
   const [isRescheduling, setIsRescheduling] = useState(false);
   const [isSessionRunning, setIsSessionRunning] = useState(false);
@@ -142,6 +145,7 @@ export function usePreviewDrain(linkItemIds: string[]): {
   // is what actually decides whether the scope changed. Item ids are UUIDs,
   // so splitting it back inside the effect is lossless.
   const idsKey = linkItemIds.join(",");
+  const drainFailedMessage = t.items.previewDrain.drainFailed;
 
   useEffect(() => {
     const ids = idsKey ? idsKey.split(",") : [];
@@ -172,7 +176,9 @@ export function usePreviewDrain(linkItemIds: string[]): {
     async function drainScoped(): Promise<boolean> {
       while (round < maxRounds && !cancelled && visible()) {
         round++;
-        const result = await fetchDrainPreviewQueue({ itemIds: ids });
+        const result = await fetchDrainPreviewQueue(drainFailedMessage, {
+          itemIds: ids,
+        });
         if (cancelled) return false;
         if (!result.ok) return false;
 
@@ -193,7 +199,7 @@ export function usePreviewDrain(linkItemIds: string[]): {
         visible()
       ) {
         globalRound++;
-        const result = await fetchDrainPreviewQueue();
+        const result = await fetchDrainPreviewQueue(drainFailedMessage);
         if (cancelled) return;
         if (!result.ok) return;
 
@@ -286,7 +292,7 @@ export function usePreviewDrain(linkItemIds: string[]): {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       unsubscribe();
     };
-  }, [idsKey, router]);
+  }, [idsKey, router, drainFailedMessage]);
 
   /** Toolbar action: re-queue this page's previews, then drain them. The
    * drain is woken through `notifyPreviewQueueChanged()` -- the same channel
@@ -301,20 +307,20 @@ export function usePreviewDrain(linkItemIds: string[]): {
       }
       const { rescheduled } = result.data;
       if (rescheduled === 0) {
-        toastInfo("Nenhuma prévia pendente nesta página.");
+        toastInfo(t.items.previewDrain.noPendingPreviews);
         return;
       }
       toastSuccess(
         rescheduled === 1
-          ? "1 prévia será atualizada."
-          : `${rescheduled} prévias serão atualizadas.`,
+          ? t.items.previewDrain.oneScheduled
+          : t.items.previewDrain.manyScheduled(rescheduled),
       );
       notifyPreviewQueueChanged();
     } catch {
       // A thrown action (network down, expired session) needs the same
       // error state as an `ok: false` result -- and never leaks the raw
       // error to the user.
-      toastError("Não foi possível atualizar as prévias.");
+      toastError(t.items.previewDrain.updateFailed);
     } finally {
       setIsRescheduling(false);
     }

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { ptBR } from "@/lib/i18n/dictionaries/pt-BR";
 
 const {
   getTagByIdMock,
@@ -36,6 +37,14 @@ vi.mock("@/lib/database/queries/tags", () => ({
 vi.mock("@/lib/database/queries/items", () => ({
   getLibraryItems: getLibraryItemsMock,
   getLibraryItemsCountForTag: getLibraryItemsCountForTagMock,
+}));
+
+// TagDetailPage now resolves `t` (AAA-215) to pass down to TagDetailView.
+// `getDictionary()` reads `cookies()`/`headers()`, unavailable outside a
+// real request -- mocked here the same way the data queries above are,
+// not because this test cares about locale.
+vi.mock("@/lib/i18n/server", () => ({
+  getDictionary: vi.fn().mockResolvedValue(ptBR),
 }));
 
 vi.mock("@/components/tags/TagDetailView", () => ({
@@ -161,15 +170,20 @@ describe("TagDetailPage", () => {
     });
     expect(getLibraryItemsCountForTagMock).toHaveBeenCalledWith(validTagId);
 
-    expect(element.props).toEqual({
-      tag: mockTag,
-      childCount: 3,
-      tags: mockPageTags,
-      ancestors: mockAncestors,
-      items: mockItemsResult.items,
-      itemsCount: 7,
-      nextCursor: "next-cursor-token",
-      prevCursor: "prev-cursor-token",
-    });
+    // objectContaining, not toEqual: the page also now passes `t` (the
+    // resolved dictionary) through to TagDetailView, which this test
+    // doesn't otherwise care about.
+    expect(element.props).toEqual(
+      expect.objectContaining({
+        tag: mockTag,
+        childCount: 3,
+        tags: mockPageTags,
+        ancestors: mockAncestors,
+        items: mockItemsResult.items,
+        itemsCount: 7,
+        nextCursor: "next-cursor-token",
+        prevCursor: "prev-cursor-token",
+      }),
+    );
   });
 });
