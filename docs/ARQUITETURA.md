@@ -89,6 +89,27 @@ Três entidades centrais, todas com `user_id` obrigatório e RLS:
 Tabelas de suporte: `user_preferences` (tema), `link_previews` (fila de
 enriquecimento de metadados e cache de thumbnail/favicon).
 
+### URLs de tag
+
+**UUID é a identidade da tag. Slug é apenas a identidade de roteamento.**
+Relações, RPCs e Server Actions continuam por UUID; o slug só existe para a
+URL `/t/<slug-raiz>/.../<slug-tag>` (ex.: `/t/design/recursos-assets/icones`).
+
+- Só o slug de cada tag é persistido; o caminho é derivado de
+  `parent_id + slug` na leitura. Renomear ou mover uma tag muda a URL dela e
+  das descendentes sem nenhum update em cascata.
+- O banco é o único autor de slug (`slugify_tag_name` + trigger
+  `tags_set_slug`, para toda escrita, inclusive importação de favoritos e
+  restauração de backup): sem acento, minúsculas, `[a-z0-9-]`, nunca vazio
+  (`tag` como fallback).
+- Único por irmãos (`(user_id, slug, parent_id)`). Nomes distintos que
+  normalizam igual ("Ícones", "Icones") ganham sufixo: `icones`, `icones-2`.
+- Rename muda o slug quando a base do nome muda; não há histórico de slug.
+- `/tags/<uuid>` (links antigos) responde 307 para o caminho atual — não
+  permanente, porque o destino muda a cada rename.
+- Backup 1.3 inclui o slug; arquivos anteriores restauram com o slug
+  derivado do nome.
+
 A fila de previews é drenada pelo próprio cliente, através de um Route
 Handler dedicado — e não de uma Server Action, porque Server Actions são
 serializadas por cliente e uma varredura em segundo plano competiria com
