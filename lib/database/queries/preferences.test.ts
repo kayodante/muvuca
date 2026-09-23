@@ -64,7 +64,7 @@ describe("getUserPreferences", () => {
       displayName: "Kayo",
       locale: "en",
     });
-    expect(select).toHaveBeenCalledWith("*");
+    expect(select).toHaveBeenCalledWith("theme, display_name, locale");
   });
 
   it("falls back to null for an invalid saved locale", async () => {

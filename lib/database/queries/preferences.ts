@@ -22,13 +22,11 @@ export const getUserPreferences = cache(async (): Promise<UserPreferences> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("user_preferences")
-    // `*`, não "theme, display_name, locale": o deploy do app não espera
-    // o job `migrate` (aprovação manual). Com o schema anterior à 0029,
-    // um select nomeado dá 42703 em toda página logada; `*` só não traz a
-    // coluna e o valor cai para null.
-    // ponytail: voltar ao select nomeado quando a 0029/0030 estiverem em
-    // produção.
-    .select("*")
+    // Uma coluna nova aqui só entra depois que a migration dela estiver em
+    // produção: o deploy do app no Vercel não espera o job `migrate`
+    // (aprovação manual), e uma coluna ausente dá 42703 em toda página
+    // logada.
+    .select("theme, display_name, locale")
     .maybeSingle();
 
   if (error) {
