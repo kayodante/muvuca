@@ -1,22 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { requireUserMock, getTagsByIdsMock, notFoundMock, redirectMock } =
-  vi.hoisted(() => ({
-    requireUserMock: vi.fn(),
-    getTagsByIdsMock: vi.fn(),
-    notFoundMock: vi.fn().mockImplementation(() => {
-      throw new Error("NEXT_NOT_FOUND");
-    }),
-    redirectMock: vi.fn().mockImplementation((url: string) => {
-      throw new Error(`NEXT_REDIRECT:${url}`);
-    }),
-  }));
+const { getTagsByIdsMock, notFoundMock, redirectMock } = vi.hoisted(() => ({
+  getTagsByIdsMock: vi.fn(),
+  notFoundMock: vi.fn().mockImplementation(() => {
+    throw new Error("NEXT_NOT_FOUND");
+  }),
+  redirectMock: vi.fn().mockImplementation((url: string) => {
+    throw new Error(`NEXT_REDIRECT:${url}`);
+  }),
+}));
 
 vi.mock("next/navigation", () => ({
   notFound: notFoundMock,
   redirect: redirectMock,
 }));
-vi.mock("@/lib/auth/require-user", () => ({ requireUser: requireUserMock }));
 vi.mock("@/lib/database/queries/tags", () => ({
   getTagsByIds: getTagsByIdsMock,
 }));
@@ -38,7 +35,6 @@ function visit(
 describe("/tags/[tagId] (legacy redirect)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    requireUserMock.mockResolvedValue({ id: "user-a" });
   });
 
   it("redirects to the tag's current friendly path, keeping the query", async () => {
@@ -67,12 +63,5 @@ describe("/tags/[tagId] (legacy redirect)", () => {
 
     await expect(visit(TAG_ID)).rejects.toThrow("NEXT_NOT_FOUND");
     expect(redirectMock).not.toHaveBeenCalled();
-  });
-
-  it("requires a session before touching data", async () => {
-    requireUserMock.mockRejectedValue(new Error("NEXT_REDIRECT:/login"));
-
-    await expect(visit(TAG_ID)).rejects.toThrow("NEXT_REDIRECT:/login");
-    expect(getTagsByIdsMock).not.toHaveBeenCalled();
   });
 });

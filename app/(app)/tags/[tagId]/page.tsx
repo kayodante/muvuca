@@ -1,7 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 
-import { requireUser } from "@/lib/auth/require-user";
 import { getTagsByIds } from "@/lib/database/queries/tags";
 import { getTagHref } from "@/lib/tags/routes";
 
@@ -19,7 +18,9 @@ import { getTagHref } from "@/lib/tags/routes";
  * client-side one with status 200.
  *
  * A malformed id, a missing tag and another user's tag all end in the same
- * 404 -- RLS makes the last two indistinguishable by construction.
+ * 404 -- RLS makes the last two indistinguishable by construction. No
+ * session check here, like every other page under `(app)`: `proxy.ts`
+ * sends `/tags/*` without claims to /login before this renders.
  */
 export default async function LegacyTagRedirectPage({
   params,
@@ -28,10 +29,6 @@ export default async function LegacyTagRedirectPage({
   params: Promise<{ tagId: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  // Explicit, not left to the layout: without a session RLS returns no
-  // rows, and this page must send the visitor to /login, not to a 404.
-  await requireUser();
-
   const [{ tagId }, rawSearchParams] = await Promise.all([
     params,
     searchParams,
