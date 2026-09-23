@@ -131,7 +131,7 @@ describe("setLocale (lib/actions/locale.ts)", () => {
       expect(revalidatePathMock).toHaveBeenCalledWith("/", "layout");
     });
 
-    it("retorna erro genérico e loga falha quando o upsert falha, mas o cookie já foi salvo", async () => {
+    it("retorna erro genérico, loga falha e não grava o cookie quando o upsert falha", async () => {
       upsertMock.mockResolvedValue({
         error: { name: "PostgresError", message: "disk full" },
       });
@@ -143,7 +143,7 @@ describe("setLocale (lib/actions/locale.ts)", () => {
         code: "UNKNOWN",
         message: ptBR.errors.unknown,
       });
-      expect(cookieSetMock).toHaveBeenCalled();
+      expect(cookieSetMock).not.toHaveBeenCalled();
       expect(logEventMock).toHaveBeenCalledWith({
         event: "preferences.locale_update_failed",
         status: "failure",

@@ -38,18 +38,22 @@ function parseAcceptLanguage(acceptLanguage: string): AcceptLanguageTag[] {
 }
 
 /**
- * Highest-q tag that starts with a supported language wins (`en-US` and
- * `pt-PT` both match); every other tag is ignored, not treated as a block.
- * `null` when nothing in the header matches a supported language.
+ * Highest-q tag whose primary subtag is a supported language wins (`en-US`
+ * and `pt-PT` both match; `eng` or `ptx` don't). `q=0` means "not
+ * acceptable" (RFC 9110 §12.4.2), so those entries are skipped rather than
+ * picked. Other tags are ignored, not treated as a block. `null` when
+ * nothing in the header matches a supported language.
  */
 function localeFromAcceptLanguage(
   acceptLanguage: string | null | undefined,
 ): Locale | null {
   if (!acceptLanguage) return null;
 
-  for (const { tag } of parseAcceptLanguage(acceptLanguage)) {
-    if (tag.startsWith("en")) return "en";
-    if (tag.startsWith("pt")) return "pt-BR";
+  for (const { tag, q } of parseAcceptLanguage(acceptLanguage)) {
+    if (q <= 0) continue;
+    const primary = tag.split("-")[0];
+    if (primary === "en") return "en";
+    if (primary === "pt") return "pt-BR";
   }
 
   return null;

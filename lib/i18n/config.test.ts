@@ -34,6 +34,16 @@ describe("resolveLocale", () => {
     expect(resolveLocale({ acceptLanguage: "pt-PT,pt;q=0.9" })).toBe("pt-BR");
   });
 
+  it("skips a language the client rejected with q=0", () => {
+    expect(resolveLocale({ acceptLanguage: "en;q=0,fr" })).toBe(DEFAULT_LOCALE);
+    expect(resolveLocale({ acceptLanguage: "en;q=0,pt;q=0.5" })).toBe("pt-BR");
+  });
+
+  it("matches only the exact primary subtag, not a prefix", () => {
+    expect(resolveLocale({ acceptLanguage: "eng,ptx" })).toBe(DEFAULT_LOCALE);
+    expect(resolveLocale({ acceptLanguage: "enx-US,en-GB;q=0.8" })).toBe("en");
+  });
+
   it("falls back to the default when only unsupported languages are offered", () => {
     expect(resolveLocale({ acceptLanguage: "fr" })).toBe(DEFAULT_LOCALE);
   });

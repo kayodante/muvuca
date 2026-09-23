@@ -13,9 +13,12 @@ const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
 /**
  * Persists the UI locale. Works logged-out (cookie only) and logged-in
- * (cookie + saved preference), so the cookie write always happens first and
- * unconditionally; the DB upsert only runs when there is a session, and the
- * user id always comes from that session, never from the caller's input.
+ * (saved preference + cookie). The DB upsert only runs when there is a
+ * session, and the user id always comes from that session, never from the
+ * caller's input. The cookie is written last, only after the upsert
+ * succeeded: a failed save must not leave a cookie that flips the language
+ * on the next request while the UI has already rolled back and reported
+ * the error.
  */
 export async function setLocale(
   locale: unknown,
@@ -25,15 +28,6 @@ export async function setLocale(
   if (!parsed.success) {
     return fail("VALIDATION_FAILED", t.errors.invalidInput);
   }
-
-  const cookieStore = await cookies();
-  cookieStore.set(LOCALE_COOKIE, parsed.data, {
-    path: "/",
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    httpOnly: true,
-    maxAge: ONE_YEAR_SECONDS,
-  });
 
   const user = await getOptionalUser();
   if (user) {
@@ -61,6 +55,15 @@ export async function setLocale(
       userId: user.id,
     });
   }
+
+  const cookieStore = await cookies();
+  cookieStore.set(LOCALE_COOKIE, parsed.data, {
+    path: "/",
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+    maxAge: ONE_YEAR_SECONDS,
+  });
 
   revalidatePath("/", "layout");
   return ok(parsed.data);
