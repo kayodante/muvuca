@@ -63,6 +63,7 @@ export function DeleteItemAlertDialog({
               type="submit"
               variant="destructive"
               pending={pending}
+              pendingLabel={t.items.deleteDialog.deleting}
             >
               {t.items.deleteDialog.confirm}
             </AlertDialogAction>

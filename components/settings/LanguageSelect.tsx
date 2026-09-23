@@ -37,6 +37,7 @@ export function LanguageSelect({ locale }: { locale: Locale }) {
             size="icon"
             aria-label={t.settings.language.ariaLabel(names[value])}
             pending={isPending}
+            pendingLabel={t.common.loading}
             className="border-0 shadow-light"
           />
         }

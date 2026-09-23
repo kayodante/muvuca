@@ -487,7 +487,13 @@ export function ItemEditorDialog({
             </p>
           )}
           <DialogFooter>
-            <Button type="submit" pending={pending}>
+            <Button
+              type="submit"
+              pending={pending}
+              pendingLabel={
+                editing ? t.items.editor.saving : t.items.editor.creating
+              }
+            >
               {editing ? t.items.editor.saveChanges : t.items.editor.createItem}
             </Button>
           </DialogFooter>

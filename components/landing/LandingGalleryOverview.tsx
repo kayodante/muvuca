@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { DEMO_ITEMS, DEMO_TAGS, type DemoItem } from "@/lib/landing/demo-data";
+import { demoItems, demoTags, type DemoItem } from "@/lib/landing/demo-data";
 import { TagChip } from "@/components/tags/TagChip";
 import {
   LinkIcon,
@@ -15,16 +15,25 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { toastSuccess } from "@/components/states/Toast";
+import { useDictionary } from "@/lib/i18n/client";
+import type { Dictionary } from "@/lib/i18n/dictionaries/pt-BR";
 
-const FILTER_TABS = [
-  { id: "all", label: "Todos" },
-  { id: "link", label: "Links" },
-  { id: "prompt", label: "Prompts" },
-] as const;
+function filterTabs(t: Dictionary) {
+  const f = t.landing.galleryOverview.filters;
+  return [
+    { id: "all", label: f.all },
+    { id: "link", label: f.links },
+    { id: "prompt", label: f.prompts },
+  ] as const;
+}
 
-type FilterType = (typeof FILTER_TABS)[number]["id"];
+type FilterType = ReturnType<typeof filterTabs>[number]["id"];
 
 export function LandingGalleryOverview() {
+  const t = useDictionary();
+  const DEMO_ITEMS = demoItems(t);
+  const DEMO_TAGS = demoTags(t);
+  const FILTER_TABS = filterTabs(t);
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const pillRef = useRef<HTMLSpanElement>(null);
@@ -79,13 +88,13 @@ export function LandingGalleryOverview() {
     const ok = await copyToClipboard(item.contentPreview);
     if (ok) {
       setCopiedId(item.id);
-      toastSuccess("Prompt copiado.");
+      toastSuccess(t.landing.demo.promptCopied);
       setTimeout(() => setCopiedId(null), 2000);
     }
   }
 
   function handleTabKeyDown(e: React.KeyboardEvent, currentId: FilterType) {
-    const currentIndex = FILTER_TABS.findIndex((t) => t.id === currentId);
+    const currentIndex = FILTER_TABS.findIndex((tab) => tab.id === currentId);
     let nextIndex = -1;
 
     if (e.key === "ArrowRight") {
@@ -113,12 +122,10 @@ export function LandingGalleryOverview() {
       <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
         <ScrollReveal variant="stagger" className="max-w-[52ch]">
           <h2 className="text-headline-lg t-stagger-line t-stagger-line--1 leading-tight font-[560] tracking-tight text-foreground">
-            Uma biblioteca que continua legível quando cresce.
+            {t.landing.galleryOverview.title}
           </h2>
           <p className="text-body-lg t-stagger-line t-stagger-line--2 mt-4 leading-relaxed text-pretty text-muted-foreground">
-            O Muvuca reúne seus itens em uma galeria visual, mantém a busca
-            sempre por perto e usa tags para dar contexto sem transformar sua
-            coleção em uma árvore impossível de navegar.
+            {t.landing.galleryOverview.subtitle}
           </p>
         </ScrollReveal>
 
@@ -131,17 +138,17 @@ export function LandingGalleryOverview() {
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
             <div className="flex items-center gap-2">
               <span className="text-label-md text-foreground">
-                Acervo em Destaque
+                {t.landing.galleryOverview.heading}
               </span>
               <span className="text-metadata font-mono text-muted-foreground">
-                ({displayedItems.length} itens)
+                {t.landing.galleryOverview.itemsCount(displayedItems.length)}
               </span>
             </div>
 
             {/* Animated Filter Tabs */}
             <div
               role="tablist"
-              aria-label="Filtrar acervo por tipo"
+              aria-label={t.landing.galleryOverview.filterAriaLabel}
               className="t-tabs relative flex items-center gap-1 rounded-lg border border-border bg-background p-0.5"
             >
               {/* Sliding active pill indicator */}
@@ -217,7 +224,9 @@ export function LandingGalleryOverview() {
                           />
                         )}
                         <span className="text-metadata truncate font-mono text-muted-foreground">
-                          {item.type === "link" ? domain : "PROMPT"}
+                          {item.type === "link"
+                            ? domain
+                            : t.landing.demo.promptBadge}
                         </span>
                       </div>
 
@@ -227,7 +236,7 @@ export function LandingGalleryOverview() {
                           target="_blank"
                           rel="noopener noreferrer"
                           className="p-1 text-muted-foreground hover:text-foreground"
-                          aria-label={`Abrir ${item.title}`}
+                          aria-label={t.landing.demo.openItem(item.title)}
                         >
                           <ExternalLinkIcon className="size-3.5" />
                         </a>
@@ -238,19 +247,21 @@ export function LandingGalleryOverview() {
                           size="xs"
                           onClick={() => handleCopy(item)}
                           className="h-6 gap-1 px-1.5"
-                          aria-label="Copiar prompt"
+                          aria-label={t.landing.demo.copyPrompt}
                         >
                           {copiedId === item.id ? (
                             <>
                               <CheckIcon className="size-3 text-brand-accent" />
                               <span className="text-metadata text-brand-accent">
-                                Copiado
+                                {t.landing.demo.copied}
                               </span>
                             </>
                           ) : (
                             <>
                               <CopyIcon className="size-3" />
-                              <span className="text-metadata">Copiar</span>
+                              <span className="text-metadata">
+                                {t.landing.demo.copy}
+                              </span>
                             </>
                           )}
                         </Button>
@@ -278,7 +289,7 @@ export function LandingGalleryOverview() {
 
                   <div className="mt-4 flex flex-wrap gap-1 pt-2">
                     {item.tagIds.slice(0, 2).map((tagId) => {
-                      const tag = DEMO_TAGS.find((t) => t.id === tagId);
+                      const tag = DEMO_TAGS.find((dt) => dt.id === tagId);
                       return tag ? (
                         <TagChip
                           key={tag.id}

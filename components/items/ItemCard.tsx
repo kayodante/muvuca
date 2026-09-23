@@ -337,6 +337,7 @@ export function ItemCard({
                 size="icon-sm"
                 aria-label={t.items.card.copyPrompt}
                 pending={copyingContent}
+                pendingLabel={t.items.card.copyingPrompt}
                 onClick={handleCopyContent}
                 className={ACTION_CLASS}
               />
@@ -359,6 +360,7 @@ export function ItemCard({
                 size="icon-sm"
                 aria-label={t.items.card.copyCode}
                 pending={copyingContent}
+                pendingLabel={t.items.card.copyingCode}
                 onClick={handleCopyContent}
                 className={ACTION_CLASS}
               />

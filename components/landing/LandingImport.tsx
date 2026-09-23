@@ -12,8 +12,11 @@ import {
 import { swatchClassFor } from "@/lib/tags/colors";
 import { cn } from "@/lib/utils";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
+import { useDictionary } from "@/lib/i18n/client";
 
 export function LandingImport() {
+  const t = useDictionary();
+  const imp = t.landing.import;
   const [activeStage, setActiveStage] = useState<
     "source" | "parser" | "target"
   >("target");
@@ -23,11 +26,10 @@ export function LandingImport() {
       <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
         <ScrollReveal variant="stagger" className="max-w-[52ch]">
           <h2 className="text-headline-lg t-stagger-line t-stagger-line--1 leading-tight font-[560] tracking-tight text-foreground">
-            Traga seus favoritos sem perder a estrutura de pastas.
+            {imp.title}
           </h2>
           <p className="text-body-lg t-stagger-line t-stagger-line--2 mt-4 leading-relaxed text-pretty text-muted-foreground">
-            Importe os favoritos do navegador e transforme pastas e subpastas em
-            uma hierarquia de tags antes de confirmar o que entra na biblioteca.
+            {imp.subtitle}
           </p>
         </ScrollReveal>
 
@@ -39,7 +41,7 @@ export function LandingImport() {
           {/* Stage Switcher Tabs */}
           <div className="mb-6 flex flex-wrap items-center gap-2 border-b border-border/60 pb-4">
             <span className="text-metadata mr-2 text-muted-foreground">
-              Etapas da migração:
+              {imp.stagesLabel}
             </span>
             <button
               type="button"
@@ -51,7 +53,7 @@ export function LandingImport() {
               }`}
             >
               <FolderIcon className="size-3.5" />
-              <span>1. Arquivo de Favoritos</span>
+              <span>{imp.stage1}</span>
             </button>
             <button
               type="button"
@@ -63,7 +65,7 @@ export function LandingImport() {
               }`}
             >
               <Code2Icon className="size-3.5" />
-              <span>2. Análise Segura no Navegador</span>
+              <span>{imp.stage2}</span>
             </button>
             <button
               type="button"
@@ -75,7 +77,7 @@ export function LandingImport() {
               }`}
             >
               <TagIcon className="size-3.5" />
-              <span>3. Árvore de Tags Muvuca</span>
+              <span>{imp.stage3}</span>
             </button>
           </div>
 
@@ -92,32 +94,32 @@ export function LandingImport() {
                 <div className="flex items-center gap-2">
                   <FolderIcon className="size-4 text-muted-foreground" />
                   <h3 className="text-body-sm font-semibold text-foreground">
-                    Favoritos do Navegador (.html)
+                    {imp.sourceHeading}
                   </h3>
                 </div>
                 <span className="text-metadata font-mono text-muted-foreground">
-                  114 links
+                  {imp.sourceCount}
                 </span>
               </div>
 
               <div className="text-metadata space-y-2 font-mono text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <span className="text-foreground">📁 Design</span>
+                  <span className="text-foreground">{imp.folderDesign}</span>
                 </div>
                 <div className="flex items-center gap-2 pl-4">
-                  <span>↳ 📁 Inspiração (54 links)</span>
+                  <span>{imp.folderInspiration}</span>
                 </div>
                 <div className="flex items-center gap-2 pl-4">
-                  <span>↳ 📁 Ferramentas (18 links)</span>
+                  <span>{imp.folderTools}</span>
                 </div>
                 <div className="flex items-center gap-2 pt-2">
-                  <span className="text-foreground">📁 Desenvolvimento</span>
+                  <span className="text-foreground">{imp.folderDev}</span>
                 </div>
                 <div className="flex items-center gap-2 pl-4">
-                  <span>↳ 📁 React &amp; Next.js (24 links)</span>
+                  <span>{imp.folderReact}</span>
                 </div>
                 <div className="flex items-center gap-2 pl-4">
-                  <span>↳ 📁 IA &amp; LLMs (18 links)</span>
+                  <span>{imp.folderAi}</span>
                 </div>
               </div>
             </div>
@@ -128,7 +130,7 @@ export function LandingImport() {
                 <ArrowRightIcon className="size-5" />
               </div>
               <span className="text-metadata font-mono text-muted-foreground">
-                Conversão 1:1
+                {imp.conversion}
               </span>
             </div>
 
@@ -144,11 +146,11 @@ export function LandingImport() {
                 <div className="flex items-center gap-2">
                   <TagIcon className="size-4 text-brand-accent" />
                   <h3 className="text-body-sm font-semibold text-foreground">
-                    Estrutura de Tags no Muvuca
+                    {imp.targetHeading}
                   </h3>
                 </div>
                 <span className="text-metadata font-mono font-medium text-brand-accent">
-                  6 tags criadas
+                  {imp.tagsCreated}
                 </span>
               </div>
 
@@ -162,7 +164,7 @@ export function LandingImport() {
                     )}
                   />
                   <span className="font-semibold text-foreground">
-                    # Design
+                    {imp.tagDesign}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 pl-4">
@@ -173,7 +175,7 @@ export function LandingImport() {
                       swatchClassFor("pink"),
                     )}
                   />
-                  <span># Inspiração [tag filha]</span>
+                  <span>{imp.tagInspiration}</span>
                 </div>
                 <div className="flex items-center gap-2 pl-4">
                   <span
@@ -183,7 +185,7 @@ export function LandingImport() {
                       swatchClassFor("cyan"),
                     )}
                   />
-                  <span># Ferramentas [tag filha]</span>
+                  <span>{imp.tagTools}</span>
                 </div>
                 <div className="flex items-center gap-2 pt-2">
                   <span
@@ -194,7 +196,7 @@ export function LandingImport() {
                     )}
                   />
                   <span className="font-semibold text-foreground">
-                    # Desenvolvimento
+                    {imp.tagDev}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 pl-4">
@@ -205,7 +207,7 @@ export function LandingImport() {
                       swatchClassFor("violet"),
                     )}
                   />
-                  <span># React &amp; Next.js [tag filha]</span>
+                  <span>{imp.tagReact}</span>
                 </div>
                 <div className="flex items-center gap-2 pl-4">
                   <span
@@ -215,7 +217,7 @@ export function LandingImport() {
                       swatchClassFor("emerald"),
                     )}
                   />
-                  <span># IA &amp; LLMs [tag filha]</span>
+                  <span>{imp.tagAi}</span>
                 </div>
               </div>
             </div>
@@ -226,15 +228,10 @@ export function LandingImport() {
             <div className="mt-6 rounded-lg border border-border bg-background p-4">
               <div className="text-metadata mb-2 flex items-center gap-2 font-mono text-muted-foreground">
                 <ShieldCheckIcon className="size-4 text-brand-accent" />
-                <span>
-                  Parser inerte no cliente (sem SSRF, sem envio de HTML bruto)
-                </span>
+                <span>{imp.parserNote}</span>
               </div>
               <pre className="text-metadata overflow-x-auto font-mono text-foreground">
-                {`const parser = new DOMParser();
-const doc = parser.parseFromString(rawHtml, 'text/html');
-// Extração pura de textContent e atributos href validados (apenas http/https)
-// O servidor recebe apenas o DTO estruturado de tags e links.`}
+                {imp.parserCode}
               </pre>
             </div>
           )}
@@ -242,10 +239,7 @@ const doc = parser.parseFromString(rawHtml, 'text/html');
           {/* Bottom Security / UX note */}
           <div className="text-body-sm mt-8 flex flex-wrap items-center gap-3 border-t border-border pt-4 text-muted-foreground">
             <CheckCircle2Icon className="size-4 shrink-0 text-brand-accent" />
-            <span>
-              O arquivo é processado localmente. Antes de salvar, você vê
-              quantos itens são válidos e quantos são duplicados.
-            </span>
+            <span>{imp.caption}</span>
           </div>
         </ScrollReveal>
       </div>

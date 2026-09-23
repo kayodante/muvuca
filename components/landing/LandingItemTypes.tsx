@@ -15,22 +15,23 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { Button } from "@/components/ui/button";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { toastError, toastSuccess } from "@/components/states/Toast";
+import { useDictionary } from "@/lib/i18n/client";
 
 export function LandingItemTypes() {
+  const t = useDictionary();
   const [copiedPrompt, setCopiedPrompt] = useState(false);
   const [expandedPrompt, setExpandedPrompt] = useState(false);
 
-  const promptContent =
-    "Atue como um Senior Code Reviewer. Analise o diff priorizando:\n1. Segurança de dados e integridade de RLS;\n2. Tipagem estrita em TypeScript sem any;\n3. Acessibilidade WCAG 2.2 AA (teclado e contraste);\n4. Ausência de queries SQL concatenadas.\n\nRetorne apontamentos objetivos categorizados por severidade.";
+  const promptContent = t.landing.itemTypes.promptContent;
 
   async function handleCopyPrompt() {
     const ok = await copyToClipboard(promptContent);
     if (ok) {
       setCopiedPrompt(true);
-      toastSuccess("Prompt copiado para a área de transferência.");
+      toastSuccess(t.items.card.promptCopied);
       setTimeout(() => setCopiedPrompt(false), 2000);
     } else {
-      toastError("Não foi possível copiar o prompt.");
+      toastError(t.items.card.promptCopyFailed);
     }
   }
 
@@ -39,11 +40,10 @@ export function LandingItemTypes() {
       <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
         <ScrollReveal variant="stagger" className="max-w-[52ch]">
           <h2 className="text-headline-lg t-stagger-line t-stagger-line--1 leading-tight font-[560] tracking-tight text-foreground">
-            Links e prompts convivem no mesmo acervo.
+            {t.landing.itemTypes.title}
           </h2>
           <p className="text-body-lg t-stagger-line t-stagger-line--2 mt-4 leading-relaxed text-pretty text-muted-foreground">
-            Cada tipo de item possui personalidade visual e ações contextuais
-            próprias, sem quebrar o grid da biblioteca.
+            {t.landing.itemTypes.subtitle}
           </p>
         </ScrollReveal>
 
@@ -55,7 +55,7 @@ export function LandingItemTypes() {
           <div className="t-stagger-line t-stagger-line--1 flex flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-xs">
             <div>
               <div className="text-metadata mb-3 font-semibold text-muted-foreground uppercase">
-                Link de Referência
+                {t.landing.itemTypes.linkCardLabel}
               </div>
 
               <div className="rounded-lg border border-border bg-muted/20 p-4">
@@ -75,7 +75,7 @@ export function LandingItemTypes() {
                     rel="noopener noreferrer"
                     className="text-metadata inline-flex items-center gap-1 text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca hover:text-foreground motion-reduce:transition-none"
                   >
-                    <span>Abrir link</span>
+                    <span>{t.items.card.openLink}</span>
                     <ExternalLinkIcon className="size-3" aria-hidden="true" />
                   </a>
                 </div>
@@ -85,20 +85,24 @@ export function LandingItemTypes() {
                 </h3>
 
                 <p className="text-body-sm mt-2 text-muted-foreground">
-                  Referência de interface densa com navegação por teclado e
-                  performance em milissegundos.
+                  {t.landing.itemTypes.linkCardDescription}
                 </p>
 
                 <div className="mt-4 flex flex-wrap gap-1.5 pt-2">
-                  <TagChip name="Design" colorToken="teal" />
-                  <TagChip name="Product Design" colorToken="cyan" />
+                  <TagChip
+                    name={t.landing.demo.tags.design}
+                    colorToken="teal"
+                  />
+                  <TagChip
+                    name={t.landing.demo.tags.productDesign}
+                    colorToken="cyan"
+                  />
                 </div>
               </div>
             </div>
 
             <div className="text-body-sm mt-6 border-t border-border pt-4 text-muted-foreground">
-              O domínio aparece sozinho, em Geist Mono. A tag herda da
-              hierarquia do item. Abrir o link usa sempre{" "}
+              {t.landing.itemTypes.linkCaption}{" "}
               <code className="text-metadata text-foreground">
                 rel=&quot;noopener noreferrer&quot;
               </code>
@@ -110,7 +114,7 @@ export function LandingItemTypes() {
           <div className="t-stagger-line t-stagger-line--2 flex flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-xs">
             <div>
               <div className="text-metadata mb-3 font-semibold text-muted-foreground uppercase">
-                Prompt de IA &amp; Instrução
+                {t.landing.itemTypes.promptCardLabel}
               </div>
 
               <div className="rounded-lg border border-border bg-muted/20 p-4">
@@ -121,7 +125,7 @@ export function LandingItemTypes() {
                       aria-hidden="true"
                     />
                     <span className="text-metadata font-mono text-muted-foreground">
-                      PROMPT
+                      {t.landing.demo.promptBadge}
                     </span>
                   </div>
                   <Button
@@ -130,31 +134,30 @@ export function LandingItemTypes() {
                     size="xs"
                     onClick={handleCopyPrompt}
                     className="gap-1 text-xs"
-                    aria-label="Copiar prompt demonstrativo"
+                    aria-label={t.landing.itemTypes.copyPromptDemoAria}
                   >
                     {copiedPrompt ? (
                       <>
                         <CheckIcon className="size-3 text-brand-accent" />
                         <span className="font-semibold text-brand-accent">
-                          Copiado
+                          {t.landing.demo.copied}
                         </span>
                       </>
                     ) : (
                       <>
                         <CopyIcon className="size-3" />
-                        <span>Copiar prompt</span>
+                        <span>{t.items.card.copyPrompt}</span>
                       </>
                     )}
                   </Button>
                 </div>
 
                 <h3 className="text-headline-sm font-medium text-foreground">
-                  System Prompt: Senior Code Reviewer
+                  {t.landing.demo.items.item2.title}
                 </h3>
 
                 <p className="text-body-sm mt-2 text-muted-foreground">
-                  Instrução de sistema para auditoria de segurança OWASP e
-                  consistência de tipos.
+                  {t.landing.itemTypes.promptCardDescription}
                 </p>
 
                 <div className="mt-3 border-t border-border/70 pt-2.5">
@@ -172,8 +175,8 @@ export function LandingItemTypes() {
                   >
                     <span>
                       {expandedPrompt
-                        ? "Recolher visualização"
-                        : "Ver prompt completo"}
+                        ? t.landing.itemTypes.collapse
+                        : t.landing.itemTypes.expand}
                     </span>
                     {expandedPrompt ? (
                       <ChevronUpIcon className="size-3" />
@@ -184,15 +187,17 @@ export function LandingItemTypes() {
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-1.5 pt-2">
-                  <TagChip name="Desenvolvimento" colorToken="blue" />
-                  <TagChip name="IA & Prompts" colorToken="emerald" />
+                  <TagChip
+                    name={t.landing.demo.tags.desenvolvimento}
+                    colorToken="blue"
+                  />
+                  <TagChip name={t.landing.demo.tags.ia} colorToken="emerald" />
                 </div>
               </div>
             </div>
 
             <div className="text-body-sm mt-6 border-t border-border pt-4 text-muted-foreground">
-              O preview mantém a formatação original, e copiar vai pro clipboard
-              em um clique. Expandir mostra o prompt inteiro.
+              {t.landing.itemTypes.promptCardCaption}
             </div>
           </div>
         </ScrollReveal>

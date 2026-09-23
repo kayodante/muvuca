@@ -257,6 +257,7 @@ export function ItemsPage({
             variant="outline"
             size="sm"
             pending={isDetailPending}
+            pendingLabel={t.common.loading}
             onClick={() => loadItem(detailError.item, detailError.target)}
           >
             {t.common.tryAgain}

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import {
-  DEMO_TAGS,
+  demoTags,
+  demoItems,
   getItemsForTag,
   getDescendantTagIds,
 } from "@/lib/landing/demo-data";
@@ -21,32 +22,36 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { toastSuccess } from "@/components/states/Toast";
+import { useDictionary } from "@/lib/i18n/client";
 
 export function LandingTagRollup() {
+  const t = useDictionary();
+  const DEMO_TAGS = demoTags(t);
+  const DEMO_ITEMS = demoItems(t);
   const [selectedTagId, setSelectedTagId] = useState<string>("skills");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const filteredItems = getItemsForTag(selectedTagId);
+  const filteredItems = getItemsForTag(selectedTagId, DEMO_TAGS, DEMO_ITEMS);
   const currentTag =
-    DEMO_TAGS.find((t) => t.id === selectedTagId) ?? DEMO_TAGS[0]!;
+    DEMO_TAGS.find((tag) => tag.id === selectedTagId) ?? DEMO_TAGS[0]!;
 
-  const descendantIds = getDescendantTagIds(selectedTagId).filter(
+  const descendantIds = getDescendantTagIds(selectedTagId, DEMO_TAGS).filter(
     (id) => id !== selectedTagId,
   );
 
   const treeTags = DEMO_TAGS.filter(
-    (t) =>
-      t.id === "skills" ||
-      t.parentId === "skills" ||
-      t.parentId === "design" ||
-      t.parentId === "desenvolvimento",
+    (tag) =>
+      tag.id === "skills" ||
+      tag.parentId === "skills" ||
+      tag.parentId === "design" ||
+      tag.parentId === "desenvolvimento",
   );
 
   async function handleCopyPrompt(content: string, id: string) {
     const ok = await copyToClipboard(content);
     if (ok) {
       setCopiedId(id);
-      toastSuccess("Prompt copiado.");
+      toastSuccess(t.landing.demo.promptCopied);
       setTimeout(() => setCopiedId(null), 2000);
     }
   }
@@ -59,12 +64,10 @@ export function LandingTagRollup() {
       <div className="mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-8">
         <ScrollReveal variant="stagger" className="max-w-[52ch]">
           <h2 className="text-display t-stagger-line t-stagger-line--1 leading-[1.05] font-[560] tracking-[-0.03em] text-foreground sm:text-[clamp(2.5rem,3.5vw,3rem)]">
-            Organize uma vez e encontre por qualquer caminho depois.
+            {t.landing.tagRollup.title}
           </h2>
           <p className="text-body-lg t-stagger-line t-stagger-line--2 mt-5 leading-relaxed text-pretty text-muted-foreground">
-            Tags podem ter filhas, e um item pode pertencer a mais de uma. Ao
-            abrir uma tag pai, o Muvuca reúne automaticamente os itens de toda a
-            hierarquia, sem duplicar conteúdo.
+            {t.landing.tagRollup.subtitle}
           </p>
         </ScrollReveal>
 
@@ -112,7 +115,7 @@ export function LandingTagRollup() {
           <div className="relative z-10 flex flex-col gap-2 border-b border-border pb-6 lg:border-r lg:border-b-0 lg:pr-6 lg:pb-0">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-metadata font-semibold text-muted-foreground uppercase">
-                Árvore de Tags (Clique para testar)
+                {t.landing.tagRollup.treeLabel}
               </span>
               <LayersIcon
                 className="size-3.5 text-muted-foreground"
@@ -177,17 +180,17 @@ export function LandingTagRollup() {
             <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3">
               <div className="flex items-center gap-2">
                 <span className="text-metadata text-muted-foreground">
-                  Tag ativa:
+                  {t.landing.tagRollup.activeTagLabel}
                 </span>
                 <span className="rounded-md border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-brand-accent">
                   {currentTag.name}
                 </span>
               </div>
               <span className="text-metadata font-mono text-muted-foreground">
-                {filteredItems.length} itens agregados{" "}
-                {descendantIds.length > 0
-                  ? `(de ${descendantIds.length} subtags)`
-                  : ""}
+                {t.landing.tagRollup.itemsAggregated(
+                  filteredItems.length,
+                  descendantIds.length,
+                )}
               </span>
             </div>
 
@@ -212,7 +215,9 @@ export function LandingTagRollup() {
                             <FileTextIcon className="size-3.5 shrink-0 text-muted-foreground" />
                           )}
                           <span className="text-metadata truncate font-mono text-muted-foreground">
-                            {item.type === "link" ? domain : "PROMPT"}
+                            {item.type === "link"
+                              ? domain
+                              : t.landing.demo.promptBadge}
                           </span>
                         </div>
 
@@ -222,7 +227,7 @@ export function LandingTagRollup() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="p-1 text-muted-foreground hover:text-foreground"
-                            aria-label={`Abrir ${item.title}`}
+                            aria-label={t.landing.demo.openItem(item.title)}
                           >
                             <ExternalLinkIcon className="size-3.5" />
                           </a>
@@ -235,14 +240,16 @@ export function LandingTagRollup() {
                               handleCopyPrompt(item.contentPreview!, item.id)
                             }
                             className="h-6 gap-1 px-1.5"
-                            aria-label="Copiar prompt"
+                            aria-label={t.landing.demo.copyPrompt}
                           >
                             {copiedId === item.id ? (
                               <CheckIcon className="size-3 text-brand-accent" />
                             ) : (
                               <CopyIcon className="size-3" />
                             )}
-                            <span className="text-metadata">Copiar</span>
+                            <span className="text-metadata">
+                              {t.landing.demo.copy}
+                            </span>
                           </Button>
                         ) : null}
                       </div>
@@ -259,14 +266,14 @@ export function LandingTagRollup() {
 
                     <div className="mt-3 flex flex-wrap gap-1 border-t border-border/40 pt-2">
                       {item.tagIds.map((tagId) => {
-                        const tag = DEMO_TAGS.find((t) => t.id === tagId);
+                        const tag = DEMO_TAGS.find((dt) => dt.id === tagId);
                         return tag ? (
                           <button
                             key={tag.id}
                             type="button"
                             onClick={() => setSelectedTagId(tag.id)}
                             className="transition-opacity duration-(--motion-fast) ease-out-muvuca hover:opacity-80 motion-reduce:transition-none"
-                            title={`Filtrar por ${tag.name}`}
+                            title={t.landing.tagRollup.filterByTag(tag.name)}
                           >
                             <TagChip
                               name={tag.name}

@@ -66,6 +66,7 @@ export function ThemeToggle({ theme }: { theme: Theme }) {
             size="icon"
             aria-label={t.settings.appearance.themeAriaLabel(labels[theme])}
             pending={isPending}
+            pendingLabel={t.common.loading}
             className="border-0 shadow-light"
           />
         }

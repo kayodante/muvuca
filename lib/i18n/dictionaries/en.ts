@@ -16,6 +16,7 @@ export const en: Dictionary = {
     delete: "Delete",
     tryAgain: "Try again",
     close: "Close",
+    loading: "Loading",
   },
   metadata: {
     title: "Muvuca",
@@ -324,6 +325,8 @@ export const en: Dictionary = {
       copyPrompt: "Copy prompt",
       copyCode: "Copy code",
       copyLink: "Copy link",
+      copyingPrompt: "Copying prompt",
+      copyingCode: "Copying code",
       copied: "Copied!",
       refreshPreview: "Refresh preview",
       itemActions: (title: string) => `Actions for ${title}`,
@@ -359,6 +362,7 @@ export const en: Dictionary = {
       description:
         "This removes the item and its tag associations. This can't be undone.",
       confirm: "Delete item",
+      deleting: "Deleting...",
       deleted: "Item deleted.",
     },
     editor: {
@@ -395,6 +399,8 @@ export const en: Dictionary = {
       itemCreated: "Item created.",
       saveChanges: "Save changes",
       createItem: "Create item",
+      saving: "Saving...",
+      creating: "Creating...",
     },
     promptDetail: {
       openSource: "Open original source",
@@ -684,5 +690,337 @@ export const en: Dictionary = {
     spotlightLoadFailed: "Couldn't load data for quick search.",
     spotlightSearchFailed: "Error searching items in quick search.",
     unreadableFile: "Couldn't read this file.",
+  },
+  landing: {
+    skipToContent: "Skip to main content",
+    common: {
+      getStarted: "Get started",
+      seeHow: "See how it works",
+      login: "Log in",
+      library: "Library",
+    },
+    nav: {
+      home: "Home",
+      overview: "Overview",
+      tags: "Tags",
+      search: "Search",
+      import: "Import",
+    },
+    header: {
+      navAriaLabel: "Main navigation",
+      mobileNavAriaLabel: "Mobile navigation",
+      openSpotlight: "Open Spotlight",
+      openSearchMobile: "Open quick search",
+      openMenu: "Open navigation menu",
+      menuTitle: "Navigation menu",
+      menuDescription: "Links and actions for the landing page",
+    },
+    demo: {
+      promptCopied: "Prompt copied.",
+      copyPrompt: "Copy prompt",
+      copy: "Copy",
+      copied: "Copied",
+      promptBadge: "PROMPT",
+      openItem: (title: string) => `Open ${title}`,
+      openItemNewTab: (title: string) => `Open ${title} in a new tab`,
+      tags: {
+        skills: "Skills",
+        design: "Design",
+        branding: "Branding",
+        productDesign: "Product Design",
+        desenvolvimento: "Development",
+        frontend: "Front-end",
+        ia: "AI & Prompts",
+        produtividade: "Productivity",
+        referencias: "References",
+        artigos: "Articles",
+      },
+      items: {
+        item1: {
+          title: "Linear — Issue tracking for high-velocity teams",
+          description:
+            "A dense interface reference with keyboard navigation and millisecond response times.",
+        },
+        item2: {
+          title: "System Prompt: Senior Code Reviewer",
+          description:
+            "Audit focused on database integrity, RLS, and no any types.",
+          contentPreview:
+            "Act as a Senior Code Reviewer. Review the diff prioritizing: 1. Security and RLS; 2. Strict typing, no any; 3. WCAG AA accessibility; 4. Parameterized queries.",
+        },
+        item3: {
+          title: "Minimal Gallery — Curated web design inspiration",
+          description:
+            "A curated directory focused on editorial grids, precise typography, and elegant micro-interactions.",
+        },
+        item4: {
+          title: "Refactoring Accessible Components",
+          description:
+            "Best-practice guide for keyboard navigation and WCAG 2.2 AA compliance.",
+          contentPreview:
+            "Replace clickable divs with <button>, add aria-label to icon buttons, and link error messages with aria-describedby.",
+        },
+        item5: {
+          title: "Tailwind CSS v4 Documentation",
+          description:
+            "Complete guide to the new CSS engine built on native variables and cascade layers.",
+        },
+        item6: {
+          title: "Token Terminal — Financial metrics for crypto",
+          description:
+            "A grid reference with 1px hairlines, Geist Mono typography, and a dense, calm composition.",
+        },
+        item7: {
+          title: "Pure Bookmark DTO Extractor",
+          description:
+            "Safe algorithm for parsing a Netscape Bookmarks file client-side with an inert DOMParser.",
+          contentPreview:
+            "function parseBookmarksHtml(rawHtml: string): BookmarkFolderTree {\n  const parser = new DOMParser();\n  const doc = parser.parseFromString(rawHtml, 'text/html');\n  // strictly extracts textContent and href attributes\n}",
+        },
+      },
+    },
+    hero: {
+      title: "Organize the muvuca you save on the internet.",
+      subtitle:
+        "Links and prompts organized in a visual library built to help you find again what you decided to keep.",
+      openSearchAria: "Open the demo's quick search",
+      searchPlaceholder: "Search your library...",
+      gridView: "Grid view",
+      listView: "List view",
+      clearFilter: "Clear",
+      allItems: "All items",
+      itemsShown: (count: number, filtered: boolean) =>
+        `(${count} ${count === 1 ? "item shown" : "items shown"}${filtered ? " by the filter" : ""})`,
+      activeFilter: (tagName: string) => `Active filter: ${tagName}`,
+    },
+    problem: {
+      title:
+        "The real work starts when you forget where you saved something and have to find it again.",
+      subtitle:
+        "Most bookmarking tools treat your links as one endless, unsorted list.",
+      steps: {
+        scattered: {
+          title: "Bookmarks scattered everywhere",
+          description:
+            "Links end up trapped across dozens of tabs, notes, and different tools, with no central place to retrieve them later.",
+        },
+        rigid: {
+          title: "Folders that don't match how you think",
+          description:
+            "A technical or visual reference almost always makes sense in more than one context. Traditional folders force you to pick just one drawer.",
+        },
+        lost: {
+          title: "Searching takes more effort than the content is worth",
+          description:
+            "As the library grows, remembering which folder or device you saved something in takes more work than just finding what you need.",
+        },
+        solution: {
+          title: "Instant retrieval from any angle",
+          description:
+            "Hierarchical tags and automatic rollup power an instant search that scans titles, descriptions, and prompts in milliseconds.",
+        },
+      },
+      visuals: {
+        scattered: {
+          tabsOpen: "28 tabs open",
+          mobileNotes: "Phone notes",
+          codeReviewTitle: "System Prompt: Code Review",
+          desktopTabs: "Browser tabs (desktop)",
+          uiPatternsTitle: "Linear UI Patterns & Architecture",
+          bookmarksOther: "Bookmarks / Other",
+          tailwindDocsTitle: "Tailwind CSS v4 Documentation",
+          fragmented: "Fragmented across 3 different devices",
+        },
+        rigid: {
+          treeLabel: "Traditional Rigid Tree",
+          oneFolderPerItem: "1 folder per item",
+          bookmarksRoot: "📁 Bookmarks",
+          work: "├── 📁 Work",
+          design: "│ └── 📁 Design",
+          designSystemTitle: "📄 Design System & Tokens",
+          stuckInDesign: "Stuck in Design",
+          personal: "└── 📁 Personal",
+          frontendEngineering: " └── 📁 Front-end Engineering",
+          caption:
+            "This link is both design and code, but the folder only accepts one of the two.",
+        },
+        lost: {
+          searchAttempt: "Search attempt",
+          noMatch: "No match",
+          queryExample: '"typescript refactor prompt"',
+          untitledGist: "Untitled (1), https://gist.github.com/...",
+          linkSavedOn: "Link saved on 12/04/2024",
+          newTabAiTool: "New tab - AI Tool",
+          caption: "The prompt is saved somewhere, but search can't reach it.",
+        },
+        muvuca: {
+          tagRollupActive: "Tag Rollup Active",
+          instantRetrieval: "Instant retrieval",
+          searchQuery: "refactor",
+          itemsFound: (n: number) => `${n} items found`,
+          readyToCopy: "Ready to copy",
+          iaTagShort: "AI",
+          caption: "Found through any child tag or the parent tag.",
+        },
+      },
+    },
+    galleryOverview: {
+      title: "A library that stays readable as it grows.",
+      subtitle:
+        "Muvuca gathers your items in a visual gallery, keeps search close at hand, and uses tags for context without turning your collection into a tree you can't navigate.",
+      heading: "Featured Collection",
+      itemsCount: (count: number) => `(${count} items)`,
+      filterAriaLabel: "Filter collection by type",
+      filters: {
+        all: "All",
+        links: "Links",
+        prompts: "Prompts",
+      },
+    },
+    tagRollup: {
+      title: "Organize once, find it any way after.",
+      subtitle:
+        "Tags can have children, and an item can belong to more than one. Open a parent tag and Muvuca automatically gathers the items from the whole hierarchy, without duplicating content.",
+      treeLabel: "Tag Tree (Click to try it)",
+      activeTagLabel: "Active tag:",
+      itemsAggregated: (count: number, subtagCount: number) =>
+        `${count} items aggregated ${subtagCount > 0 ? `(from ${subtagCount} subtags)` : ""}`,
+      filterByTag: (name: string) => `Filter by ${name}`,
+    },
+    searchDemo: {
+      title: "You don't need to remember where you saved it.",
+      subtitle:
+        "Search by title, domain, description, or content, and combine search with your tags to quickly narrow your library down to what matters.",
+      inputAriaLabel: "Interactive search demo",
+      placeholder: "Search by title, domain, description, or prompt...",
+      tryQueries: "Try these searches:",
+      openSpotlightShortcut: "Open Spotlight (⌘K)",
+      resultsCount: (count: number) =>
+        `${count} ${count === 1 ? "result found" : "results found"}`,
+      noResults: (query: string) => `No item matches the search "${query}".`,
+    },
+    itemTypes: {
+      title: "Links and prompts live in the same collection.",
+      subtitle:
+        "Each item type has its own visual identity and contextual actions, without breaking the library's grid.",
+      linkCardLabel: "Reference Link",
+      linkCardDescription:
+        "A dense interface reference with keyboard navigation and millisecond response times.",
+      linkCaption:
+        "The domain stands alone, in Geist Mono. The tag inherits the item's hierarchy. Opening the link always uses",
+      promptCardLabel: "AI Prompt & Instruction",
+      copyPromptDemoAria: "Copy demo prompt",
+      promptCardDescription:
+        "System instruction for OWASP security audits and type consistency.",
+      promptContent:
+        "Act as a Senior Code Reviewer. Review the diff prioritizing:\n1. Data security and RLS integrity;\n2. Strict TypeScript typing with no any;\n3. WCAG 2.2 AA accessibility (keyboard and contrast);\n4. No concatenated SQL queries.\n\nReturn objective findings categorized by severity.",
+      collapse: "Collapse preview",
+      expand: "View full prompt",
+      promptCardCaption:
+        "The preview keeps the original formatting, and copying goes to the clipboard in one click. Expanding shows the full prompt.",
+    },
+    import: {
+      title: "Bring in your bookmarks without losing your folder structure.",
+      subtitle:
+        "Import your browser bookmarks and turn folders and subfolders into a tag hierarchy before confirming what enters your library.",
+      stagesLabel: "Migration steps:",
+      stage1: "1. Bookmarks File",
+      stage2: "2. Safe Analysis in the Browser",
+      stage3: "3. Muvuca Tag Tree",
+      sourceHeading: "Browser Bookmarks (.html)",
+      sourceCount: "114 links",
+      folderDesign: "📁 Design",
+      folderInspiration: "↳ 📁 Inspiration (54 links)",
+      folderTools: "↳ 📁 Tools (18 links)",
+      folderDev: "📁 Development",
+      folderReact: "↳ 📁 React & Next.js (24 links)",
+      folderAi: "↳ 📁 AI & LLMs (18 links)",
+      conversion: "1:1 conversion",
+      targetHeading: "Muvuca Tag Structure",
+      tagsCreated: "6 tags created",
+      tagDesign: "# Design",
+      tagInspiration: "# Inspiration [child tag]",
+      tagTools: "# Tools [child tag]",
+      tagDev: "# Development",
+      tagReact: "# React & Next.js [child tag]",
+      tagAi: "# AI & LLMs [child tag]",
+      parserNote: "Inert client-side parser (no SSRF, no raw HTML sent)",
+      parserCode:
+        "const parser = new DOMParser();\nconst doc = parser.parseFromString(rawHtml, 'text/html');\n// Pure extraction of textContent and validated href attributes (http/https only)\n// The server only receives the structured DTO of tags and links.",
+      caption:
+        "The file is processed locally. Before saving, you see how many items are valid and how many are duplicates.",
+    },
+    collections: {
+      title: "Organize every collection your own way.",
+      subtitle:
+        "Build the taxonomy that makes sense to you and group any kind of interest. Muvuca shapes itself around your personal collection.",
+      items: {
+        skills: {
+          title: "Skills & Engineering",
+          countHint: "128 items",
+          tags: ["Front-end", "Next.js", "Security"],
+          description:
+            "Technical articles, docs, and snippets essential to your daily coding flow.",
+        },
+        design: {
+          title: "Design & Art Direction",
+          countHint: "94 items",
+          tags: ["Typography", "Branding", "Design System"],
+          description:
+            "Visual references, editorial catalogs, and high-fidelity components.",
+        },
+        prompts: {
+          title: "AI Prompts",
+          countHint: "42 items",
+          tags: ["Code Review", "Writing", "Refactoring"],
+          description:
+            "System instructions, agent templates, and reusable commands ready to copy.",
+        },
+        wishlist: {
+          title: "Wishlist",
+          countHint: "31 items",
+          tags: ["Books", "Hardware", "Gifts"],
+          description:
+            "Things to buy and recommendations, without the mess of lists scattered across notes.",
+        },
+        videos: {
+          title: "Videos & Talks",
+          countHint: "56 items",
+          tags: ["Talks", "Tutorials", "Podcasts"],
+          description: "Recordings you want to watch calmly over the weekend.",
+        },
+        articles: {
+          title: "Articles & Essays",
+          countHint: "67 items",
+          tags: ["Philosophy", "Product", "Web History"],
+          description:
+            "Long reads and essays saved for future reference and research.",
+        },
+      },
+    },
+    cta: {
+      title: "Turn your muvuca into a library.",
+      subtitle: "Keep what matters without relying on memory to find it later.",
+    },
+    commandPalette: {
+      dialogAriaLabel: "Quick search in the demo library",
+      placeholder: "Search links, prompts, domains, or tags...",
+      inputAriaLabel: "Type a search",
+      closeAria: "Close quick search",
+      filterByTagLabel: "Filter by tag:",
+      allTags: (count: number) => `All (${count})`,
+      noResults: (query: string) => `No item found for "${query}".`,
+      open: "Open",
+      navigateHint: "navigate",
+      selectHint: "select",
+      closeHint: "close",
+      itemCount: (count: number) =>
+        `${count} ${count === 1 ? "item" : "items"}`,
+    },
+    footer: {
+      tagline: "What you save stays easy to find.",
+      navAriaLabel: "Footer",
+      copyright: (year: number) => `© ${year} Muvuca. All rights reserved.`,
+    },
   },
 };
