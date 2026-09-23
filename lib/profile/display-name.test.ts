@@ -17,6 +17,12 @@ describe("displayNameSchema", () => {
     expect(displayNameSchema.safeParse("a".repeat(51)).success).toBe(false);
   });
 
+  it("conta code points como o char_length do banco, não UTF-16", () => {
+    // 50 emoji = 100 unidades UTF-16, mas 50 code points: válido no banco.
+    expect(displayNameSchema.safeParse("🦊".repeat(50)).success).toBe(true);
+    expect(displayNameSchema.safeParse("🦊".repeat(51)).success).toBe(false);
+  });
+
   it("rejeita caractere de controle no meio do nome", () => {
     expect(displayNameSchema.safeParse("Kayo\nDante").success).toBe(false);
     expect(displayNameSchema.safeParse("Kayo\u0000").success).toBe(false);
@@ -41,6 +47,13 @@ describe("initialsOf", () => {
   it("não parte emoji nem acento", () => {
     expect(initialsOf("🦊 Raposa")).toBe("🦊R");
     expect(initialsOf("élis")).toBe("É");
+  });
+
+  it("pega o grafema inteiro: bandeira, tom de pele, ZWJ, acento decomposto", () => {
+    expect(initialsOf("🇧🇷 Brasil")).toBe("🇧🇷B");
+    expect(initialsOf("👋🏽 Oi")).toBe("👋🏽O");
+    expect(initialsOf("👩‍💻 Dev")).toBe("👩‍💻D");
+    expect(initialsOf("élis")).toBe("É");
   });
 
   it("vazio vira ?", () => {

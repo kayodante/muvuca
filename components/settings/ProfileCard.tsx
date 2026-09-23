@@ -3,10 +3,7 @@
 import { useId, useState, useTransition, type FormEvent } from "react";
 
 import { setDisplayName } from "@/lib/actions/profile";
-import {
-  DISPLAY_NAME_MAX_LENGTH,
-  displayNameSchema,
-} from "@/lib/profile/display-name";
+import { displayNameSchema } from "@/lib/profile/display-name";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UserAvatar } from "@/components/shell/UserAvatar";
@@ -72,7 +69,6 @@ export function ProfileCard({
             id={inputId}
             dir="auto"
             autoComplete="nickname"
-            maxLength={DISPLAY_NAME_MAX_LENGTH}
             placeholder={fallbackName}
             value={value}
             onChange={(event) => {

@@ -15,7 +15,12 @@ export async function getUserPreferences(): Promise<UserPreferences> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("user_preferences")
-    .select("theme, display_name")
+    // `*`, não "theme, display_name": o deploy do app não espera o job
+    // `migrate` (aprovação manual). Com o schema anterior à 0029, um select
+    // nomeado dá 42703 em toda página logada; `*` só não traz a coluna e o
+    // nome cai para null.
+    // ponytail: voltar ao select nomeado quando a 0029 estiver em produção.
+    .select("*")
     .maybeSingle();
 
   if (error) {

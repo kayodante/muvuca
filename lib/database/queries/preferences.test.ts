@@ -62,6 +62,21 @@ describe("getUserPreferences", () => {
       theme: "dark",
       displayName: "Kayo",
     });
-    expect(select).toHaveBeenCalledWith("theme, display_name");
+    expect(select).toHaveBeenCalledWith("*");
+  });
+
+  it("keeps working against the pre-0029 schema (no display_name column)", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: { theme: "light", user_id: "usr-42" },
+      error: null,
+    });
+    const select = vi.fn().mockReturnValue({ maybeSingle });
+    const from = vi.fn().mockReturnValue({ select });
+    createClientMock.mockResolvedValue({ from });
+
+    await expect(getUserPreferences()).resolves.toEqual({
+      theme: "light",
+      displayName: null,
+    });
   });
 });
