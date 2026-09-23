@@ -34,13 +34,17 @@ export async function findExistingBookmarkUrls(
   const urlChunks = chunkArray(parsed.data, DUPLICATE_CHECK_CHUNK_SIZE);
   const foundUrls: string[] = [];
 
-  for (const chunk of urlChunks) {
-    const { data, error } = await supabase
+  const promises = urlChunks.map((chunk) =>
+    supabase
       .from("library_items")
       .select("normalized_url")
       .eq("type", "link")
-      .in("normalized_url", chunk);
+      .in("normalized_url", chunk),
+  );
 
+  const results = await Promise.all(promises);
+
+  for (const { data, error } of results) {
     if (error) {
       logEvent({
         event: "bookmark.preview_failed",
