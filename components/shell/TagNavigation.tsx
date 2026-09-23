@@ -14,9 +14,11 @@ import {
   type TagNode,
 } from "@/lib/tags/tree";
 import { Input } from "@/components/ui/input";
+import { useDictionary } from "@/lib/i18n/client";
 
 /** Compact, navigation-only tag tree for the persistent app shell. */
 export function TagNavigation({ tags }: { tags: FlatTag[] }) {
+  const t = useDictionary();
   const nodes = buildTagTree(tags);
   const [query, setQuery] = useState("");
 
@@ -36,7 +38,7 @@ export function TagNavigation({ tags }: { tags: FlatTag[] }) {
           // Mono is reserved for URLs, counters and timestamps.
           className="text-label-md mb-2 px-2 tracking-wide text-muted-foreground uppercase"
         >
-          Tags
+          {t.shell.tagNav.heading}
         </h2>
         <div className="relative mb-2">
           <SearchIcon
@@ -49,8 +51,8 @@ export function TagNavigation({ tags }: { tags: FlatTag[] }) {
             maxLength={80}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar tags"
-            aria-label="Buscar tags por nome"
+            placeholder={t.shell.tagNav.searchPlaceholder}
+            aria-label={t.shell.tagNav.searchAriaLabel}
             className="border-0 bg-background pl-9 shadow-light dark:bg-background [&::-webkit-search-cancel-button]:hidden"
           />
         </div>
@@ -71,7 +73,7 @@ export function TagNavigation({ tags }: { tags: FlatTag[] }) {
           dir="auto"
           className="text-body-sm py-2 [overflow-wrap:anywhere] text-muted-foreground"
         >
-          Nenhuma tag encontrada para “{query}”.
+          {t.shell.tagNav.noneFound(query)}
         </p>
       )}
     </section>
@@ -87,6 +89,7 @@ function TagNavigationRow({
   depth: number;
   filtering: boolean;
 }) {
+  const t = useDictionary();
   const pathname = usePathname();
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
@@ -133,7 +136,9 @@ function TagNavigationRow({
             // collapsed branch open, a button labelled "Expandir" alongside
             // `aria-expanded="true"` contradicts itself.
             aria-label={
-              open ? `Recolher ${node.name}` : `Expandir ${node.name}`
+              open
+                ? t.tags.tree.collapse(node.name)
+                : t.tags.tree.expand(node.name)
             }
             onClick={() => setExpanded((value) => !value)}
             className={cn(

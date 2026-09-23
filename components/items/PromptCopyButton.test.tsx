@@ -21,21 +21,30 @@ afterEach(async () => {
   vi.clearAllMocks();
 });
 
+// Mirrors the PT defaults PromptCopyButton used to fall back to before its
+// props became required (AAA-215): every test overrides only what it needs
+// to assert, same as its real caller (PromptDetailDialog) always passing
+// every prop explicitly from the dictionary.
+const DEFAULT_PROPS = {
+  label: "Copiar conteúdo",
+  pendingLabel: "Copiando conteúdo",
+  successLabel: "Copiado!",
+  successMessage: "Conteúdo copiado.",
+  errorMessage: "Não foi possível copiar o conteúdo.",
+};
+
 async function renderCopyButton(
   content: string,
-  props: {
-    label?: string;
-    pendingLabel?: string;
-    successMessage?: string;
-    errorMessage?: string;
-  } = {},
+  props: Partial<typeof DEFAULT_PROPS> = {},
 ): Promise<HTMLButtonElement> {
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
 
   await act(async () =>
-    root?.render(<PromptCopyButton content={content} {...props} />),
+    root?.render(
+      <PromptCopyButton content={content} {...DEFAULT_PROPS} {...props} />,
+    ),
   );
 
   const button = container.querySelector("button");
@@ -138,6 +147,8 @@ describe("PromptCopyButton", () => {
 
     const button = await renderCopyButton("Prompt de teste", {
       label: "Copiar prompt",
+      pendingLabel: "Copiando prompt",
+      successLabel: "Prompt copiado!",
     });
 
     const iconSwap = button.querySelector(".t-icon-swap");

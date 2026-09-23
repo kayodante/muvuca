@@ -15,6 +15,7 @@ export const en: Dictionary = {
     edit: "Edit",
     delete: "Delete",
     tryAgain: "Try again",
+    close: "Close",
   },
   metadata: {
     title: "Muvuca",
@@ -27,6 +28,12 @@ export const en: Dictionary = {
       heading: "Profile",
       description: "How Muvuca refers to you.",
       fallbackName: "User",
+      nameLabel: "What should we call you",
+      hint: "Shows in the account menu. Leave blank to use",
+      save: "Save",
+      saving: "Saving...",
+      saved: "Name saved.",
+      removed: "Name removed.",
     },
     appearance: {
       heading: "Appearance",
@@ -61,6 +68,20 @@ export const en: Dictionary = {
     danger: {
       heading: "Danger zone",
       description: "Destructive, irreversible actions.",
+      resetAccount: {
+        cardHeading: "Start over",
+        cardDescription:
+          "Permanently deletes all your links, prompts, and tags. Your account ends up as if it were just created.",
+        confirmTitle: "Delete all data?",
+        confirmDescriptionPrefix:
+          "This removes all your links, prompts, tags, and preferences. This can't be undone. Type",
+        confirmDescriptionSuffix: "to confirm.",
+        confirmInputLabel: (phrase: string) => `Type ${phrase} to confirm`,
+        confirmButton: "Delete everything",
+        deleting: "Deleting...",
+        confirmPhrase: "DELETE",
+        success: "Your account has been reset.",
+      },
     },
   },
   tags: {
@@ -95,6 +116,62 @@ export const en: Dictionary = {
       zinc: "Zinc",
       stone: "Stone",
     } satisfies Record<TagColorToken, string>,
+    breadcrumb: {
+      ariaLabel: "Tag path",
+      root: "Tags",
+      hiddenAncestors: (names: string) => `Intermediate tags: ${names}`,
+    },
+    editor: {
+      createTitle: "New tag",
+      editTitle: "Edit tag",
+      createDescription:
+        "Tags help you organize and find items in your library.",
+      editDescription: "Existing item associations are preserved.",
+      nameLabel: "Name",
+      descriptionLabel: "Description",
+      optional: "(optional)",
+      colorLabel: "Color",
+      parentLabel: "Parent tag",
+      noParent: "None (root tag)",
+      createButton: "Create tag",
+      saveButton: "Save changes",
+      saving: "Saving...",
+      created: "Tag created.",
+      updated: "Tag updated.",
+    },
+    deleteDialog: {
+      title: (name: string) => `Delete “${name}”?`,
+      description: (name: string) =>
+        `Direct child tags move under “${name}”'s own parent (or become root tags, if “${name}” was already a root). Associated items aren't deleted -- they only lose the association with this tag.`,
+      confirm: "Delete tag",
+      deleting: "Deleting...",
+      deleted: "Tag deleted.",
+    },
+    tree: {
+      collapse: (name: string) => `Collapse ${name}`,
+      expand: (name: string) => `Expand ${name}`,
+      actions: (name: string) => `Actions for tag ${name}`,
+      createChild: "Create child tag",
+    },
+    page: {
+      heading: "Tags",
+      createTag: "Create tag",
+      emptyTitle: "No tags yet",
+      emptyDescription:
+        "Create tags to organize your library into hierarchies, like Skills → Design → Dev.",
+      filterLabel: "Filter tags by name",
+      treeRegionLabel: "Tag tree",
+      noneFound: (query: string) => `No tags found for “${query}”.`,
+      clearSearch: "Clear search",
+    },
+    detail: {
+      headingPrefix: "Your Muvuca in",
+      itemsLabel: "items",
+      subtagsLabel: "subtags",
+      emptyItemsTitle: "No items in this tag",
+      emptyItemsDescription:
+        "Items linked to this tag and its child tags show up here.",
+    },
   },
   bookmarks: {
     errors: {
@@ -106,6 +183,121 @@ export const en: Dictionary = {
       tooManyFolders: (count: string) =>
         `The file has more than ${count} folders.`,
       noValidBookmarks: "No valid bookmarks were found.",
+    },
+    dialog: {
+      title: "Import bookmarks",
+      description:
+        "The file is read only in this browser. No URL will be accessed.",
+      selectFile: "Select an .html file up to 10 MB",
+      counts: {
+        folders: "Folders",
+        validLinks: "Valid links",
+        alreadyInLibrary: "Already in library",
+        duplicatesInFile: "Duplicates in file",
+        ignored: "Ignored",
+      },
+      importingAria: "Importing bookmarks",
+      importingBatch: (current: number, total: number) =>
+        `Importing batch ${current} of ${total}...`,
+      progressAria: "Import progress",
+      processedOf: (processed: number, total: number) =>
+        `${processed} of ${total} bookmarks processed`,
+      proposedStructure: "Proposed structure",
+      flattenedFolders: (n: number) =>
+        `${n} folder(s) were flattened at the sixth level.`,
+      catalogedBadge: "library cataloged",
+      resultNone: "No new links needed to be added to your library.",
+      resultOne: "1 new link and its tag structure were organized.",
+      resultMany: (count: number, locale: string) =>
+        `${count.toLocaleString(locale)} new links and the folder structure were organized.`,
+      resultCounts: {
+        itemsImported: "Items imported",
+        tagsCreated: "Tags created",
+        associationsCreated: "Tag associations",
+        alreadyInLibrary: "Already in library",
+        duplicatesInFile: "Duplicates in file",
+        errorsIgnored: "Errors ignored",
+      },
+      previewsNote:
+        "Link previews (thumbnail, favicon, remote title and description) load in the background.",
+      chooseAnother: "Choose another",
+      importing: "Importing...",
+      confirmImport: "Confirm import",
+      done: "Done",
+      imported: "Bookmarks imported.",
+      batchError: (
+        batch: number,
+        total: number,
+        message: string,
+        imported: number,
+      ) =>
+        `Error importing batch ${batch} of ${total}: ${message}. ${imported} links were imported before the failure.`,
+    },
+  },
+  auth: {
+    login: {
+      linkSentBadge: "LINK SENT",
+      checkEmailTitle: "Check your email",
+      checkEmailBody:
+        "If that email has an account, we've sent a sign-in link. Check your inbox.",
+      useAnotherEmail: "Use another email",
+      resendHint:
+        "Didn't get it? Check your spam folder. Muvuca isn't accepting new accounts yet, so emails without an existing account won't receive a link.",
+      personalLibraryBadge: "PERSONAL LIBRARY",
+      pitch:
+        "Save links and prompts, organize them with nested tags, and find everything again in seconds.",
+      emailLabel: "Email",
+      emailPlaceholder: "you@email.com",
+      sendingLink: "Sending access link",
+      sendLink: "Send access link",
+      passwordlessHint:
+        "No password — we email you an access link. Muvuca isn't accepting new accounts yet.",
+    },
+    loginFailedMessage:
+      "Couldn't complete sign-in. The link may have expired or already been used. Request a new link below.",
+    signOut: {
+      pending: "Signing out",
+      label: "Sign out",
+    },
+  },
+  shell: {
+    nav: {
+      ariaLabel: "Main navigation",
+      allItems: "All items",
+    },
+    sidebarToggle: {
+      expand: "Expand sidebar",
+      collapse: "Collapse sidebar",
+    },
+    userMenu: {
+      fallbackName: "User",
+      tags: "Tags",
+      importBookmarks: "Import bookmarks",
+      settings: "Settings",
+    },
+    topbar: {
+      createItem: "Create item",
+    },
+    mobileNav: {
+      openLabel: "Open navigation",
+      title: "Navigation",
+    },
+    search: {
+      placeholder: "Search your library",
+      openSpotlight: "Open quick search (Spotlight)",
+      clear: "Clear search",
+      searching: "Searching…",
+    },
+    tagNav: {
+      heading: "Tags",
+      searchPlaceholder: "Search tags",
+      searchAriaLabel: "Search tags by name",
+      noneFound: (query: string) => `No tags found for “${query}”.`,
+    },
+    loading: {
+      library: "Loading library",
+      tag: "Loading tag",
+      tags: "Loading tags",
     },
   },
   items: {
@@ -346,6 +538,80 @@ export const en: Dictionary = {
       linkCopiedMessage: "Link copied to clipboard.",
       promptCopiedMessage: "Prompt copied to clipboard.",
       codeCopiedMessage: "Code copied to clipboard.",
+    },
+  },
+  export: {
+    heading: "Export data",
+    description:
+      "Download a complete copy of all your links, prompts, and tags.",
+    jsonButton: "Export JSON (Full)",
+    htmlButton: "Export HTML Bookmarks",
+    exporting: "Exporting...",
+    jsonSuccess: "JSON backup exported successfully.",
+    htmlSuccess: "HTML bookmarks exported successfully.",
+  },
+  backup: {
+    cardHeading: "Restore backup",
+    cardDescription:
+      "Upload a JSON file exported from Muvuca to rebuild links, prompts, and tags. Nothing that already exists is deleted.",
+    restoreButton: "Restore JSON backup",
+    dialogTitle: "Restore backup",
+    dialogDescription:
+      "The file is read only in this browser. Restoring only adds: nothing is deleted or overwritten.",
+    selectFile: "Select a .json file up to 10 MB",
+    fileTooLarge: "The file exceeds the 10 MB limit.",
+    invalidJson: "This file isn't valid JSON.",
+    incompatibleFile:
+      "This file isn't a Muvuca backup compatible with this version.",
+    emptyFile:
+      "This backup file is empty. No changes will be made to your library.",
+    restoring: "Restoring backup...",
+    counts: {
+      tags: "Tags",
+      items: "Items",
+      ignored: "Ignored",
+    },
+    resultCounts: {
+      itemsRestored: "Items restored",
+      tagsCreated: "Tags created",
+      alreadyExisted: "Already existed",
+    },
+    chooseAnother: "Choose another",
+    confirmRestore: "Confirm restore",
+    restoringShort: "Restoring...",
+    done: "Done",
+    restored: "Backup restored.",
+  },
+  states: {
+    error: {
+      genericTitle: "Something went wrong",
+      boundary: {
+        root: {
+          title: "Something went wrong",
+          message: "Couldn't complete that action. Please try again.",
+        },
+        app: {
+          title: "Couldn't load your account",
+          message: "Please try again in a few seconds.",
+        },
+        library: {
+          title: "Couldn't open your library",
+          message: "Try loading your items again.",
+        },
+        tag: {
+          title: "Couldn't open this tag",
+          message: "Try loading the hierarchy and items again.",
+        },
+        tags: {
+          title: "Couldn't open the tag list",
+          message: "Try loading the tags again.",
+        },
+        notFound: {
+          title: "Page not found",
+          message: "Check the address or head back to your library.",
+          backToLibrary: "Go to library",
+        },
+      },
     },
   },
   validation: {

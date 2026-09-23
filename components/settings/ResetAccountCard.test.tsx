@@ -11,6 +11,7 @@ vi.mock("@/lib/actions/account", () => ({ resetAccount: resetAccountMock }));
 vi.mock("sonner", () => ({ toast: { success: toastSuccessMock } }));
 
 import { ResetAccountCard } from "@/components/settings/ResetAccountCard";
+import { LocaleProvider } from "@/lib/i18n/client";
 
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
@@ -96,5 +97,32 @@ describe("ResetAccountCard", () => {
       "Não foi possível apagar os dados da conta.",
     );
     expect(document.body.querySelector('[role="alertdialog"]')).not.toBeNull();
+  });
+
+  it("under an English locale, requires the English confirm phrase (DELETE), not the Portuguese one", async () => {
+    await act(async () => {
+      root?.render(
+        <LocaleProvider locale="en">
+          <ResetAccountCard />
+        </LocaleProvider>,
+      );
+    });
+    const trigger = document.body.querySelector("button") as HTMLButtonElement;
+    await act(async () => trigger.click());
+
+    const confirm = Array.from(document.body.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Delete everything"),
+    ) as HTMLButtonElement | undefined;
+    expect(confirm).not.toBeUndefined();
+    const input = document.body.querySelector("input") as HTMLInputElement;
+
+    expect(confirm!.disabled).toBe(true);
+
+    // The Portuguese phrase must not work once the locale is English.
+    await act(async () => setInputValue(input, "APAGAR"));
+    expect(confirm!.disabled).toBe(true);
+
+    await act(async () => setInputValue(input, "DELETE"));
+    expect(confirm!.disabled).toBe(false);
   });
 });

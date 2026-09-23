@@ -1,8 +1,11 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
 
 import type { FlatTag } from "@/lib/tags/tree";
 import type { Theme } from "@/lib/theme/preference";
+import { useDictionary } from "@/lib/i18n/client";
 import { Logo } from "@/components/brand/Logo";
 import { NavLink } from "./NavLink";
 import { TagNavigation } from "./TagNavigation";
@@ -32,9 +35,10 @@ export function Sidebar({
   signOutSlot: ReactNode;
   itemsCount?: number;
 }) {
+  const t = useDictionary();
   return (
     <nav
-      aria-label="Navegação principal"
+      aria-label={t.shell.nav.ariaLabel}
       className="flex h-full flex-col overflow-hidden"
     >
       <div className="flex shrink-0 items-center justify-between gap-2 border-r border-b border-border bg-secondary p-2">
@@ -55,7 +59,7 @@ export function Sidebar({
         <div className="shrink-0">
           <NavLink
             item={{
-              label: "Todos os itens",
+              label: t.shell.nav.allItems,
               href: "/library",
               count: itemsCount,
             }}

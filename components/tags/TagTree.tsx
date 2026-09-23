@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { swatchClassFor } from "@/lib/tags/colors";
 import { indentClassFor } from "@/lib/tags/indent";
 import type { TagNode } from "@/lib/tags/tree";
+import { useDictionary } from "@/lib/i18n/client";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -75,6 +76,7 @@ function TagTreeRow({
   filtering: boolean;
   actions: TagTreeActions;
 }) {
+  const t = useDictionary();
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
   const isActive = node.id === activeTagId;
@@ -101,7 +103,9 @@ function TagTreeRow({
             // collapsed branch open, a button labelled "Expandir" alongside
             // `aria-expanded="true"` contradicts itself.
             aria-label={
-              open ? `Recolher ${node.name}` : `Expandir ${node.name}`
+              open
+                ? t.tags.tree.collapse(node.name)
+                : t.tags.tree.expand(node.name)
             }
             className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
@@ -146,21 +150,21 @@ function TagTreeRow({
             }
           >
             <MoreHorizontalIcon aria-hidden="true" />
-            <span className="sr-only">Ações da tag {node.name}</span>
+            <span className="sr-only">{t.tags.tree.actions(node.name)}</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             <DropdownMenuItem onClick={() => actions.onCreateChild(node)}>
-              Criar tag filha
+              {t.tags.tree.createChild}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => actions.onEdit(node)}>
-              Editar
+              {t.common.edit}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
               onClick={() => actions.onDelete(node)}
             >
-              Excluir
+              {t.common.delete}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

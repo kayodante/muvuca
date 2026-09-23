@@ -4,10 +4,12 @@ import { useTransition } from "react";
 import { FileCodeIcon, FileTextIcon } from "lucide-react";
 import { exportUserLibrary } from "@/lib/actions/export";
 import { formatAsNetscapeBookmarks } from "@/lib/export/formatter";
+import { useDictionary } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
 import { toastError, toastSuccess } from "@/components/states/Toast";
 
 export function ExportLibraryCard() {
+  const t = useDictionary();
   const [isPending, startTransition] = useTransition();
 
   function triggerDownload(
@@ -41,7 +43,7 @@ export function ExportLibraryCard() {
           `muvuca-backup-${today}.json`,
           "application/json",
         );
-        toastSuccess("Backup JSON exportado com sucesso.");
+        toastSuccess(t.export.jsonSuccess);
       } else {
         const htmlString = formatAsNetscapeBookmarks(result.data);
         triggerDownload(
@@ -49,7 +51,7 @@ export function ExportLibraryCard() {
           `muvuca-bookmarks-${today}.html`,
           "text/html",
         );
-        toastSuccess("Favoritos HTML exportados com sucesso.");
+        toastSuccess(t.export.htmlSuccess);
       }
     });
   }
@@ -57,9 +59,9 @@ export function ExportLibraryCard() {
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-5">
       <div className="space-y-1">
-        <p className="text-label-md">Exportar dados</p>
+        <p className="text-label-md">{t.export.heading}</p>
         <p className="text-body-sm text-muted-foreground">
-          Baixe uma cópia completa de todos os seus links, prompts e tags.
+          {t.export.description}
         </p>
       </div>
 
@@ -68,19 +70,21 @@ export function ExportLibraryCard() {
           variant="outline"
           size="sm"
           pending={isPending}
+          pendingLabel={t.export.exporting}
           onClick={() => handleExport("json")}
         >
           <FileCodeIcon aria-hidden="true" data-icon="inline-start" />
-          Exportar JSON (Completo)
+          {t.export.jsonButton}
         </Button>
         <Button
           variant="outline"
           size="sm"
           pending={isPending}
+          pendingLabel={t.export.exporting}
           onClick={() => handleExport("html")}
         >
           <FileTextIcon aria-hidden="true" data-icon="inline-start" />
-          Exportar HTML Bookmarks
+          {t.export.htmlButton}
         </Button>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { MenuIcon } from "lucide-react";
 
+import { useDictionary } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -20,6 +21,7 @@ import {
  * open Sheet.
  */
 export function MobileNav({ children }: { children: ReactNode }) {
+  const t = useDictionary();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   // Some nav items (e.g. "Importar favoritos" -> /library?import=1) differ
@@ -40,7 +42,11 @@ export function MobileNav({ children }: { children: ReactNode }) {
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
         render={
-          <Button variant="ghost" size="icon" aria-label="Abrir navegação" />
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t.shell.mobileNav.openLabel}
+          />
         }
       >
         <MenuIcon aria-hidden="true" />
@@ -50,7 +56,7 @@ export function MobileNav({ children }: { children: ReactNode }) {
         className="w-[var(--layout-sidebar-width)] p-0 sm:max-w-none"
       >
         <SheetHeader className="sr-only">
-          <SheetTitle>Navegação</SheetTitle>
+          <SheetTitle>{t.shell.mobileNav.title}</SheetTitle>
         </SheetHeader>
         {children}
       </SheetContent>

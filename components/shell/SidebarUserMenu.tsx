@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import packageJson from "@/package.json";
+import { useDictionary } from "@/lib/i18n/client";
 import { UserAvatar } from "@/components/shell/UserAvatar";
 import {
   DropdownMenu,
@@ -35,9 +36,11 @@ export function SidebarUserMenu({
   userName?: string | null;
   signOutSlot: ReactNode;
 }) {
+  const t = useDictionary();
   if (!userEmail) return null;
 
-  const displayName = userName || userEmail.split("@")[0] || "Usuário";
+  const displayName =
+    userName || userEmail.split("@")[0] || t.shell.userMenu.fallbackName;
 
   return (
     <DropdownMenu>
@@ -72,15 +75,15 @@ export function SidebarUserMenu({
       <DropdownMenuContent align="end" className="min-w-[--anchor-width] p-1">
         <DropdownMenuItem render={<Link href="/tags" />}>
           <TagIcon aria-hidden="true" />
-          Tags
+          {t.shell.userMenu.tags}
         </DropdownMenuItem>
         <DropdownMenuItem render={<Link href="/library?import=1" />}>
           <UploadIcon aria-hidden="true" />
-          Importar favoritos
+          {t.shell.userMenu.importBookmarks}
         </DropdownMenuItem>
         <DropdownMenuItem render={<Link href="/settings" />}>
           <SettingsIcon aria-hidden="true" />
-          Configurações
+          {t.shell.userMenu.settings}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         {signOutSlot}

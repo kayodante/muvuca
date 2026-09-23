@@ -1,7 +1,10 @@
+"use client";
+
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { PlusIcon } from "lucide-react";
 
+import { useDictionary } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
 import { LibrarySearch } from "./LibrarySearch";
 
@@ -20,6 +23,7 @@ export function Topbar({
   mobileNav: ReactNode;
   sidebarToggle: ReactNode;
 }) {
+  const t = useDictionary();
   return (
     // Opaque, not a blurred scrim: glass is not part of this design
     // language, and the surface tone (not the canvas tone) is what lifts
@@ -43,7 +47,9 @@ export function Topbar({
           <PlusIcon aria-hidden="true" data-icon="inline-start" />
           {/* `sr-only` below `sm`, not `hidden`: an icon-only button still
               needs a discernible name at every viewport. */}
-          <span className="sr-only sm:not-sr-only">Criar item</span>
+          <span className="sr-only sm:not-sr-only">
+            {t.shell.topbar.createItem}
+          </span>
         </Button>
       </div>
     </header>

@@ -50,7 +50,9 @@ export function ProfileCard({
         return;
       }
       setValue(result.data ?? "");
-      toastSuccess(result.data ? "Nome salvo." : "Nome removido.");
+      toastSuccess(
+        result.data ? t.settings.profile.saved : t.settings.profile.removed,
+      );
     });
   }
 
@@ -66,7 +68,7 @@ export function ProfileCard({
         />
         <div className="min-w-0 flex-1 space-y-1.5">
           <label htmlFor={inputId} className="text-label-md">
-            Como quer ser chamado
+            {t.settings.profile.nameLabel}
           </label>
           <Input
             id={inputId}
@@ -86,8 +88,7 @@ export function ProfileCard({
       </div>
 
       <p id={hintId} className="text-body-sm text-muted-foreground">
-        Aparece no menu da conta. Deixe em branco para usar{" "}
-        <span dir="auto">{fallbackName}</span>.
+        {t.settings.profile.hint} <span dir="auto">{fallbackName}</span>.
       </p>
 
       {error && (
@@ -101,9 +102,10 @@ export function ProfileCard({
         size="sm"
         className="self-start"
         pending={isPending}
+        pendingLabel={t.settings.profile.saving}
         disabled={unchanged}
       >
-        Salvar
+        {t.settings.profile.save}
       </Button>
     </form>
   );

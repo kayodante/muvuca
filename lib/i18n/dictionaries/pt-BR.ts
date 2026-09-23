@@ -25,6 +25,8 @@ export const ptBR = {
     edit: "Editar",
     delete: "Excluir",
     tryAgain: "Tentar novamente",
+    // Accessible name do botão "X" de fechar em Dialog/Sheet.
+    close: "Fechar",
   },
   metadata: {
     title: "Muvuca",
@@ -37,6 +39,13 @@ export const ptBR = {
       heading: "Perfil",
       description: "Como o Muvuca se refere a você.",
       fallbackName: "Usuário",
+      nameLabel: "Como quer ser chamado",
+      // Sem o ponto final: o JSX encaixa `{fallbackName}.` logo depois.
+      hint: "Aparece no menu da conta. Deixe em branco para usar",
+      save: "Salvar",
+      saving: "Salvando...",
+      saved: "Nome salvo.",
+      removed: "Nome removido.",
     },
     appearance: {
       heading: "Aparência",
@@ -71,6 +80,25 @@ export const ptBR = {
     danger: {
       heading: "Zona de perigo",
       description: "Ações destrutivas e irreversíveis.",
+      resetAccount: {
+        cardHeading: "Começar do zero",
+        cardDescription:
+          "Apaga permanentemente todos os seus links, prompts e tags. Sua conta fica como se tivesse acabado de ser criada.",
+        confirmTitle: "Apagar todos os dados?",
+        // Dividido em prefixo/sufixo (não uma única string interpolada) para
+        // o JSX poder envolver a frase de confirmação em <strong>.
+        confirmDescriptionPrefix:
+          "Esta ação remove todos os seus links, prompts, tags e preferências. Não pode ser desfeita. Digite",
+        confirmDescriptionSuffix: "para confirmar.",
+        confirmInputLabel: (phrase: string) =>
+          `Digite ${phrase} para confirmar`,
+        confirmButton: "Apagar tudo",
+        deleting: "Apagando...",
+        // Comparado literalmente contra o texto digitado -- precisa
+        // permanecer em maiúsculas em ambos os idiomas.
+        confirmPhrase: "APAGAR",
+        success: "Sua conta foi zerada.",
+      },
     },
   },
   tags: {
@@ -106,6 +134,64 @@ export const ptBR = {
       zinc: "Zinco",
       stone: "Pedra",
     } satisfies Record<TagColorToken, string>,
+    breadcrumb: {
+      ariaLabel: "Caminho da tag",
+      root: "Tags",
+      hiddenAncestors: (names: string) => `Tags intermediárias: ${names}`,
+    },
+    editor: {
+      createTitle: "Nova tag",
+      editTitle: "Editar tag",
+      createDescription:
+        "Tags ajudam a organizar e reencontrar itens da biblioteca.",
+      editDescription: "As associações existentes com itens são preservadas.",
+      nameLabel: "Nome",
+      descriptionLabel: "Descrição",
+      optional: "(opcional)",
+      colorLabel: "Cor",
+      parentLabel: "Tag pai",
+      noParent: "Nenhuma (tag raiz)",
+      createButton: "Criar tag",
+      saveButton: "Salvar alterações",
+      // Único rótulo de pendência para criar e editar: a janela de
+      // pendência dura menos de um segundo, não justifica duas strings.
+      saving: "Salvando...",
+      created: "Tag criada.",
+      updated: "Tag atualizada.",
+    },
+    deleteDialog: {
+      title: (name: string) => `Excluir “${name}”?`,
+      description: (name: string) =>
+        `As tags filhas diretas passam a ficar sob a tag pai de “${name}” (ou viram tags raiz, se “${name}” já era raiz). Os itens associados não são excluídos -- apenas perdem a associação com esta tag.`,
+      confirm: "Excluir tag",
+      deleting: "Excluindo...",
+      deleted: "Tag excluída.",
+    },
+    tree: {
+      collapse: (name: string) => `Recolher ${name}`,
+      expand: (name: string) => `Expandir ${name}`,
+      actions: (name: string) => `Ações da tag ${name}`,
+      createChild: "Criar tag filha",
+    },
+    page: {
+      heading: "Tags",
+      createTag: "Criar tag",
+      emptyTitle: "Nenhuma tag ainda",
+      emptyDescription:
+        "Crie tags para organizar sua biblioteca em hierarquias, como Skills → Design → Dev.",
+      filterLabel: "Filtrar tags por nome",
+      treeRegionLabel: "Árvore de tags",
+      noneFound: (query: string) => `Nenhuma tag encontrada para “${query}”.`,
+      clearSearch: "Limpar busca",
+    },
+    detail: {
+      headingPrefix: "Sua Muvuca em",
+      itemsLabel: "itens",
+      subtagsLabel: "subtags",
+      emptyItemsTitle: "Nenhum item nesta tag",
+      emptyItemsDescription:
+        "Itens associados a esta tag e às tags filhas aparecem aqui.",
+    },
   },
   bookmarks: {
     errors: {
@@ -117,6 +203,121 @@ export const ptBR = {
       tooManyFolders: (count: string) =>
         `O arquivo possui mais de ${count} pastas.`,
       noValidBookmarks: "Nenhum favorito válido foi encontrado.",
+    },
+    dialog: {
+      title: "Importar favoritos",
+      description:
+        "O arquivo é lido somente neste navegador. Nenhuma URL será acessada.",
+      selectFile: "Selecione um arquivo .html de até 10 MB",
+      counts: {
+        folders: "Pastas",
+        validLinks: "Links válidos",
+        alreadyInLibrary: "Já na biblioteca",
+        duplicatesInFile: "Repetidos no arquivo",
+        ignored: "Ignorados",
+      },
+      importingAria: "Importando favoritos",
+      importingBatch: (current: number, total: number) =>
+        `Importando lote ${current} de ${total}...`,
+      progressAria: "Progresso da importação",
+      processedOf: (processed: number, total: number) =>
+        `${processed} de ${total} favoritos processados`,
+      proposedStructure: "Estrutura proposta",
+      flattenedFolders: (n: number) =>
+        `${n} pasta(s) foram achatadas no sexto nível.`,
+      catalogedBadge: "acervo catalogado",
+      resultNone: "Nenhum link novo precisou ser adicionado à sua biblioteca.",
+      resultOne: "1 novo link e sua estrutura de tags foram organizados.",
+      resultMany: (count: number, locale: string) =>
+        `${count.toLocaleString(locale)} novos links e a estrutura de pastas foram organizados.`,
+      resultCounts: {
+        itemsImported: "Itens importados",
+        tagsCreated: "Tags criadas",
+        associationsCreated: "Associações de tag",
+        alreadyInLibrary: "Já estavam na biblioteca",
+        duplicatesInFile: "Repetidos no arquivo",
+        errorsIgnored: "Erros ignorados",
+      },
+      previewsNote:
+        "As prévias de link (miniatura, favicon, título e descrição remotos) carregam em segundo plano.",
+      chooseAnother: "Escolher outro",
+      importing: "Importando...",
+      confirmImport: "Confirmar importação",
+      done: "Concluir",
+      imported: "Favoritos importados.",
+      batchError: (
+        batch: number,
+        total: number,
+        message: string,
+        imported: number,
+      ) =>
+        `Erro ao importar lote ${batch} de ${total}: ${message}. Foram importados ${imported} links antes da falha.`,
+    },
+  },
+  auth: {
+    login: {
+      linkSentBadge: "LINK ENVIADO",
+      checkEmailTitle: "Verifique seu email",
+      checkEmailBody:
+        "Se esse email tiver uma conta, enviamos um link de acesso. Confira sua caixa de entrada.",
+      useAnotherEmail: "Usar outro email",
+      resendHint:
+        "Não recebeu? Verifique a pasta de spam. O Muvuca ainda não está aceitando novas contas, então emails sem cadastro não recebem link.",
+      personalLibraryBadge: "BIBLIOTECA PESSOAL",
+      pitch:
+        "Salve links e prompts, organize por tags aninhadas e reencontre tudo em segundos.",
+      emailLabel: "Email",
+      emailPlaceholder: "voce@email.com",
+      sendingLink: "Enviando link de acesso",
+      sendLink: "Enviar link de acesso",
+      passwordlessHint:
+        "Sem senha — enviamos um link de acesso por email. O Muvuca ainda não está aceitando novas contas.",
+    },
+    loginFailedMessage:
+      "Não foi possível concluir o login. O link pode ter expirado ou já ter sido usado. Solicite um novo link abaixo.",
+    signOut: {
+      pending: "Saindo da conta",
+      label: "Sair",
+    },
+  },
+  shell: {
+    nav: {
+      ariaLabel: "Navegação principal",
+      allItems: "Todos os itens",
+    },
+    sidebarToggle: {
+      expand: "Expandir barra lateral",
+      collapse: "Recolher barra lateral",
+    },
+    userMenu: {
+      fallbackName: "Usuário",
+      tags: "Tags",
+      importBookmarks: "Importar favoritos",
+      settings: "Configurações",
+    },
+    topbar: {
+      createItem: "Criar item",
+    },
+    mobileNav: {
+      openLabel: "Abrir navegação",
+      title: "Navegação",
+    },
+    search: {
+      placeholder: "Buscar na biblioteca",
+      openSpotlight: "Abrir busca rápida (Spotlight)",
+      clear: "Limpar busca",
+      searching: "Pesquisando…",
+    },
+    tagNav: {
+      heading: "Tags",
+      searchPlaceholder: "Buscar tags",
+      searchAriaLabel: "Buscar tags por nome",
+      noneFound: (query: string) => `Nenhuma tag encontrada para “${query}”.`,
+    },
+    loading: {
+      library: "Carregando biblioteca",
+      tag: "Carregando tag",
+      tags: "Carregando tags",
     },
   },
   items: {
@@ -374,6 +575,89 @@ export const ptBR = {
       linkCopiedMessage: "Link copiado para a área de transferência.",
       promptCopiedMessage: "Prompt copiado para a área de transferência.",
       codeCopiedMessage: "Código copiado para a área de transferência.",
+    },
+  },
+  export: {
+    heading: "Exportar dados",
+    description:
+      "Baixe uma cópia completa de todos os seus links, prompts e tags.",
+    jsonButton: "Exportar JSON (Completo)",
+    htmlButton: "Exportar HTML Bookmarks",
+    // `Button`'s own `pendingLabel` becomes the accessible name while
+    // `pending`, overriding the button's own visible text -- every button
+    // that sets `pending` needs an explicit one, not `Button`'s generic
+    // default, so it stays correct in both locales.
+    exporting: "Exportando...",
+    jsonSuccess: "Backup JSON exportado com sucesso.",
+    htmlSuccess: "Favoritos HTML exportados com sucesso.",
+  },
+  backup: {
+    cardHeading: "Restaurar backup",
+    cardDescription:
+      "Carregue um arquivo JSON exportado do Muvuca para reconstruir links, prompts e tags. Nada do que já existe é apagado.",
+    restoreButton: "Restaurar backup JSON",
+    dialogTitle: "Restaurar backup",
+    dialogDescription:
+      "O arquivo é lido somente neste navegador. A restauração apenas acrescenta: nada é apagado nem sobrescrito.",
+    selectFile: "Selecione um arquivo .json de até 10 MB",
+    fileTooLarge: "O arquivo excede o limite de 10 MB.",
+    invalidJson: "Este arquivo não é um JSON válido.",
+    incompatibleFile:
+      "Este arquivo não é um backup do Muvuca compatível com esta versão.",
+    emptyFile:
+      "Este arquivo de backup está vazio. Nenhuma alteração será feita na biblioteca.",
+    restoring: "Restaurando backup...",
+    counts: {
+      tags: "Tags",
+      items: "Itens",
+      ignored: "Ignorados",
+    },
+    resultCounts: {
+      itemsRestored: "Itens restaurados",
+      tagsCreated: "Tags criadas",
+      alreadyExisted: "Já existiam",
+    },
+    chooseAnother: "Escolher outro",
+    confirmRestore: "Confirmar restauração",
+    restoringShort: "Restaurando...",
+    done: "Concluir",
+    restored: "Backup restaurado.",
+  },
+  states: {
+    error: {
+      genericTitle: "Algo deu errado",
+      // Copy dos error boundaries de rota (app/**/error.tsx, app/error.tsx,
+      // app/not-found.tsx). Vive aqui, não em `errors`, porque `errors` é
+      // convencionalmente chave -> string plana (mapTagError em
+      // lib/actions/tags.ts indexa `Dictionary["errors"]` esperando sempre
+      // `string`); um valor objeto ali quebraria esse contrato de tipo.
+      boundary: {
+        root: {
+          title: "Algo deu errado",
+          message: "Não foi possível concluir essa ação. Tente novamente.",
+        },
+        app: {
+          title: "Não foi possível carregar sua conta",
+          message: "Tente novamente em alguns segundos.",
+        },
+        library: {
+          title: "Não foi possível abrir a biblioteca",
+          message: "Tente carregar seus itens novamente.",
+        },
+        tag: {
+          title: "Não foi possível abrir esta tag",
+          message: "Tente carregar a hierarquia e os itens novamente.",
+        },
+        tags: {
+          title: "Não foi possível abrir a lista de tags",
+          message: "Tente carregar as tags novamente.",
+        },
+        notFound: {
+          title: "Página não encontrada",
+          message: "Verifique o endereço ou volte para a sua biblioteca.",
+          backToLibrary: "Ir para a biblioteca",
+        },
+      },
     },
   },
   validation: {

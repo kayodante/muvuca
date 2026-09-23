@@ -53,7 +53,7 @@ export function ImportBackupDialog({
   async function selectFile(file: File | undefined) {
     if (!file) return;
     if (file.size > MAX_BACKUP_FILE_SIZE)
-      return setError("O arquivo excede o limite de 10 MB.");
+      return setError(t.backup.fileTooLarge);
     setError(null);
     setResult(null);
 
@@ -61,14 +61,11 @@ export function ImportBackupDialog({
     try {
       raw = JSON.parse(await file.text());
     } catch {
-      return setError("Este arquivo não é um JSON válido.");
+      return setError(t.backup.invalidJson);
     }
 
     const parsed = backupFileSchema.safeParse(raw);
-    if (!parsed.success)
-      return setError(
-        "Este arquivo não é um backup do Muvuca compatível com esta versão.",
-      );
+    if (!parsed.success) return setError(t.backup.incompatibleFile);
 
     try {
       const { skipped } = toBackupPayload(parsed.data);
@@ -98,7 +95,7 @@ export function ImportBackupDialog({
       response = await importLibraryBackup({ tags, items });
     } catch {
       setIsImporting(false);
-      setError("Não foi possível concluir a restauração.");
+      setError(t.errors.backupRestoreFailed);
       return;
     }
 
@@ -110,18 +107,15 @@ export function ImportBackupDialog({
     }
 
     setResult(response.data);
-    toastSuccess("Backup restaurado.");
+    toastSuccess(t.backup.restored);
   }
 
   return (
     <Dialog open={open} onOpenChange={close}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Restaurar backup</DialogTitle>
-          <DialogDescription>
-            O arquivo é lido somente neste navegador. A restauração apenas
-            acrescenta: nada é apagado nem sobrescrito.
-          </DialogDescription>
+          <DialogTitle>{t.backup.dialogTitle}</DialogTitle>
+          <DialogDescription>{t.backup.dialogDescription}</DialogDescription>
         </DialogHeader>
 
         {!preview && !result && (
@@ -130,9 +124,7 @@ export function ImportBackupDialog({
               aria-hidden="true"
               className="size-6 text-muted-foreground"
             />
-            <span className="text-body-sm">
-              Selecione um arquivo .json de até 10 MB
-            </span>
+            <span className="text-body-sm">{t.backup.selectFile}</span>
             <input
               className="sr-only"
               type="file"
@@ -145,16 +137,21 @@ export function ImportBackupDialog({
         {preview && !result && (
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-2 text-sm">
-              <Count label="Tags" value={preview.file.tags.length} />
-              <Count label="Itens" value={preview.file.items.length} />
-              <Count label="Ignorados" value={preview.skipped} />
+              <Count
+                label={t.backup.counts.tags}
+                value={preview.file.tags.length}
+              />
+              <Count
+                label={t.backup.counts.items}
+                value={preview.file.items.length}
+              />
+              <Count label={t.backup.counts.ignored} value={preview.skipped} />
             </div>
 
             {preview.file.tags.length === 0 &&
               preview.file.items.length === 0 && (
                 <p className="text-sm text-muted-foreground">
-                  Este arquivo de backup está vazio. Nenhuma alteração será
-                  feita na biblioteca.
+                  {t.backup.emptyFile}
                 </p>
               )}
 
@@ -167,7 +164,7 @@ export function ImportBackupDialog({
                   aria-hidden="true"
                   className="size-4 animate-spin text-primary [animation-duration:600ms] motion-reduce:[animation-duration:1200ms]"
                 />
-                Restaurando backup...
+                {t.backup.restoring}
               </div>
             )}
           </div>
@@ -175,9 +172,18 @@ export function ImportBackupDialog({
 
         {result && (
           <div className="grid grid-cols-3 gap-2 text-sm">
-            <Count label="Itens restaurados" value={result.itemsImported} />
-            <Count label="Tags criadas" value={result.tagsCreated} />
-            <Count label="Já existiam" value={result.duplicatesIgnored} />
+            <Count
+              label={t.backup.resultCounts.itemsRestored}
+              value={result.itemsImported}
+            />
+            <Count
+              label={t.backup.resultCounts.tagsCreated}
+              value={result.tagsCreated}
+            />
+            <Count
+              label={t.backup.resultCounts.alreadyExisted}
+              value={result.duplicatesIgnored}
+            />
           </div>
         )}
 
@@ -194,14 +200,22 @@ export function ImportBackupDialog({
           {preview && !result && (
             <>
               <Button variant="ghost" onClick={reset} disabled={isImporting}>
-                Escolher outro
+                {t.backup.chooseAnother}
               </Button>
-              <Button onClick={confirm} pending={isImporting}>
-                {isImporting ? "Restaurando..." : "Confirmar restauração"}
+              <Button
+                onClick={confirm}
+                pending={isImporting}
+                pendingLabel={t.backup.restoringShort}
+              >
+                {isImporting
+                  ? t.backup.restoringShort
+                  : t.backup.confirmRestore}
               </Button>
             </>
           )}
-          {result && <Button onClick={() => close(false)}>Concluir</Button>}
+          {result && (
+            <Button onClick={() => close(false)}>{t.backup.done}</Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

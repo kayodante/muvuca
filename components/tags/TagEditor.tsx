@@ -81,7 +81,9 @@ export function TagEditor({
 
   useEffect(() => {
     if (state?.ok) {
-      toastSuccess(mode === "edit" ? "Tag atualizada." : "Tag criada.");
+      toastSuccess(
+        mode === "edit" ? t.tags.editor.updated : t.tags.editor.created,
+      );
       onOpenChange(false);
       onSaved?.();
     }
@@ -124,18 +126,20 @@ export function TagEditor({
           )}
           <DialogHeader>
             <DialogTitle>
-              {mode === "edit" ? "Editar tag" : "Nova tag"}
+              {mode === "edit"
+                ? t.tags.editor.editTitle
+                : t.tags.editor.createTitle}
             </DialogTitle>
             <DialogDescription>
               {mode === "edit"
-                ? "As associações existentes com itens são preservadas."
-                : "Tags ajudam a organizar e reencontrar itens da biblioteca."}
+                ? t.tags.editor.editDescription
+                : t.tags.editor.createDescription}
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="tag-name" className="text-label-md">
-              Nome
+              {t.tags.editor.nameLabel}
             </label>
             <Input
               id="tag-name"
@@ -166,9 +170,9 @@ export function TagEditor({
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="tag-description" className="text-label-md">
-              Descrição{" "}
+              {t.tags.editor.descriptionLabel}{" "}
               <span className="font-normal text-muted-foreground">
-                (opcional)
+                {t.tags.editor.optional}
               </span>
             </label>
             <Textarea
@@ -189,7 +193,9 @@ export function TagEditor({
             serves the pointer, the `sr-only` span serves the accessible name.
           */}
           <fieldset className="flex flex-col gap-1.5">
-            <legend className="text-label-md mb-1.5">Cor</legend>
+            <legend className="text-label-md mb-1.5">
+              {t.tags.editor.colorLabel}
+            </legend>
             <div className="grid grid-cols-6 gap-2 sm:grid-cols-8">
               {TAG_COLOR_TOKENS.map((token) => (
                 <label
@@ -226,24 +232,24 @@ export function TagEditor({
 
           <div className="flex flex-col gap-1.5">
             <span className="text-label-md" id="tag-parent-label">
-              Tag pai
+              {t.tags.editor.parentLabel}
             </span>
             <Select name="parentId" defaultValue={defaultParentId ?? ""}>
               <SelectTrigger
                 aria-labelledby="tag-parent-label"
                 className="w-full"
               >
-                <SelectValue placeholder="Nenhuma (tag raiz)">
+                <SelectValue placeholder={t.tags.editor.noParent}>
                   {(value: string) =>
                     value === ""
-                      ? "Nenhuma (tag raiz)"
+                      ? t.tags.editor.noParent
                       : (parentOptions.find((tag) => tag.id === value)?.name ??
                         value)
                   }
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhuma (tag raiz)</SelectItem>
+                <SelectItem value="">{t.tags.editor.noParent}</SelectItem>
                 {parentOptions.map((tag) => (
                   <SelectItem key={tag.id} value={tag.id}>
                     {"　".repeat(tag.depth)}
@@ -261,8 +267,14 @@ export function TagEditor({
           )}
 
           <DialogFooter>
-            <Button type="submit" pending={pending}>
-              {mode === "edit" ? "Salvar alterações" : "Criar tag"}
+            <Button
+              type="submit"
+              pending={pending}
+              pendingLabel={t.tags.editor.saving}
+            >
+              {mode === "edit"
+                ? t.tags.editor.saveButton
+                : t.tags.editor.createButton}
             </Button>
           </DialogFooter>
         </form>

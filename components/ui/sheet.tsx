@@ -4,6 +4,7 @@ import * as React from "react";
 import { Dialog as SheetPrimitive } from "@base-ui/react/dialog";
 
 import { cn } from "@/lib/utils";
+import { useDictionary } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
 import { XIcon } from "lucide-react";
 
@@ -46,6 +47,7 @@ function SheetContent({
   side?: "top" | "right" | "bottom" | "left";
   showCloseButton?: boolean;
 }) {
+  const t = useDictionary();
   return (
     <SheetPortal>
       <SheetOverlay />
@@ -74,7 +76,7 @@ function SheetContent({
             }
           >
             <XIcon aria-hidden="true" />
-            <span className="sr-only">Fechar</span>
+            <span className="sr-only">{t.common.close}</span>
           </SheetPrimitive.Close>
         )}
       </SheetPrimitive.Popup>

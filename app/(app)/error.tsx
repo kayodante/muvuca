@@ -1,5 +1,6 @@
 "use client";
 
+import { useDictionary } from "@/lib/i18n/client";
 import { ErrorState } from "@/components/states/ErrorState";
 
 /**
@@ -7,15 +8,16 @@ import { ErrorState } from "@/components/states/ErrorState";
  * a transient failure in `getTagList`/`getUserPreferences`/
  * `getLibraryItemsCount` -- all run in `app/(app)/layout.tsx` before any
  * page renders -- bubbles past this segment straight to the generic root
- * `app/error.tsx`, showing "Algo deu errado" instead of a recoverable,
- * specific message. Same pattern as `library/error.tsx` and
+ * `app/error.tsx`, showing the generic boundary message instead of a
+ * recoverable, specific one. Same pattern as `library/error.tsx` and
  * `tags/[tagId]/error.tsx`.
  */
 export default function AppError({ reset }: { reset: () => void }) {
+  const t = useDictionary();
   return (
     <ErrorState
-      title="Não foi possível carregar sua conta"
-      message="Tente novamente em alguns segundos."
+      title={t.states.error.boundary.app.title}
+      message={t.states.error.boundary.app.message}
       onRetry={reset}
     />
   );

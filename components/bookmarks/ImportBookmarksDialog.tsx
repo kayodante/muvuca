@@ -146,7 +146,12 @@ export function ImportBookmarksDialog({
         setIsImporting(false);
         setError(
           accumulated.itemsImported > 0
-            ? `Erro ao importar lote ${i + 1} de ${totalBatches}: ${response.message}. Foram importados ${accumulated.itemsImported} links antes da falha.`
+            ? t.bookmarks.dialog.batchError(
+                i + 1,
+                totalBatches,
+                response.message,
+                accumulated.itemsImported,
+              )
             : response.message,
         );
         return;
@@ -169,7 +174,7 @@ export function ImportBookmarksDialog({
     setIsImporting(false);
     setProgress(null);
     setResult(accumulated);
-    toastSuccess("Favoritos importados.");
+    toastSuccess(t.bookmarks.dialog.imported);
     if (accumulated.itemsImported > 0) notifyPreviewQueueChanged();
   }
 
@@ -181,9 +186,9 @@ export function ImportBookmarksDialog({
     <Dialog open={open} onOpenChange={close}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Importar favoritos</DialogTitle>
+          <DialogTitle>{t.bookmarks.dialog.title}</DialogTitle>
           <DialogDescription>
-            O arquivo é lido somente neste navegador. Nenhuma URL será acessada.
+            {t.bookmarks.dialog.description}
           </DialogDescription>
         </DialogHeader>
 
@@ -194,7 +199,7 @@ export function ImportBookmarksDialog({
               className="size-6 text-muted-foreground"
             />
             <span className="text-body-sm">
-              Selecione um arquivo .html de até 10 MB
+              {t.bookmarks.dialog.selectFile}
             </span>
             <input
               className="sr-only"
@@ -208,10 +213,16 @@ export function ImportBookmarksDialog({
         {preview && !result && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
-              <Count label="Pastas" value={preview.tags.length} />
-              <Count label="Links válidos" value={preview.items.length} />
               <Count
-                label="Já na biblioteca"
+                label={t.bookmarks.dialog.counts.folders}
+                value={preview.tags.length}
+              />
+              <Count
+                label={t.bookmarks.dialog.counts.validLinks}
+                value={preview.items.length}
+              />
+              <Count
+                label={t.bookmarks.dialog.counts.alreadyInLibrary}
                 value={
                   isCheckingDuplicates ? (
                     <ShimmerText text="..." />
@@ -223,10 +234,13 @@ export function ImportBookmarksDialog({
                 }
               />
               <Count
-                label="Repetidos no arquivo"
+                label={t.bookmarks.dialog.counts.duplicatesInFile}
                 value={duplicateSummary?.repeatedInFile ?? 0}
               />
-              <Count label="Ignorados" value={preview.invalidCount} />
+              <Count
+                label={t.bookmarks.dialog.counts.ignored}
+                value={preview.invalidCount}
+              />
             </div>
 
             {isImporting && progress && (
@@ -237,10 +251,13 @@ export function ImportBookmarksDialog({
                       variant="orbit"
                       rounded
                       className="size-4 text-primary"
-                      aria-label="Importando favoritos"
+                      aria-label={t.bookmarks.dialog.importingAria}
                     />
                     <ShimmerText
-                      text={`Importando lote ${progress.currentBatch} de ${progress.totalBatches}...`}
+                      text={t.bookmarks.dialog.importingBatch(
+                        progress.currentBatch,
+                        progress.totalBatches,
+                      )}
                     />
                   </span>
                   <span className="font-mono text-muted-foreground">
@@ -252,7 +269,7 @@ export function ImportBookmarksDialog({
                   aria-valuenow={progress.percent}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-label="Progresso da importação"
+                  aria-label={t.bookmarks.dialog.progressAria}
                   className="h-2.5 w-full overflow-hidden rounded-full bg-secondary"
                 >
                   <div
@@ -263,15 +280,19 @@ export function ImportBookmarksDialog({
                   />
                 </div>
                 <p className="text-metadata text-muted-foreground">
-                  {progress.processedItems} de {progress.totalItems} favoritos
-                  processados
+                  {t.bookmarks.dialog.processedOf(
+                    progress.processedItems,
+                    progress.totalItems,
+                  )}
                 </p>
               </div>
             )}
 
             {!isImporting && (
               <div>
-                <p className="text-label-md">Estrutura proposta</p>
+                <p className="text-label-md">
+                  {t.bookmarks.dialog.proposedStructure}
+                </p>
                 <ul className="text-body-sm mt-2 max-h-48 space-y-1 overflow-y-auto pr-1 text-muted-foreground">
                   {preview.tags.map((tag) => (
                     <li
@@ -285,8 +306,9 @@ export function ImportBookmarksDialog({
                 </ul>
                 {preview.flattenedFolderCount > 0 && (
                   <p className="text-body-sm mt-2 text-muted-foreground">
-                    {preview.flattenedFolderCount} pasta(s) foram achatadas no
-                    sexto nível.
+                    {t.bookmarks.dialog.flattenedFolders(
+                      preview.flattenedFolderCount,
+                    )}
                   </p>
                 )}
               </div>
@@ -299,14 +321,17 @@ export function ImportBookmarksDialog({
             <div className="flex items-center justify-between rounded-lg border border-primary/25 bg-primary/[0.04] p-3.5 dark:border-primary/20 dark:bg-primary/[0.06]">
               <div className="space-y-0.5">
                 <span className="text-brand-pixel text-brand-accent uppercase">
-                  acervo catalogado
+                  {t.bookmarks.dialog.catalogedBadge}
                 </span>
                 <p className="text-body-sm font-medium text-foreground">
                   {result.itemsImported === 0
-                    ? "Nenhum link novo precisou ser adicionado à sua biblioteca."
+                    ? t.bookmarks.dialog.resultNone
                     : result.itemsImported === 1
-                      ? "1 novo link e sua estrutura de tags foram organizados."
-                      : `${result.itemsImported.toLocaleString("pt-BR")} novos links e a estrutura de pastas foram organizados.`}
+                      ? t.bookmarks.dialog.resultOne
+                      : t.bookmarks.dialog.resultMany(
+                          result.itemsImported,
+                          locale,
+                        )}
                 </p>
               </div>
               <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-brand-accent">
@@ -316,22 +341,22 @@ export function ImportBookmarksDialog({
 
             <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
               <Count
-                label="Itens importados"
+                label={t.bookmarks.dialog.resultCounts.itemsImported}
                 value={<NumberPopIn value={result.itemsImported} />}
                 highlight={result.itemsImported > 0}
               />
               <Count
-                label="Tags criadas"
+                label={t.bookmarks.dialog.resultCounts.tagsCreated}
                 value={<NumberPopIn value={result.tagsCreated} />}
                 highlight={result.tagsCreated > 0}
               />
               <Count
-                label="Associações de tag"
+                label={t.bookmarks.dialog.resultCounts.associationsCreated}
                 value={<NumberPopIn value={result.associationsCreated} />}
                 highlight={result.associationsCreated > 0}
               />
               <Count
-                label="Já estavam na biblioteca"
+                label={t.bookmarks.dialog.resultCounts.alreadyInLibrary}
                 value={
                   existingChecked
                     ? (duplicateSummary?.alreadyInLibrary ?? 0)
@@ -339,10 +364,13 @@ export function ImportBookmarksDialog({
                 }
               />
               <Count
-                label="Repetidos no arquivo"
+                label={t.bookmarks.dialog.resultCounts.duplicatesInFile}
                 value={duplicateSummary?.repeatedInFile ?? 0}
               />
-              <Count label="Erros ignorados" value={result.errorsIgnored} />
+              <Count
+                label={t.bookmarks.dialog.resultCounts.errorsIgnored}
+                value={result.errorsIgnored}
+              />
             </div>
 
             {/* Imports never fetch anything server-side during the import
@@ -353,10 +381,7 @@ export function ImportBookmarksDialog({
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-primary/60 opacity-75 motion-reduce:hidden" />
                 <span className="relative inline-flex size-2 rounded-full bg-primary" />
               </span>
-              <span>
-                As prévias de link (miniatura, favicon, título e descrição
-                remotos) carregam em segundo plano.
-              </span>
+              <span>{t.bookmarks.dialog.previewsNote}</span>
             </div>
           </div>
         )}
@@ -378,14 +403,17 @@ export function ImportBookmarksDialog({
                 onClick={reset}
                 disabled={isImporting || isCheckingDuplicates}
               >
-                Escolher outro
+                {t.bookmarks.dialog.chooseAnother}
               </Button>
               <Button
                 onClick={confirm}
                 disabled={isCheckingDuplicates}
                 pending={isImporting}
+                pendingLabel={t.bookmarks.dialog.importing}
               >
-                {isImporting ? "Importando..." : "Confirmar importação"}
+                {isImporting
+                  ? t.bookmarks.dialog.importing
+                  : t.bookmarks.dialog.confirmImport}
               </Button>
             </>
           )}
@@ -394,7 +422,7 @@ export function ImportBookmarksDialog({
               onClick={() => close(false)}
               className="transition-transform duration-(--motion-fast) ease-out-muvuca active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100"
             >
-              Concluir
+              {t.bookmarks.dialog.done}
             </Button>
           )}
         </DialogFooter>
