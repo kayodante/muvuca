@@ -44,14 +44,15 @@ describe("getUserPreferences", () => {
     await expect(getUserPreferences()).resolves.toEqual({
       theme: "system",
       displayName: null,
+      locale: null,
     });
 
     expect(logEventMock).not.toHaveBeenCalled();
   });
 
-  it("returns the saved display name alongside the theme", async () => {
+  it("returns the saved display name and locale alongside the theme", async () => {
     const maybeSingle = vi.fn().mockResolvedValue({
-      data: { theme: "dark", display_name: "Kayo" },
+      data: { theme: "dark", display_name: "Kayo", locale: "en" },
       error: null,
     });
     const select = vi.fn().mockReturnValue({ maybeSingle });
@@ -61,11 +62,28 @@ describe("getUserPreferences", () => {
     await expect(getUserPreferences()).resolves.toEqual({
       theme: "dark",
       displayName: "Kayo",
+      locale: "en",
     });
     expect(select).toHaveBeenCalledWith("*");
   });
 
-  it("keeps working against the pre-0029 schema (no display_name column)", async () => {
+  it("falls back to null for an invalid saved locale", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: { theme: "dark", locale: "fr" },
+      error: null,
+    });
+    const select = vi.fn().mockReturnValue({ maybeSingle });
+    const from = vi.fn().mockReturnValue({ select });
+    createClientMock.mockResolvedValue({ from });
+
+    await expect(getUserPreferences()).resolves.toEqual({
+      theme: "dark",
+      displayName: null,
+      locale: null,
+    });
+  });
+
+  it("keeps working against the pre-0029/0030 schema (no display_name/locale columns)", async () => {
     const maybeSingle = vi.fn().mockResolvedValue({
       data: { theme: "light", user_id: "usr-42" },
       error: null,
@@ -77,6 +95,7 @@ describe("getUserPreferences", () => {
     await expect(getUserPreferences()).resolves.toEqual({
       theme: "light",
       displayName: null,
+      locale: null,
     });
   });
 });

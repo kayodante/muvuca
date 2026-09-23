@@ -1,7 +1,7 @@
 -- Theme preferences are private, valid and persist as one row per user.
 begin;
 
-select plan(15);
+select plan(20);
 
 create temporary table fixture_ids (label text primary key, id uuid not null);
 grant select, insert, update, delete on fixture_ids to authenticated;
@@ -142,6 +142,44 @@ Dante' where user_id = (select auth.uid())$$,
   '23514'::character(5),
   null::text,
   'display name with control characters is rejected'
+);
+
+-- locale (0030_user_locale.sql). Ainda como A.
+select lives_ok(
+  $$update public.user_preferences set locale = 'en' where user_id = (select auth.uid())$$,
+  'A can save a valid locale'
+);
+
+select is(
+  (select locale from public.user_preferences),
+  'en',
+  'A can read their own saved locale'
+);
+
+select throws_ok(
+  $$update public.user_preferences set locale = 'fr' where user_id = (select auth.uid())$$,
+  '23514'::character(5),
+  null::text,
+  'invalid locale is rejected by the check constraint'
+);
+
+select tests.authenticate_as((select id from fixture_ids where label = 'user_b'));
+
+select is(
+  (select count(*)::int from public.user_preferences),
+  0,
+  'B cannot read A''s locale via RLS'
+);
+
+with locale_upd as (
+  update public.user_preferences set locale = 'pt-BR'
+  where user_id = (select id from fixture_ids where label = 'user_a')
+  returning 1
+)
+select is(
+  (select count(*)::int from locale_upd),
+  0,
+  'B cannot update A''s locale via RLS'
 );
 
 select * from finish();
