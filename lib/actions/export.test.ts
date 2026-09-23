@@ -41,6 +41,7 @@ describe("exportUserLibrary", () => {
       {
         id: "tag-1",
         name: "Dev",
+        slug: "dev",
         color_token: "lime",
         parent_id: null,
         description: "Ferramentas de dev",
@@ -49,6 +50,7 @@ describe("exportUserLibrary", () => {
       {
         id: "tag-2",
         name: "Frontend",
+        slug: "frontend",
         color_token: "cyan",
         parent_id: "tag-1",
         description: null,
@@ -140,7 +142,7 @@ describe("exportUserLibrary", () => {
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.data.version).toBe("1.2");
+      expect(result.data.version).toBe("1.3");
       expect(result.data.tags).toEqual([
         {
           id: "tag-1",
@@ -149,6 +151,7 @@ describe("exportUserLibrary", () => {
           parentId: null,
           description: "Ferramentas de dev",
           createdAt: "2026-08-10T00:00:00Z",
+          slug: "dev",
         },
         {
           id: "tag-2",
@@ -157,6 +160,7 @@ describe("exportUserLibrary", () => {
           parentId: "tag-1",
           description: null,
           createdAt: "2026-08-11T00:00:00Z",
+          slug: "frontend",
         },
       ]);
       expect(result.data.items).toEqual([

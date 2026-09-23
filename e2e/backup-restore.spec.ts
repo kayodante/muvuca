@@ -67,4 +67,11 @@ test("restaura um backup JSON pela página de configurações", async ({
   await expect(
     page.getByRole("heading", { name: "Prompt restaurado" }),
   ).toBeVisible();
+
+  // Arquivo 1.0 não tem `slug`: o banco deriva do nome na restauração.
+  await expect(
+    page
+      .getByRole("navigation", { name: "Navegação principal" })
+      .getByRole("link", { name: "Restaurado" }),
+  ).toHaveAttribute("href", "/t/restaurado");
 });

@@ -16,6 +16,7 @@ import {
   tagDescriptionSchema,
   tagNameSchema,
 } from "@/lib/validation/tag";
+import { tagSlugSchema } from "@/lib/tags/routes";
 
 // PostgREST serializa timestamptz como "2026-08-15T00:00:00+00:00", então o
 // offset precisa ser aceito -- o default de z.iso.datetime() só admite "Z".
@@ -39,6 +40,8 @@ const backupFileTagSchema = z.object({
   // vira null em toBackupPayload, para a RPC usar now() só em tag nova.
   description: tagDescriptionSchema.optional(),
   createdAt: timestampSchema.optional(),
+  // Formato 1.3: ausente em arquivos 1.0-1.2, e aí o banco deriva do nome.
+  slug: tagSlugSchema.optional(),
 });
 
 const backupFileItemBaseSchema = z.object({
@@ -72,9 +75,9 @@ const backupFileItemSchema = z.discriminatedUnion("type", [
 
 /**
  * Valida o arquivo inteiro no navegador antes de qualquer envio. Aceita
- * qualquer versão em SUPPORTED_BACKUP_VERSIONS (1.0, 1.1 e 1.2) -- um
- * arquivo antigo continua restaurável, só sem description/createdAt de tag
- * e sem language de code_component.
+ * qualquer versão em SUPPORTED_BACKUP_VERSIONS (1.0 a 1.3) -- um arquivo
+ * antigo continua restaurável, só sem description/createdAt/slug de tag e
+ * sem language de code_component.
  */
 export const backupFileSchema = z
   .object({
@@ -122,6 +125,9 @@ const backupTagPayloadSchema = z.object({
   colorToken: tagColorSchema,
   description: tagDescriptionSchema,
   createdAt: timestampSchema.nullable(),
+  // Opcional além de nulável: um navegador ainda com o bundle anterior ao
+  // formato 1.3 manda o payload sem a chave, e a RPC trata ausente como nulo.
+  slug: tagSlugSchema.nullish(),
 });
 
 const backupItemPayloadBaseSchema = z.object({
