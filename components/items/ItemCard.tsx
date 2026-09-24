@@ -94,6 +94,15 @@ const ACTION_CLASS =
   "opacity-100 transition-[opacity,background-color,color,transform] [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100";
 
 /**
+ * Glass pill behind the header over a link thumbnail (see its use). Hairline
+ * border and badge padding are TagChip's (Figma "Tag" 253:2637), so the pills
+ * over the image and the chips under the text read as one family; 4px
+ * taller than the chip, so the icon buttons fit with even padding.
+ */
+const MEDIA_PILL =
+  "flex h-8 items-center rounded-full bg-card/70 inset-ring-[0.5px] inset-ring-border backdrop-blur-md backdrop-saturate-150";
+
+/**
  * Crossfade entre o ícone de "copiar" e o Check de confirmação: os dois
  * ficam empilhados na mesma célula (não teleporta, e o botão não muda de
  * largura) e só opacidade/escala trocam. Nunca anima a partir de scale(0)
@@ -571,7 +580,7 @@ export function ItemCard({
     // look 1px wider than the card. Over the text area it changes nothing.
     // Hover (Figma 251:1906) swaps that edge for effect "Light-2" and lays
     // `light-4` over the surface; no lift -- the thumbnail zoom and the
-    // scrim carry the motion. 300ms ease-out in Figma = --motion-slow.
+    // actions fading in carry the motion. 300ms ease-out in Figma = --motion-slow.
     <article
       aria-busy={isPending || undefined}
       className={cn(
@@ -604,33 +613,6 @@ export function ItemCard({
                 domain={domain}
                 preview={item.preview}
               />
-              {/* Scrim, not decoration: the badge and the action icons sit
-                on whatever the thumbnail happens to show there, and without
-                it their contrast is whatever the remote page decided -- a
-                light thumbnail erased the icons entirely (AAA-180).
-                Spec: Figma "OG:IMAGE" (163:928) -- a gradient from the
-                surface token (`--card` === `--surface`) at the top to
-                transparent: at 60% of the height in Default, at 100% in
-                Hover, 300ms ease-out. One full-height gradient scaled from
-                the top reproduces both stops exactly and animates as a
-                transform. The state gate is the same media query as
-                ACTION_CLASS: 60% height at rest only for fine-pointer
-                devices (growing on group-hover/focus-within with
-                --motion-slow ≈ the Figma 300ms), while touch keeps the
-                Hover state -- its actions never hide, so its scrim stays
-                full.
-                `z-[3]` is load-bearing, not tidying: LinkPreviewMedia paints
-                the thumbnail in `.t-skel-content` at z-index 2, and a
-                positioned element at `z-index: auto` is painted *before* any
-                positioned sibling with a positive z-index -- DOM order
-                doesn't break that tie. Without it the gradient renders under
-                the image and the scrim is invisible, which is what made the
-                old scrim look like it worked only on dark thumbs. Stays
-                below the header's `z-10` so badge and actions keep winning. */}
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 z-[3] origin-top bg-gradient-to-b from-card to-transparent transition-transform duration-(--motion-slow) ease-out-muvuca motion-reduce:transition-none [@media(hover:hover)_and_(pointer:fine)]:scale-y-[0.6] [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:scale-y-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:scale-y-100"
-              />
             </div>
             <div className="flex flex-1 flex-col gap-4 p-4">
               {siteRow}
@@ -643,10 +625,38 @@ export function ItemCard({
             still reaches the card's own link first, and
             `pointer-events-none` on the wrapper hands the clicks it covers
             back to that anchor underneath; the actions themselves opt back
-            in. */}
+            in.
+            Badge and actions sit on whatever the thumbnail shows there, so
+            each gets its own glass pill (AAA-180: a light thumbnail erased
+            the icons). This replaces Figma's "OG:IMAGE" (163:928)
+            surface-to-transparent gradient, which in light mode washed the
+            top of every thumbnail into a white fog. Deliberate exception to
+            DESIGN.md's no-glass rule, scoped to media overlays.
+            The glass follows the theme (light pill, dark glyphs in light
+            mode). Its 70% tint is what keeps that working over the worst
+            case: dark glyphs over a black thumbnail need ~40% of the light
+            surface to clear 3:1, and 70% is the floor for the dark theme's
+            teal badge text to keep 4.5:1 over a white one. The actions pill
+            fades with the icons (ACTION_CLASS) so no empty pill shows at
+            rest. */}
           <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-2.5 p-4 pb-2">
-            {typeBadge}
-            {actions}
+            <div className={cn(MEDIA_PILL, "min-w-0 pr-2.5 pl-2")}>
+              {typeBadge}
+            </div>
+            {/* Icon buttons (pill > actions > button, hence `*:*:`; the
+              tooltip/menu triggers overwrite `data-slot`, so position is the
+              stable hook) become 28px circles. `p-0.5` keeps a hovered
+              button's circle 2px from the pill on every side and lands the
+              pill on the badge's 32px. */}
+            <div
+              className={cn(
+                MEDIA_PILL,
+                ACTION_CLASS,
+                "p-0.5 *:*:size-7 *:*:rounded-full",
+              )}
+            >
+              {actions}
+            </div>
           </div>
           {tagsBlock && <div className="flex px-4 pb-4">{tagsBlock}</div>}
         </>
