@@ -7,7 +7,8 @@ import { getTagHref } from "@/lib/tags/routes";
 import { ptBR, type Dictionary } from "@/lib/i18n/dictionaries/pt-BR";
 
 /**
- * Ancestry without becoming a second heavy nav.
+ * Ancestry without becoming a second heavy nav. No "Tags" root: `/tags` is
+ * already reachable from the user menu and the header's edit icon.
  * More than 3 intermediate ancestors collapse to an ellipsis on every
  * viewport (not just mobile) -- the max tree depth is 6, so this can only
  * ever hide root-adjacent levels, never the immediate parent or the current
@@ -39,17 +40,8 @@ export function Breadcrumb({
   return (
     <nav aria-label={t.tags.breadcrumb.ariaLabel} className="min-w-0">
       <ol className="flex min-w-0 flex-wrap items-center gap-1 text-xs text-muted-foreground">
-        <li>
-          <Link
-            href="/tags"
-            className="inline-flex h-5 items-center rounded px-0.5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          >
-            {t.tags.breadcrumb.root}
-          </Link>
-        </li>
         {collapsed && (
           <li className="flex min-w-0 items-center gap-1">
-            <Separator />
             <span aria-hidden="true">…</span>
             <span className="sr-only">
               {t.tags.breadcrumb.hiddenAncestors(
@@ -58,9 +50,9 @@ export function Breadcrumb({
             </span>
           </li>
         )}
-        {visible.map((ancestor) => (
+        {visible.map((ancestor, index) => (
           <li key={ancestor.id} className="flex min-w-0 items-center gap-1">
-            <Separator />
+            {(collapsed || index > 0) && <Separator />}
             <Link
               href={getTagHref(ancestor)}
               title={ancestor.name}

@@ -276,7 +276,7 @@ export function LibraryToolbar({
               variant="outline"
               size="sm"
               aria-label={t.items.toolbar.sortAriaLabel}
-              className="h-8 rounded-md border-0 bg-background px-3 py-1.5 shadow-light"
+              className="h-8 rounded-md border-0 bg-surface px-3 py-1.5 shadow-light dark:bg-surface"
             />
           }
         >

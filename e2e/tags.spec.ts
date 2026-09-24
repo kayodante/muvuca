@@ -35,9 +35,10 @@ test.describe("Rota /t/[...tagPath] e navegação de tags", () => {
     await expect(
       page.getByRole("heading", { level: 2, name: "Seus itens" }),
     ).toBeVisible();
+    // Tag raiz: sem ancestrais, o caminho repetiria só o próprio nome.
     await expect(
       page.getByRole("navigation", { name: "Caminho da tag" }),
-    ).toBeVisible();
+    ).toHaveCount(0);
   });
 
   test("navega para a página de detalhe da tag a partir da barra lateral (TagNavigation)", async ({

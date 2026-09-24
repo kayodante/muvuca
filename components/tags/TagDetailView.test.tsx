@@ -166,7 +166,7 @@ describe("TagDetailView", () => {
     });
 
     const edit = [...container!.querySelectorAll("a")].find(
-      (a) => a.textContent === "Editar tag",
+      (a) => a.getAttribute("aria-label") === "Editar tag",
     );
     expect(edit?.getAttribute("href")).toBe(
       `/tags?tag=${encodeURIComponent(currentTag.path)}`,

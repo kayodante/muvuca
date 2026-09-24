@@ -226,149 +226,160 @@ export function ItemsPage({
 
   return (
     <>
-      {/* Figma 78:3676: the section title and its controls share one row,
+      {/* Its own column: as a bare fragment these blocks joined the caller's
+          flex gap (TagDetailView) and stacked it on their own margins. */}
+      <div className="flex flex-col gap-4">
+        {/* Figma 78:3676: the section title and its controls share one row,
           heading flush left and the toolbar flush right. No item count and no
           "Importar favoritos" here -- the count belongs to the tag head above
           (or to the empty state, which already says there is nothing), and
           import lives in the account menu and in the empty state. */}
-      <div className="flex flex-wrap items-center justify-end gap-3">
-        <Heading className="text-headline-sm mr-auto min-w-0 [overflow-wrap:anywhere]">
-          {resolvedTitle}
-        </Heading>
+        <div className="flex flex-wrap items-center justify-end gap-3 px-4">
+          <Heading className="text-headline-sm mr-auto min-w-0 [overflow-wrap:anywhere]">
+            {resolvedTitle}
+          </Heading>
 
-        <LibraryToolbar
-          type={type}
-          sort={sort}
-          isPending={isDetailPending}
-          canRefreshPreviews={linkItemIds.length > 0}
-          isRefreshingPreviews={isDraining}
-          onRefreshPreviews={refreshVisible}
-          onFilterChange={updateParams}
-        />
-      </div>
-
-      {detailError && (
-        <div
-          role="alert"
-          className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2"
-        >
-          <p className="text-sm text-destructive">{detailError.message}</p>
-          <Button
-            variant="outline"
-            size="sm"
-            pending={isDetailPending}
-            pendingLabel={t.common.loading}
-            onClick={() => loadItem(detailError.item, detailError.target)}
-          >
-            {t.common.tryAgain}
-          </Button>
+          <LibraryToolbar
+            type={type}
+            sort={sort}
+            isPending={isDetailPending}
+            canRefreshPreviews={linkItemIds.length > 0}
+            isRefreshingPreviews={isDraining}
+            onRefreshPreviews={refreshVisible}
+            onFilterChange={updateParams}
+          />
         </div>
-      )}
 
-      {items.length === 0 ? (
-        <EmptyState
-          className="mt-4"
-          icon={FileTextIcon}
-          title={
-            hasSearchFilters ? t.items.page.noResultsTitle : resolvedEmptyTitle
-          }
-          description={
-            hasSearchFilters
-              ? t.items.page.noResultsDescription
-              : resolvedEmptyDescription
-          }
-          action={
-            hasSearchFilters ? (
-              <Button
-                variant="outline"
-                onClick={() =>
-                  updateParams({ q: null, type: null, tag: null, sort: null })
-                }
-              >
-                <FilterXIcon aria-hidden="true" data-icon="inline-start" />
-                {t.items.page.clearFilters}
-              </Button>
-            ) : (
-              <Button onClick={() => setEditorTarget({ mode: "create" })}>
-                <PlusIcon aria-hidden="true" data-icon="inline-start" />
-                {t.items.editor.createItem}
-              </Button>
-            )
-          }
-          secondaryAction={
-            hasSearchFilters ? undefined : (
-              <Button variant="outline" onClick={() => setImportOpen(true)}>
-                {t.items.page.importBookmarks}
-              </Button>
-            )
-          }
-        />
-      ) : (
-        <>
-          {/* `auto-fill`, not `auto-fit`: with two items auto-fit collapses
-              the empty tracks and stretches each card past 500px, technical rhythm. */}
-          <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-4">
-            {items.map((item) => (
-              <ItemCard
-                key={item.id}
-                item={item}
-                tags={tags}
-                morphing={morphingId === item.id}
-                isPending={isDetailPending && loadingItemId === item.id}
-                onEdit={() => loadItem(item, "edit")}
-                onDelete={() => setDeletingItem(item)}
-                onView={() => loadItem(item, "view")}
-                onCopyContent={() => loadItemContent(item.id)}
-                onRefreshPreview={() => handleRefreshPreview(item.id)}
-              />
-            ))}
-          </div>
-          {(prevPageHref || nextPageHref) && (
-            <nav
-              aria-label={t.items.page.paginationLabel}
-              className="mt-8 flex items-center justify-center gap-3"
+        {detailError && (
+          <div
+            role="alert"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2"
+          >
+            <p className="text-sm text-destructive">{detailError.message}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              pending={isDetailPending}
+              pendingLabel={t.common.loading}
+              onClick={() => loadItem(detailError.item, detailError.target)}
             >
-              {prevPageHref ? (
-                <Button
-                  variant="outline"
-                  nativeButton={false}
-                  render={<Link href={prevPageHref} />}
-                >
-                  <ChevronLeftIcon
-                    aria-hidden="true"
-                    data-icon="inline-start"
-                  />
-                  {t.items.page.previousPage}
-                </Button>
-              ) : (
-                <Button variant="outline" disabled>
-                  <ChevronLeftIcon
-                    aria-hidden="true"
-                    data-icon="inline-start"
-                  />
-                  {t.items.page.previousPage}
-                </Button>
-              )}
+              {t.common.tryAgain}
+            </Button>
+          </div>
+        )}
 
-              {nextPageHref ? (
+        {items.length === 0 ? (
+          <EmptyState
+            icon={FileTextIcon}
+            title={
+              hasSearchFilters
+                ? t.items.page.noResultsTitle
+                : resolvedEmptyTitle
+            }
+            description={
+              hasSearchFilters
+                ? t.items.page.noResultsDescription
+                : resolvedEmptyDescription
+            }
+            action={
+              hasSearchFilters ? (
                 <Button
                   variant="outline"
-                  nativeButton={false}
-                  render={<Link href={nextPageHref} />}
+                  onClick={() =>
+                    updateParams({ q: null, type: null, tag: null, sort: null })
+                  }
                 >
-                  {t.items.page.nextPage}
-                  <ChevronRightIcon aria-hidden="true" data-icon="inline-end" />
+                  <FilterXIcon aria-hidden="true" data-icon="inline-start" />
+                  {t.items.page.clearFilters}
                 </Button>
               ) : (
-                <Button variant="outline" disabled>
-                  {t.items.page.nextPage}
-                  <ChevronRightIcon aria-hidden="true" data-icon="inline-end" />
+                <Button onClick={() => setEditorTarget({ mode: "create" })}>
+                  <PlusIcon aria-hidden="true" data-icon="inline-start" />
+                  {t.items.editor.createItem}
                 </Button>
-              )}
-            </nav>
-          )}
-        </>
-      )}
+              )
+            }
+            secondaryAction={
+              hasSearchFilters ? undefined : (
+                <Button variant="outline" onClick={() => setImportOpen(true)}>
+                  {t.items.page.importBookmarks}
+                </Button>
+              )
+            }
+          />
+        ) : (
+          <>
+            {/* `auto-fill`, not `auto-fit`: with two items auto-fit collapses
+              the empty tracks and stretches each card past 500px, technical rhythm. */}
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-4">
+              {items.map((item) => (
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  tags={tags}
+                  morphing={morphingId === item.id}
+                  isPending={isDetailPending && loadingItemId === item.id}
+                  onEdit={() => loadItem(item, "edit")}
+                  onDelete={() => setDeletingItem(item)}
+                  onView={() => loadItem(item, "view")}
+                  onCopyContent={() => loadItemContent(item.id)}
+                  onRefreshPreview={() => handleRefreshPreview(item.id)}
+                />
+              ))}
+            </div>
+            {(prevPageHref || nextPageHref) && (
+              <nav
+                aria-label={t.items.page.paginationLabel}
+                className="mt-4 flex items-center justify-center gap-3"
+              >
+                {prevPageHref ? (
+                  <Button
+                    variant="outline"
+                    nativeButton={false}
+                    render={<Link href={prevPageHref} />}
+                  >
+                    <ChevronLeftIcon
+                      aria-hidden="true"
+                      data-icon="inline-start"
+                    />
+                    {t.items.page.previousPage}
+                  </Button>
+                ) : (
+                  <Button variant="outline" disabled>
+                    <ChevronLeftIcon
+                      aria-hidden="true"
+                      data-icon="inline-start"
+                    />
+                    {t.items.page.previousPage}
+                  </Button>
+                )}
+
+                {nextPageHref ? (
+                  <Button
+                    variant="outline"
+                    nativeButton={false}
+                    render={<Link href={nextPageHref} />}
+                  >
+                    {t.items.page.nextPage}
+                    <ChevronRightIcon
+                      aria-hidden="true"
+                      data-icon="inline-end"
+                    />
+                  </Button>
+                ) : (
+                  <Button variant="outline" disabled>
+                    {t.items.page.nextPage}
+                    <ChevronRightIcon
+                      aria-hidden="true"
+                      data-icon="inline-end"
+                    />
+                  </Button>
+                )}
+              </nav>
+            )}
+          </>
+        )}
+      </div>
 
       {editorTarget && (
         <ItemEditorDialog

@@ -140,7 +140,6 @@ export const ptBR = {
     } satisfies Record<TagColorToken, string>,
     breadcrumb: {
       ariaLabel: "Caminho da tag",
-      root: "Tags",
       hiddenAncestors: (names: string) => `Tags intermediárias: ${names}`,
     },
     editor: {
