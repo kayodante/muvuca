@@ -482,6 +482,34 @@ test("o inspetor sticky no desktop cabe sob o topbar com uma árvore longa", asy
   await expect(saveButton).toBeInViewport();
 });
 
+test("o toast de criação não cobre o submit do inspetor sticky", async ({
+  page,
+}) => {
+  // Regressão AAA-219: o toaster global ficava em bottom-right, exatamente
+  // sobre o submit do inspetor sticky nesse viewport. Um clique real (por
+  // coordenada, como uma pessoa clica) acertava o toast em vez do botão, e
+  // o hover no toaster pausa o timer -- a criação seguinte travava.
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await signIn(page, `e2e-tags-toast-${Date.now()}@muvuca.test`);
+
+  await createRootTag(page, "Primeira");
+
+  // Sem reload: o toast da criação anterior segue na tela.
+  await page.getByRole("button", { name: "Criar tag" }).first().click();
+  const inspector = page.getByRole("region", { name: "Nova tag" });
+  await expect(inspector).toBeVisible();
+  await inspector.getByLabel("Nome").fill("Segunda");
+
+  const submit = inspector.getByRole("button", { name: "Criar tag" });
+  const box = await submit.boundingBox();
+  if (!box) {
+    throw new Error("submit do inspetor sem bounding box");
+  }
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+
+  await expect(page.getByRole("region", { name: "Segunda" })).toBeVisible();
+});
+
 test("move várias tags de uma vez levando as filhas junto", async ({
   page,
 }) => {
