@@ -200,4 +200,54 @@ describe("removeAllUserPreviewObjects", () => {
       removeAllUserPreviewObjects(supabase, "user-1"),
     ).rejects.toMatchObject({ code: "storage_failed" });
   });
+
+  it("processes deletions with bounded concurrency", async () => {
+    // Generate a page larger than the concurrency limit
+    const pageFolders = Array.from({ length: 10 }, (_, i) => `item-${i}`);
+    let currentInFlight = 0;
+    let peakInFlight = 0;
+    const removedFolders = new Set<string>();
+
+    const list = vi
+      .fn()
+      .mockImplementation((prefix: string, opts?: { limit: number }) => {
+        if (opts) {
+          if (pageFolders.length === 0)
+            return Promise.resolve({ data: [], error: null });
+          return Promise.resolve({
+            data: pageFolders.map((name) => ({ name })),
+            error: null,
+          });
+        }
+
+        // Inner list() inside deletePreviewObjects
+        const itemName = prefix.split("/")[1] ?? "";
+
+        currentInFlight++;
+        if (currentInFlight > peakInFlight) {
+          peakInFlight = currentInFlight;
+        }
+
+        // Simulate async work and clear the folder so the next page listing shrinks
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            currentInFlight--;
+            const idx = pageFolders.indexOf(itemName);
+            if (idx !== -1) pageFolders.splice(idx, 1);
+            removedFolders.add(itemName);
+            resolve({ data: [{ name: "obj.webp" }], error: null });
+          }, 10);
+        });
+      });
+
+    const remove = vi.fn().mockResolvedValue({ error: null });
+    const supabase = fakeSupabase({ list, remove });
+
+    await removeAllUserPreviewObjects(supabase, "user-1");
+
+    expect(removedFolders.size).toBe(10);
+    expect(pageFolders).toHaveLength(0);
+    // Uses the imported STORAGE_DELETE_CONCURRENCY of 3
+    expect(peakInFlight).toBe(3);
+  });
 });
