@@ -144,6 +144,19 @@ describe("TagsPage", () => {
     expect(heading()).toBe("Design");
   });
 
+  it("re-selecting the current row while dirty is a no-op, not a discard", async () => {
+    await render(TAGS, { ...NONE, tagPath: "dev" });
+
+    await act(async () => typeName("Dev renomeado"));
+    await act(async () => row("dev").click());
+
+    expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+    expect(heading()).toBe("Dev");
+    expect(
+      (document.querySelector('input[name="name"]') as HTMLInputElement).value,
+    ).toBe("Dev renomeado");
+  });
+
   it("opens create mode under the ?parent= path", async () => {
     await render(TAGS, { tagPath: null, create: true, parentPath: "design" });
 

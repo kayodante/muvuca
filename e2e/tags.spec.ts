@@ -361,6 +361,7 @@ test("trocar de tag com alterações pendentes pede confirmação", async ({
   await expect(confirm).toBeVisible();
   await confirm.getByRole("button", { name: "Descartar" }).click();
   await expect(page.getByRole("region", { name: "Outra" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Outra" })).toBeFocused();
 });
 
 test("no celular o inspetor abre num painel lateral", async ({ page }) => {
@@ -379,4 +380,32 @@ test("no celular o inspetor abre num painel lateral", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(sheet).toBeHidden();
   await expect(page).toHaveURL(/\/tags$/);
+});
+
+test("no celular excluir uma tag fecha o painel e mostra o toast", async ({
+  page,
+}) => {
+  await signIn(page, `e2e-tags-mobile-delete-${Date.now()}@muvuca.test`);
+  await createRootTag(page, "Descartável");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/tags");
+  await page
+    .getByRole("region", { name: "Árvore de tags" })
+    .getByRole("button", { name: "Descartável", exact: true })
+    .click();
+
+  const sheet = page.getByRole("dialog", { name: "Descartável" });
+  await expect(sheet).toBeVisible();
+  await sheet
+    .getByRole("button", { name: "Mais ações para Descartável" })
+    .click();
+  await page.getByRole("menuitem", { name: "Excluir" }).click();
+
+  const alert = page.getByRole("alertdialog");
+  await expect(alert).toBeVisible();
+  await alert.getByRole("button", { name: "Excluir tag" }).click();
+
+  await expect(page.getByText("Tag excluída.")).toBeVisible();
+  await expect(sheet).toBeHidden();
 });

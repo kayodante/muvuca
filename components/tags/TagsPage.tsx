@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type RefObject,
+} from "react";
 import { PlusIcon, TagIcon } from "lucide-react";
 
 import { buildTagTree, filterTagTree, type FlatTag } from "@/lib/tags/tree";
@@ -56,6 +62,24 @@ function useIsDesktop(): boolean {
       window.matchMedia(DESKTOP_QUERY).matches,
     () => true,
   );
+}
+
+/**
+ * Re-selecting the target already shown (the current row again, or "Criar
+ * tag" while already creating under the same parent) is a no-op, not a
+ * discard: routing it through `apply` would reset `dirty` to `false` while
+ * the uncontrolled `TagForm` inputs -- unchanged, since its `key` stays the
+ * same -- still hold the edited values on screen, so a later Save would
+ * silently persist what the discard prompt just told the user was thrown
+ * away.
+ */
+function isSameTarget(a: InspectorTarget, b: InspectorTarget): boolean {
+  if (a.kind !== b.kind) return false;
+  if (a.kind === "edit" && b.kind === "edit") return a.id === b.id;
+  if (a.kind === "create" && b.kind === "create") {
+    return a.parentId === b.parentId;
+  }
+  return true; // both "none"
 }
 
 function initialTarget(
@@ -144,7 +168,10 @@ export function TagsPage({
     }
   };
 
-  const select = (next: InspectorTarget) => guard(() => apply(next));
+  const select = (next: InspectorTarget) => {
+    if (isSameTarget(next, current)) return;
+    guard(() => apply(next));
+  };
 
   const focusRow = (id: string) =>
     document.querySelector<HTMLElement>(`[data-tag-row="${id}"]`)?.focus();
@@ -261,7 +288,16 @@ export function TagsPage({
           if (!open) setPendingAction(null);
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent
+          // Belt and suspenders: the `headingRef.current?.focus()` effect
+          // below already wins this race in practice (it runs synchronously
+          // in the same commit that swaps the inspector's target, before
+          // Base UI's own close-focus-restoration fires), but that's timing,
+          // not a contract. `finalFocus` is the mechanism Base UI documents
+          // for "focus this on close" -- pointing it at the same ref makes
+          // the outcome explicit instead of incidental.
+          finalFocus={headingRef as RefObject<HTMLElement | null>}
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>{t.tags.inspector.discardTitle}</AlertDialogTitle>
             <AlertDialogDescription>
