@@ -8,6 +8,8 @@ import { getTagList, type Tag } from "@/lib/database/queries/tags";
 import {
   createTagSchema,
   deleteTagSchema,
+  deleteTagsSchema,
+  moveTagsSchema,
   updateTagSchema,
 } from "@/lib/validation/tag";
 import type { Dictionary } from "@/lib/i18n/dictionaries";
@@ -43,6 +45,7 @@ const TAG_P0001_MESSAGES: Record<string, keyof Dictionary["errors"]> = {
   "esta alteração excederia a profundidade máxima de 6 níveis para tags descendentes":
     "tagDescendantMaxDepth",
   "tag não encontrada": "tagNotFound",
+  "lote de tags inválido": "tagBatchInvalid",
 };
 
 function translateTagP0001(message: string, t: Dictionary): string {
@@ -246,6 +249,106 @@ export async function deleteTag(
     // table for consistency with mapTagError.
     if (error.code === "P0001") {
       return fail("NOT_FOUND", translateTagP0001(error.message, t));
+    }
+
+    return mapTagError(error, t);
+  }
+
+  revalidatePath("/tags", "layout");
+  revalidatePath("/t", "layout");
+  return ok(null);
+}
+
+/**
+ * Moves every tag in `ids` under `parentId` (root when empty) via
+ * `move_tags` (0032): one transaction, all or nothing. A selected tag whose
+ * ancestor is also selected rides along -- the RPC drops it from the batch.
+ */
+export async function moveTags(
+  _prevState: ActionResult<null> | null,
+  formData: FormData,
+): Promise<ActionResult<null>> {
+  const t = await getDictionary();
+  const parsed = moveTagsSchema.safeParse({
+    ids: formData.getAll("ids"),
+    parentId: formData.get("parentId"),
+  });
+
+  if (!parsed.success) {
+    return fail("VALIDATION_FAILED", t.errors.tagBatchInvalid);
+  }
+
+  const user = await requireUser();
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("move_tags", {
+    p_tag_ids: parsed.data.ids,
+    // Omitted = the RPC's `default null` = root.
+    p_parent_id: parsed.data.parentId ?? undefined,
+  });
+
+  if (error) {
+    logEvent({
+      event: "tags.bulk_move_failed",
+      status: "failure",
+      errorClass: error.code,
+      userId: user.id,
+    });
+
+    // A move never renames: a clash at the destination is the user's to fix.
+    if (error.code === "23505") {
+      return fail("DUPLICATE", t.errors.tagMoveNameCollision);
+    }
+
+    // `move_tags` raises the same P0001 sentence for an invisible moved tag
+    // id and for a destination that no longer exists (e.g. deleted in
+    // another tab) -- both are the caller's stale reference, not a
+    // constraint violation.
+    if (error.code === "P0001" && error.message === "tag não encontrada") {
+      return fail("NOT_FOUND", t.errors.tagNotFound);
+    }
+
+    return mapTagError(error, t);
+  }
+
+  revalidatePath("/tags", "layout");
+  revalidatePath("/t", "layout");
+  return ok(null);
+}
+
+/**
+ * Deletes every tag in `ids` via `delete_tags_reparent_children` (0032):
+ * deepest first, in one transaction. Unselected children climb to the
+ * nearest surviving ancestor; items are never deleted.
+ */
+export async function deleteTags(
+  _prevState: ActionResult<null> | null,
+  formData: FormData,
+): Promise<ActionResult<null>> {
+  const t = await getDictionary();
+  const parsed = deleteTagsSchema.safeParse({ ids: formData.getAll("ids") });
+
+  if (!parsed.success) {
+    return fail("VALIDATION_FAILED", t.errors.tagBatchInvalid);
+  }
+
+  const user = await requireUser();
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("delete_tags_reparent_children", {
+    p_tag_ids: parsed.data.ids,
+  });
+
+  if (error) {
+    logEvent({
+      event: "tags.bulk_delete_failed",
+      status: "failure",
+      errorClass: error.code,
+      userId: user.id,
+    });
+
+    if (error.code === "P0001" && error.message === "tag não encontrada") {
+      return fail("NOT_FOUND", t.errors.tagNotFound);
     }
 
     return mapTagError(error, t);
