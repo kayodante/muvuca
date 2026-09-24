@@ -93,8 +93,10 @@ begin
   end if;
 
   -- Every selected tag is about to be deleted; its name must not push a
-  -- promoted child into a " (n)" rename. The id is unique per user, so it
-  -- can't collide with anything at any level.
+  -- promoted child into a " (n)" rename. The id is a placeholder no one
+  -- types: the UI never shows it, so a sibling already named exactly like it
+  -- only exists on purpose -- and then the unique index rolls the whole
+  -- batch back (nothing is lost), which is accepted.
   update public.tags
   set name = id::text
   where id = any(p_tag_ids);
