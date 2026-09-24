@@ -35,6 +35,7 @@ export type AppErrorCode =
   | "MISSING_REQUIRED_FIELD"
   | "FORBIDDEN"
   | "VALIDATION_FAILED"
+  | "INVALID_CREDENTIALS"
   | "NOT_FOUND"
   | "UNKNOWN";
 

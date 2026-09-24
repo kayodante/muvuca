@@ -16,7 +16,46 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: createClientMock,
 }));
 
-import { requireUser, getOptionalUser } from "./require-user";
+import {
+  requireUser,
+  getOptionalUser,
+  hasFreshRecoveryEntry,
+  hasRecoverySession,
+} from "./require-user";
+
+describe("hasFreshRecoveryEntry", () => {
+  const now = 1_790_000_000;
+
+  it("aceita uma entrada recovery recente", () => {
+    expect(
+      hasFreshRecoveryEntry([{ method: "recovery", timestamp: now - 60 }], now),
+    ).toBe(true);
+  });
+
+  it("recusa recovery fora da janela de 15 minutos", () => {
+    expect(
+      hasFreshRecoveryEntry(
+        [{ method: "recovery", timestamp: now - 15 * 60 - 1 }],
+        now,
+      ),
+    ).toBe(false);
+  });
+
+  it("recusa sessão de login por senha", () => {
+    expect(
+      hasFreshRecoveryEntry([{ method: "password", timestamp: now }], now),
+    ).toBe(false);
+  });
+
+  it("recusa formatos inesperados", () => {
+    expect(hasFreshRecoveryEntry(undefined, now)).toBe(false);
+    expect(hasFreshRecoveryEntry(["recovery"], now)).toBe(false);
+    expect(hasFreshRecoveryEntry([{ method: "recovery" }], now)).toBe(false);
+    expect(
+      hasFreshRecoveryEntry([{ method: "recovery", timestamp: "1" }], now),
+    ).toBe(false);
+  });
+});
 
 describe("require-user", () => {
   beforeEach(() => {
@@ -121,6 +160,49 @@ describe("require-user", () => {
         email: "anon@example.com",
         name: null,
       });
+    });
+  });
+
+  describe("hasRecoverySession", () => {
+    it("retorna false quando getClaims devolve erro", async () => {
+      getClaimsMock.mockResolvedValue({
+        data: null,
+        error: new Error("Invalid JWT"),
+      });
+
+      await expect(hasRecoverySession()).resolves.toBe(false);
+    });
+
+    it("retorna true para sessão aberta agora pelo link de recuperação", async () => {
+      getClaimsMock.mockResolvedValue({
+        data: {
+          claims: {
+            sub: "usr-1",
+            amr: [
+              { method: "recovery", timestamp: Math.floor(Date.now() / 1000) },
+            ],
+          },
+        },
+        error: null,
+      });
+
+      await expect(hasRecoverySession()).resolves.toBe(true);
+    });
+
+    it("retorna false para sessão de login por senha", async () => {
+      getClaimsMock.mockResolvedValue({
+        data: {
+          claims: {
+            sub: "usr-1",
+            amr: [
+              { method: "password", timestamp: Math.floor(Date.now() / 1000) },
+            ],
+          },
+        },
+        error: null,
+      });
+
+      await expect(hasRecoverySession()).resolves.toBe(false);
     });
   });
 

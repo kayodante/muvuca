@@ -2,16 +2,15 @@
 -- `[db.seed] sql_paths = ["./seed.sql"]`). Nunca roda em produção -- o seed
 -- do CLI é local/branch, e o deploy hospedado aplica só as migrations.
 --
--- Existe por um motivo: `lib/actions/auth.ts` passa `shouldCreateUser: false`
--- e `[auth] enable_signup = false` desliga cadastro, porque o Muvuca é um
--- deploy single-user. Isso é correto em produção e fatal em desenvolvimento:
--- `db reset` apaga `auth.users`, e sem cadastro pela tela de login não existe
--- forma de recriar a conta -- o magic link responde
--- `422 otp_disabled / "Signups not allowed for otp"` e ninguém entra.
+-- Existe por um motivo: `[auth] enable_signup = false` desliga cadastro em
+-- produção, porque o Muvuca é um deploy single-user. Isso é correto lá e
+-- fatal em desenvolvimento: `db reset` apaga `auth.users`, e sem cadastro
+-- pela tela de login não existe forma de recriar a conta.
 --
--- Como usar: peça o link em /login com o email abaixo e abra o Inbucket em
--- http://127.0.0.1:54324 para pegá-lo. Nenhuma senha é criada porque o único
--- fluxo de entrada é magic link.
+-- Como usar: entre em /login com o email e a senha abaixo. A senha só existe
+-- neste arquivo de seed -- nunca é enviada a produção, nunca sai daqui, e
+-- `extensions.crypt`/`gen_salt('bf')` já a grava como hash bcrypt, o mesmo
+-- formato que o GoTrue lê de `encrypted_password`.
 --
 -- O endereço é deliberadamente genérico (`.local`, reservado pela RFC 6762):
 -- nenhum email real entra num arquivo versionado, e o domínio não resolve.
@@ -22,6 +21,7 @@ insert into auth.users (
   aud,
   role,
   email,
+  encrypted_password,
   email_confirmed_at,
   raw_app_meta_data,
   raw_user_meta_data,
@@ -48,6 +48,7 @@ values (
   'authenticated',
   'authenticated',
   'dev@muvuca.local',
+  extensions.crypt('muvuca-dev-local', extensions.gen_salt('bf')),
   now(),
   '{"provider": "email", "providers": ["email"]}'::jsonb,
   '{}'::jsonb,

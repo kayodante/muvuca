@@ -302,28 +302,49 @@ export const ptBR = {
   },
   auth: {
     login: {
-      linkSentBadge: "LINK ENVIADO",
-      checkEmailTitle: "Verifique seu email",
-      checkEmailBody:
-        "Se esse email tiver uma conta, enviamos um link de acesso. Confira sua caixa de entrada.",
-      useAnotherEmail: "Usar outro email",
-      resendHint:
-        "Não recebeu? Verifique a pasta de spam. O Muvuca ainda não está aceitando novas contas, então emails sem cadastro não recebem link.",
       personalLibraryBadge: "BIBLIOTECA PESSOAL",
       pitch:
         "Salve links e prompts, organize por tags aninhadas e reencontre tudo em segundos.",
       emailLabel: "Email",
       emailPlaceholder: "voce@email.com",
-      sendingLink: "Enviando link de acesso",
-      sendLink: "Enviar link de acesso",
-      passwordlessHint:
-        "Sem senha — enviamos um link de acesso por email. O Muvuca ainda não está aceitando novas contas.",
+      passwordLabel: "Senha",
+      signIn: "Entrar",
+      signingIn: "Entrando",
+      noSignupHint: "O Muvuca ainda não está aceitando novas contas.",
+      forgotPasswordLink: "Esqueci a senha",
     },
+    // Card mostrado quando o link de callback (`/auth/confirm`) falha --
+    // cobre tanto um link expirado/reusado quanto um link de recuperação de
+    // senha inválido, já que os dois passam pela mesma rota de callback.
     loginFailedMessage:
-      "Não foi possível concluir o login. O link pode ter expirado ou já ter sido usado. Solicite um novo link abaixo.",
+      'Não foi possível validar o link. Ele pode ter expirado ou já ter sido usado. Peça um novo em "Esqueci a senha".',
     signOut: {
       pending: "Saindo da conta",
       label: "Sair",
+    },
+    forgotPassword: {
+      badge: "RECUPERAR ACESSO",
+      title: "Esqueci a senha",
+      pitch:
+        "Informe seu email e, se houver uma conta, enviamos um link para redefinir sua senha.",
+      submit: "Enviar link de redefinição",
+      sending: "Enviando link",
+      linkSentBadge: "LINK ENVIADO",
+      checkEmailTitle: "Verifique seu email",
+      checkEmailBody:
+        "Se esse email tiver uma conta, enviamos um link para redefinir a senha.",
+      useAnotherEmail: "Usar outro email",
+      resendHint: "Não recebeu? Verifique a pasta de spam.",
+      backToLogin: "Voltar para o login",
+    },
+    resetPassword: {
+      badge: "NOVA SENHA",
+      title: "Defina sua nova senha",
+      passwordLabel: "Nova senha",
+      confirmPasswordLabel: "Confirmar nova senha",
+      passwordHint: "Mínimo de 12 caracteres.",
+      submit: "Salvar nova senha",
+      saving: "Salvando",
     },
   },
   shell: {
@@ -734,6 +755,7 @@ export const ptBR = {
     duplicateFolders: "Pastas repetidas.",
     invalidFolderHierarchy: "Hierarquia de pastas inválida.",
     invalidBookmarkFolder: "Pasta do favorito inválida.",
+    passwordMismatch: "As senhas não coincidem.",
   },
   errors: {
     unknown: "Algo deu errado. Tente novamente.",
@@ -772,7 +794,14 @@ export const ptBR = {
     previewJobsLoadFailed: "Não foi possível buscar jobs de preview.",
     accountResetFailed: "Não foi possível apagar os dados da conta.",
     invalidEmail: "Informe um email válido.",
+    invalidCredentials: "Email ou senha inválidos.",
+    tooManyAttempts:
+      "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
     signOutFailed: "Não foi possível sair. Tente novamente.",
+    recoverySessionExpired:
+      'Sua sessão de redefinição expirou ou é inválida. Peça um novo link em "Esqueci a senha".',
+    passwordSameAsCurrent: "A nova senha precisa ser diferente da atual.",
+    weakPassword: "Essa senha é muito fraca. Escolha uma senha mais forte.",
     invalidTheme: "Tema inválido.",
     themeUpdateFailed: "Não foi possível atualizar a aparência.",
     displayNameSaveFailed: "Não foi possível salvar seu nome.",
