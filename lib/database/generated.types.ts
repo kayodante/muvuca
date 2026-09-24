@@ -314,6 +314,10 @@ export type Database = {
         Args: { p_tag_id: string };
         Returns: undefined;
       };
+      delete_tags_reparent_children: {
+        Args: { p_tag_ids: string[] };
+        Returns: undefined;
+      };
       get_tag_rollup_items: {
         Args: { p_tag_id: string };
         Returns: {
@@ -349,6 +353,10 @@ export type Database = {
           p_status: Database["public"]["Enums"]["preview_status"];
         };
         Returns: boolean;
+      };
+      move_tags: {
+        Args: { p_parent_id?: string; p_tag_ids: string[] };
+        Returns: undefined;
       };
       request_preview_refresh: {
         Args: { p_item_id: string };
