@@ -6,6 +6,7 @@ import { getDictionary } from "@/lib/i18n/server";
 import { logEvent } from "@/lib/security/logging";
 import { createClient } from "@/lib/supabase/server";
 import { chunkArray } from "@/lib/bookmarks/batch";
+import { processInChunks } from "@/lib/utils/concurrency";
 import {
   bookmarkImportSchema,
   bookmarkUrlsSchema,
@@ -20,6 +21,7 @@ export type BookmarkImportSummary = {
 };
 
 const DUPLICATE_CHECK_CHUNK_SIZE = 200;
+const DUPLICATE_CHECK_CONCURRENCY = 4;
 
 export async function findExistingBookmarkUrls(
   urls: string[],
@@ -34,13 +36,18 @@ export async function findExistingBookmarkUrls(
   const urlChunks = chunkArray(parsed.data, DUPLICATE_CHECK_CHUNK_SIZE);
   const foundUrls: string[] = [];
 
-  for (const chunk of urlChunks) {
-    const { data, error } = await supabase
-      .from("library_items")
-      .select("normalized_url")
-      .eq("type", "link")
-      .in("normalized_url", chunk);
+  const results = await processInChunks(
+    urlChunks,
+    DUPLICATE_CHECK_CONCURRENCY,
+    async (chunk) =>
+      supabase
+        .from("library_items")
+        .select("normalized_url")
+        .eq("type", "link")
+        .in("normalized_url", chunk),
+  );
 
+  for (const { data, error } of results) {
     if (error) {
       logEvent({
         event: "bookmark.preview_failed",
