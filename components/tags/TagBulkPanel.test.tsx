@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { FlatTag } from "@/lib/tags/tree";
+import { TAG_BULK_MAX } from "@/lib/validation/tag";
 
 const { moveTagsMock, deleteTagsMock, toastSuccessMock } = vi.hoisted(() => ({
   moveTagsMock: vi.fn(),
@@ -162,6 +163,56 @@ describe("TagBulkPanel", () => {
     expect(onDone).toHaveBeenCalled();
   });
 
+  it("keeps the delete dialog open while pending, ignoring Escape and Cancel", async () => {
+    let resolveDelete!: (value: { ok: true; data: null }) => void;
+    deleteTagsMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveDelete = resolve;
+      }),
+    );
+    const onDone = vi.fn();
+    await act(async () =>
+      root?.render(
+        <TagBulkPanel
+          selectedIds={["a", "b"]}
+          flatTags={TAGS}
+          onDone={onDone}
+          onCancel={vi.fn()}
+        />,
+      ),
+    );
+
+    await act(async () => button("Excluir")?.click());
+    const alert = document.querySelector('[role="alertdialog"]');
+    await act(async () => alert?.querySelector("form")?.requestSubmit());
+
+    // Still pending: Escape and the Cancel button must not unmount the
+    // dialog -- that would let the server action finish with no toast and
+    // without exiting selection mode.
+    await act(async () => {
+      alert?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+    });
+    const cancelButton = [...(alert?.querySelectorAll("button") ?? [])].find(
+      (node) => node.textContent === "Cancelar",
+    ) as HTMLButtonElement | undefined;
+    expect(cancelButton?.disabled).toBe(true);
+    await act(async () => cancelButton?.click());
+
+    expect(document.querySelector('[role="alertdialog"]')).not.toBeNull();
+    expect(toastSuccessMock).not.toHaveBeenCalled();
+    expect(onDone).not.toHaveBeenCalled();
+
+    await act(async () => resolveDelete({ ok: true, data: null }));
+
+    expect(toastSuccessMock).toHaveBeenCalledWith("2 tags excluídas.");
+    expect(onDone).toHaveBeenCalled();
+  });
+
   it("the move dialog says a child rides along and waits for a destination", async () => {
     await act(async () =>
       root?.render(
@@ -185,5 +236,37 @@ describe("TagBulkPanel", () => {
         (input) => (input as HTMLInputElement).value,
       ),
     ).toEqual(["a"]);
+  });
+
+  it("disables both actions and shows the cap message above 500 selected", async () => {
+    const manyTags: FlatTag[] = Array.from(
+      { length: TAG_BULK_MAX + 1 },
+      (_, index) => ({
+        id: `tag-${index}`,
+        parentId: null,
+        path: `tag-${index}`,
+        name: `Tag ${index}`,
+        colorToken: "lime",
+        description: null,
+      }),
+    );
+    const selectedIds = manyTags.map((tag) => tag.id);
+
+    await act(async () =>
+      root?.render(
+        <TagBulkPanel
+          selectedIds={selectedIds}
+          flatTags={manyTags}
+          onDone={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      ),
+    );
+
+    expect(document.body.textContent).toContain(
+      "Selecione entre 1 e 500 tags.",
+    );
+    expect(button("Mover para…")?.disabled).toBe(true);
+    expect(button("Excluir")?.disabled).toBe(true);
   });
 });

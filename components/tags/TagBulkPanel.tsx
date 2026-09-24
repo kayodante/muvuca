@@ -11,6 +11,7 @@ import {
   normalizeMoveSelection,
   type FlatTag,
 } from "@/lib/tags/tree";
+import { TAG_BULK_MAX } from "@/lib/validation/tag";
 import { useDictionary } from "@/lib/i18n/client";
 
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,7 @@ export function TagBulkPanel({
   const [moveOpen, setMoveOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const count = selectedIds.length;
+  const overCap = count > TAG_BULK_MAX;
 
   return (
     <section aria-labelledby="tag-bulk-heading" className="flex flex-col gap-3">
@@ -77,11 +79,16 @@ export function TagBulkPanel({
           ? t.tags.bulk.noneSelected
           : t.tags.bulk.selectedCount(count)}
       </p>
+      {overCap && (
+        <p role="alert" className="text-sm text-destructive">
+          {t.errors.tagBatchInvalid}
+        </p>
+      )}
       <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
           size="sm"
-          disabled={count === 0}
+          disabled={count === 0 || overCap}
           onClick={() => setMoveOpen(true)}
         >
           {t.tags.bulk.move}
@@ -89,7 +96,7 @@ export function TagBulkPanel({
         <Button
           variant="destructive"
           size="sm"
-          disabled={count === 0}
+          disabled={count === 0 || overCap}
           onClick={() => setDeleteOpen(true)}
         >
           {t.tags.bulk.delete}
@@ -163,7 +170,13 @@ function MoveTagsDialog({
   }, [state]);
 
   return (
-    <Dialog open onOpenChange={onOpenChange}>
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open && pending) return;
+        onOpenChange(open);
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <form action={formAction} className="flex flex-col gap-4">
           {moving.map((id) => (
@@ -237,6 +250,7 @@ function MoveTagsDialog({
             <Button
               type="button"
               variant="ghost"
+              disabled={pending}
               onClick={() => onOpenChange(false)}
             >
               {t.common.cancel}
@@ -290,7 +304,13 @@ function DeleteTagsAlertDialog({
   }, [state]);
 
   return (
-    <AlertDialog open onOpenChange={onOpenChange}>
+    <AlertDialog
+      open
+      onOpenChange={(open) => {
+        if (!open && pending) return;
+        onOpenChange(open);
+      }}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
@@ -320,7 +340,9 @@ function DeleteTagsAlertDialog({
           </p>
         )}
         <AlertDialogFooter>
-          <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+          <AlertDialogCancel disabled={pending}>
+            {t.common.cancel}
+          </AlertDialogCancel>
           <form action={formAction}>
             {ids.map((id) => (
               <input key={id} type="hidden" name="ids" value={id} />
