@@ -92,7 +92,7 @@ test("invalid callback shows a generic recoverable error", async ({ page }) => {
   await page.goto("/auth/confirm?token_hash=invalid&type=email");
   await expect(page).toHaveURL(/\/login\?error=auth_failed/);
   await expect(
-    page.getByText("Não foi possível concluir o login"),
+    page.getByText("Não foi possível validar o link"),
   ).toBeVisible();
 });
 

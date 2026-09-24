@@ -69,30 +69,31 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
 });
 
 /**
- * Autentica com um usuário novo e isolado por teste.
- *
- * O formulário de produção nunca cria conta -- é single-user e sempre passa
- * por um usuário já existente. Cada teste precisa de uma biblioteca vazia e
- * exclusiva, então a conta é provisionada fora do produto, por
- * `auth.signUp` com a chave publicável (nenhuma chave secreta ou service
- * role está envolvida; `enable_signup`/`enable_confirmations` só valem para
- * o stack local, e o cadastro hospedado continua desligado).
- *
- * O caminho real do formulário continua coberto por `signInThroughForm`.
+ * Provisions an isolated per-test account outside the product: the
+ * production form never creates one (single-user, always an existing
+ * account), so this uses `auth.signUp` with the publishable key directly
+ * (no secret/service-role key involved; `enable_signup`/
+ * `enable_confirmations` only apply to the local stack, and hosted signup
+ * stays off). Shared by `signIn` and specs that need a real account without
+ * immediately logging in through the form (e.g. the password-reset flow).
  */
-export async function signIn(page: Page, email: string) {
+export async function createUser(email: string) {
   const { error } = await supabase.auth.signUp({
     email,
     password: E2E_PASSWORD,
   });
 
-  // Some specs sign in with the same email twice on purpose (e.g. logging
-  // back in as the same user in a new browser session) -- that's the one
-  // signUp error that's expected, not a real failure.
+  // Some specs (re)create the same email on purpose (e.g. logging back in
+  // as the same user in a new browser session) -- that's the one signUp
+  // error that's expected, not a real failure.
   if (error && error.code !== "user_already_exists") {
     throw new Error(`could not create user ${email}: ${error.message}`);
   }
+}
 
+/** Provisions a per-test account and logs in through the real form. */
+export async function signIn(page: Page, email: string) {
+  await createUser(email);
   await signInThroughForm(page, email, E2E_PASSWORD);
   await page.waitForURL(/\/library/);
 }
