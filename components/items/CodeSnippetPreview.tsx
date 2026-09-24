@@ -20,7 +20,10 @@ import { useHighlightedLines } from "./useHighlightedLines";
  *
  * O fade no pé é o sinal visual de "tem mais" (mesma linguagem do scrim que
  * AAA-180 colocou no card de link): só renderiza quando `contentPreview`
- * tem mais linhas do que o teto local. A truncagem do servidor (2000 chars)
+ * tem mais linhas do que o teto local. É máscara no texto, não gradiente
+ * pintado por cima: um gradiente `from-secondary` precisa casar com o fundo
+ * do painel, e no hover do card o painel clareia (`light-2` por cima) --
+ * o gradiente virava uma faixa escura no pé. A truncagem do servidor (2000 chars)
  * continua dona do teto de payload — aqui é só a janela de 6 linhas.
  */
 const MAX_LINES = 6;
@@ -28,9 +31,11 @@ const MAX_LINES = 6;
 export function CodeSnippetPreview({
   contentPreview,
   language,
+  className,
 }: {
   contentPreview: string;
   language: CodeLanguage | null;
+  className?: string;
 }) {
   const source = contentPreview.replace(/\n$/, "");
   const truncated = source.split("\n").length > MAX_LINES;
@@ -38,7 +43,12 @@ export function CodeSnippetPreview({
   const lines = useHighlightedLines(visibleSource, language);
 
   return (
-    <div className="relative overflow-hidden rounded-md bg-secondary p-3">
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-md bg-secondary p-3 transition-shadow duration-(--motion-slow) ease-out-muvuca motion-reduce:transition-none",
+        className,
+      )}
+    >
       {language && (
         <span
           aria-hidden="true"
@@ -48,7 +58,12 @@ export function CodeSnippetPreview({
         </span>
       )}
       <div
-        className="text-body-sm font-mono leading-6"
+        data-fade={truncated || undefined}
+        className={cn(
+          "text-body-sm font-mono leading-6",
+          truncated &&
+            "[mask-image:linear-gradient(to_bottom,black_calc(100%-1.25rem),transparent)]",
+        )}
         style={{ color: "var(--code-foreground)" }}
       >
         {lines.map((line, index) => (
@@ -78,12 +93,6 @@ export function CodeSnippetPreview({
           </div>
         ))}
       </div>
-      {truncated && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-secondary to-transparent"
-        />
-      )}
     </div>
   );
 }

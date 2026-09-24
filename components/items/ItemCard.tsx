@@ -84,9 +84,14 @@ function typeMetaFor(t: Dictionary) {
  * breakpoint -- `sm:` tratava largura como proxy de "tem mouse", mas um
  * iPad é >= 640px e touch. Em touch as ações ficam sempre visíveis; o
  * esconder-em-repouso só se aplica a quem realmente pode passar o mouse.
+ *
+ * Pressed (`scale-[0.97]`, parado em quem abre popup), duração, easing e
+ * reduced motion vêm do Button. Aqui só entra `opacity` na lista de
+ * transição -- que precisa repetir as do Button, porque twMerge substitui
+ * a lista inteira.
  */
 const ACTION_CLASS =
-  "opacity-100 active:scale-[0.92] transition-[opacity,transform] duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none motion-reduce:active:scale-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100";
+  "opacity-100 transition-[opacity,background-color,color,transform] [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100";
 
 /**
  * Crossfade entre o ícone de "copiar" e o Check de confirmação: os dois
@@ -96,6 +101,19 @@ const ACTION_CLASS =
  * saindo leva pointer-events-none: o Button (não o svg) continua sendo o
  * único alvo de clique, e o aria-label dele já dá o nome acessível.
  */
+/**
+ * Figma hover (item-link/-code/-prompt, State=Hover): the preview panel and
+ * the tag chips (Tag, State=Hover) gain `light-2` as a second fill; the card
+ * itself gets the fainter `light-4`. An
+ * inset shadow is how CSS stacks a translucent fill over a background and
+ * under the content -- and, unlike a background-image, it transitions. At
+ * rest it is the same shadow in `transparent`, so the two interpolate
+ * instead of snapping. The article gets the same trio with `hover:` and
+ * `light-4` (it is the group, not inside it).
+ */
+const HOVER_LIGHT =
+  "inset-shadow-[0_0_0_999px] inset-shadow-transparent group-hover:inset-shadow-light-2";
+
 function CopyStateIcon({
   copied,
   Icon,
@@ -492,11 +510,15 @@ export function ItemCard({
   // the card's own bottom, same as the link layout.
   const previewPanel =
     item.type === "prompt" ? (
-      <PromptMarkdownPreview contentPreview={item.contentPreview} />
+      <PromptMarkdownPreview
+        contentPreview={item.contentPreview}
+        className={HOVER_LIGHT}
+      />
     ) : item.type === "code_component" ? (
       <CodeSnippetPreview
         contentPreview={item.contentPreview}
         language={item.language}
+        className={HOVER_LIGHT}
       />
     ) : null;
 
@@ -523,6 +545,7 @@ export function ItemCard({
           name={tag.name}
           colorToken={tag.colorToken}
           href={getTagHref(tag)}
+          className={HOVER_LIGHT}
         />
       ))}
       {hiddenTagsLabel && (
@@ -546,10 +569,13 @@ export function ItemCard({
     // Under that light it adds a 1px ring in the card's own color: the edge
     // is 6% white, which vanishes over a white thumbnail and made the image
     // look 1px wider than the card. Over the text area it changes nothing.
+    // Hover (Figma 251:1906) swaps that edge for effect "Light-2" and lays
+    // `light-4` over the surface; no lift -- the thumbnail zoom and the
+    // scrim carry the motion. 300ms ease-out in Figma = --motion-slow.
     <article
       aria-busy={isPending || undefined}
       className={cn(
-        "group relative flex min-h-56 flex-col overflow-hidden rounded-2xl bg-card shadow-[0_0_0_1px_var(--color-shadow-1)] transition-[background-color,box-shadow,transform,opacity] duration-(--motion-fast) ease-out-muvuca after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-[inherit] after:shadow-[var(--shadow-light),inset_0_0_0_1px_var(--card)] after:content-[''] hover:bg-secondary/40 hover:ring-1 hover:ring-foreground/10 motion-safe:hover:-translate-y-0.5 motion-reduce:transition-none",
+        "group relative flex min-h-56 flex-col overflow-hidden rounded-2xl bg-card shadow-[0_0_0_1px_var(--color-shadow-1)] inset-shadow-[0_0_0_999px] inset-shadow-transparent transition-[box-shadow,opacity] duration-(--motion-slow) ease-out-muvuca after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-[inherit] after:shadow-[var(--shadow-light),inset_0_0_0_1px_var(--card)] after:transition-shadow after:duration-(--motion-slow) after:ease-out-muvuca after:content-[''] hover:inset-shadow-light-4 hover:after:shadow-[var(--shadow-light-2),inset_0_0_0_1px_var(--card)] motion-reduce:transition-none motion-reduce:after:transition-none",
         morphing && MORPH_CLASS,
         isPending && "pointer-events-none opacity-75",
       )}
@@ -562,7 +588,17 @@ export function ItemCard({
             rel="noopener noreferrer"
             className="flex flex-1 flex-col rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
           >
-            <div className="relative">
+            {/* The media clips itself instead of relying on the article's
+              rounded overflow alone. On hover the thumbnail scales, which
+              moves it to its own compositor layer; Chrome then clips that
+              layer at the ancestor's rounded corners with different
+              anti-aliasing than the rest of the card, and at fractional
+              device scales (1.25x/1.5x -- Windows' defaults) the image
+              showed through as a bright fringe at both top corners.
+              Measured, not guessed: without the zoom the fringe is gone;
+              with this clip on the nearest ancestor it is gone too, and the
+              rest state is pixel-identical. */}
+            <div className="relative overflow-hidden rounded-t-2xl">
               <LinkPreviewMedia
                 itemId={item.id}
                 domain={domain}
@@ -574,11 +610,11 @@ export function ItemCard({
                 light thumbnail erased the icons entirely (AAA-180).
                 Spec: Figma "OG:IMAGE" (163:928) -- a gradient from the
                 surface token (`--card` === `--surface`) at the top to
-                transparent: at 50% of the height in Default, at 100% in
+                transparent: at 60% of the height in Default, at 100% in
                 Hover, 300ms ease-out. One full-height gradient scaled from
                 the top reproduces both stops exactly and animates as a
                 transform. The state gate is the same media query as
-                ACTION_CLASS: half-height at rest only for fine-pointer
+                ACTION_CLASS: 60% height at rest only for fine-pointer
                 devices (growing on group-hover/focus-within with
                 --motion-slow ≈ the Figma 300ms), while touch keeps the
                 Hover state -- its actions never hide, so its scrim stays
@@ -593,7 +629,7 @@ export function ItemCard({
                 below the header's `z-10` so badge and actions keep winning. */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 z-[3] origin-top bg-gradient-to-b from-card to-transparent transition-transform duration-(--motion-slow) ease-out-muvuca motion-reduce:transition-none [@media(hover:hover)_and_(pointer:fine)]:scale-y-50 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:scale-y-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:scale-y-100"
+                className="pointer-events-none absolute inset-0 z-[3] origin-top bg-gradient-to-b from-card to-transparent transition-transform duration-(--motion-slow) ease-out-muvuca motion-reduce:transition-none [@media(hover:hover)_and_(pointer:fine)]:scale-y-[0.6] [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:scale-y-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:scale-y-100"
               />
             </div>
             <div className="flex flex-1 flex-col gap-4 p-4">
@@ -608,7 +644,7 @@ export function ItemCard({
             `pointer-events-none` on the wrapper hands the clicks it covers
             back to that anchor underneath; the actions themselves opt back
             in. */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-start justify-between gap-2.5 p-4 pb-2">
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-2.5 p-4 pb-2">
             {typeBadge}
             {actions}
           </div>
@@ -616,7 +652,7 @@ export function ItemCard({
         </>
       ) : (
         <div className="flex flex-1 flex-col gap-4 p-4">
-          <div className="flex items-start justify-between gap-2.5">
+          <div className="flex items-center justify-between gap-2.5">
             {typeBadge}
             {actions}
           </div>

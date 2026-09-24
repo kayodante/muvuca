@@ -2,6 +2,7 @@
 
 import { Fragment } from "react";
 
+import { cn } from "@/lib/utils";
 import { useHighlightedLines } from "./useHighlightedLines";
 
 /**
@@ -46,8 +47,10 @@ const MAX_SOURCE_LINES = 12;
 
 export function PromptMarkdownPreview({
   contentPreview,
+  className,
 }: {
   contentPreview: string;
+  className?: string;
 }) {
   const source = contentPreview
     .replace(/\n$/, "")
@@ -57,7 +60,12 @@ export function PromptMarkdownPreview({
   const lines = useHighlightedLines(source, "markdown");
 
   return (
-    <div className="overflow-hidden rounded-md bg-secondary p-3">
+    <div
+      className={cn(
+        "overflow-hidden rounded-md bg-secondary p-3 transition-shadow duration-(--motion-slow) ease-out-muvuca motion-reduce:transition-none",
+        className,
+      )}
+    >
       <p
         dir="auto"
         className="text-body-sm line-clamp-6 [overflow-wrap:anywhere] whitespace-pre-line"
