@@ -87,15 +87,15 @@ test("a lista de tags com conteúdo não tem violações de a11y", async ({
   await expectNoViolations(page, "/tags (com conteúdo)");
 });
 
-test("o diálogo de nova tag não tem violações de a11y", async ({ page }) => {
+test("o inspetor de nova tag não tem violações de a11y", async ({ page }) => {
   await signIn(page, `e2e-a11y-dialog-${Date.now()}@muvuca.test`);
   await page.goto("/tags");
   await page.getByRole("button", { name: "Criar tag" }).first().click();
 
-  const dialog = page.getByRole("dialog", { name: "Nova tag" });
-  await expect(dialog).toBeVisible();
+  const inspector = page.getByRole("region", { name: "Nova tag" });
+  await expect(inspector).toBeVisible();
 
-  await expectNoViolations(page, "/tags com o diálogo Nova tag aberto");
+  await expectNoViolations(page, "/tags com o inspetor Nova tag aberto");
 });
 
 test("o tema escuro não tem violações de contraste", async ({ page }) => {
@@ -147,10 +147,12 @@ test.describe("movimento reduzido", () => {
   }) => {
     await signIn(page, `e2e-a11y-motion-${Date.now()}@muvuca.test`);
     await expectReducedMotion(page);
-    await page.goto("/tags");
-    await page.getByRole("button", { name: "Criar tag" }).first().click();
+    await page
+      .getByRole("banner")
+      .getByRole("button", { name: "Criar item" })
+      .click();
 
-    const dialog = page.getByRole("dialog", { name: "Nova tag" });
+    const dialog = page.getByRole("dialog", { name: "Novo item" });
     await expect(dialog).toBeVisible();
 
     // O bloco @media (prefers-reduced-motion: reduce) de app/globals.css
@@ -185,12 +187,13 @@ test("o diálogo prende o foco e o Escape devolve para o gatilho", async ({
   page,
 }) => {
   await signIn(page, `e2e-a11y-focus-${Date.now()}@muvuca.test`);
-  await page.goto("/tags");
 
-  const trigger = page.getByRole("button", { name: "Criar tag" }).first();
+  const trigger = page
+    .getByRole("banner")
+    .getByRole("button", { name: "Criar item" });
   await trigger.click();
 
-  const dialog = page.getByRole("dialog", { name: "Nova tag" });
+  const dialog = page.getByRole("dialog", { name: "Novo item" });
   await expect(dialog).toBeVisible();
 
   // O foco tem de entrar no diálogo, não ficar no gatilho atrás do overlay.

@@ -62,12 +62,14 @@ function setValue(input: HTMLInputElement, value: string) {
 
 describe("TagForm", () => {
   it("prefills an existing tag and carries its id", async () => {
+    const onDirtyChange = vi.fn();
     await act(async () => {
       root?.render(
         <TagForm
           target={{ mode: "edit", tag: flatTags[0]! }}
           flatTags={flatTags}
           onSaved={vi.fn()}
+          onDirtyChange={onDirtyChange}
         />,
       );
     });
@@ -83,6 +85,10 @@ describe("TagForm", () => {
       (container!.querySelector('input[value="cyan"]') as HTMLInputElement)
         .checked,
     ).toBe(true);
+    // Base UI's Select must not report a change on mount just because it
+    // resolves its uncontrolled default value -- otherwise every row switch
+    // in the /tags workspace would immediately prompt "Descartar alterações?".
+    expect(onDirtyChange).not.toHaveBeenCalled();
   });
 
   it("reports dirty on the first edit and clean after a save", async () => {

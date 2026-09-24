@@ -1,49 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { ChevronDownIcon, MoreHorizontalIcon } from "lucide-react";
+import { ChevronDownIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { swatchClassFor } from "@/lib/tags/colors";
 import { indentClassFor } from "@/lib/tags/indent";
 import type { TagNode } from "@/lib/tags/tree";
-import { getTagHref } from "@/lib/tags/routes";
 import { useDictionary } from "@/lib/i18n/client";
 
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-export type TagTreeActions = {
-  onCreateChild: (parent: TagNode) => void;
-  onEdit: (tag: TagNode) => void;
-  onDelete: (tag: TagNode) => void;
+type TagTreeProps = {
+  nodes: TagNode[];
+  /** True while a tag filter is active, so no match hides inside a collapsed branch. */
+  filtering: boolean;
+  selectedId: string | null;
+  onSelect: (node: TagNode) => void;
 };
 
 /**
- * Short consistent indentation, chevron only on nodes with children,
- * swatch + name, row actions behind a menu rather than permanent icons.
- * Drag-and-drop is intentionally not supported (moving a tag uses
- * TagEditor's parent picker instead).
+ * The /tags workspace tree. A row *selects* its tag for the inspector;
+ * going to a tag's items lives in the sidebar and in the inspector's
+ * "Abrir itens". Short consistent indentation, chevron only on nodes with
+ * children, swatch + name. No drag-and-drop: moving uses the inspector's
+ * parent picker.
  */
-export function TagTree({
-  nodes,
-  activeTagId,
-  filtering,
-  actions,
-}: {
-  nodes: TagNode[];
-  activeTagId?: string;
-  /** True while a tag filter is active, so no match hides inside a collapsed branch. */
-  filtering: boolean;
-  actions: TagTreeActions;
-}) {
+export function TagTree({ nodes, ...rowProps }: TagTreeProps) {
   if (nodes.length === 0) {
     return null;
   }
@@ -51,14 +32,7 @@ export function TagTree({
   return (
     <ul className="flex flex-col gap-0.5">
       {nodes.map((node) => (
-        <TagTreeRow
-          key={node.id}
-          node={node}
-          depth={0}
-          activeTagId={activeTagId}
-          filtering={filtering}
-          actions={actions}
-        />
+        <TagTreeRow key={node.id} node={node} depth={0} {...rowProps} />
       ))}
     </ul>
   );
@@ -67,20 +41,14 @@ export function TagTree({
 function TagTreeRow({
   node,
   depth,
-  activeTagId,
   filtering,
-  actions,
-}: {
-  node: TagNode;
-  depth: number;
-  activeTagId?: string;
-  filtering: boolean;
-  actions: TagTreeActions;
-}) {
+  selectedId,
+  onSelect,
+}: Omit<TagTreeProps, "nodes"> & { node: TagNode; depth: number }) {
   const t = useDictionary();
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
-  const isActive = node.id === activeTagId;
+  const isSelected = node.id === selectedId;
   // Same rule as TagNavigation: a non-empty query forces every subtree open so
   // a deep match stays visible and tabbable, without discarding the user's own
   // collapse state -- clearing the query restores whatever `expanded` held.
@@ -92,7 +60,7 @@ function TagTreeRow({
         className={cn(
           "group flex items-center gap-1 rounded-md py-1 pr-1 transition-colors duration-(--motion-fast) ease-out-muvuca focus-within:bg-secondary/60 hover:bg-secondary/60",
           indentClassFor(depth),
-          isActive && "bg-secondary",
+          isSelected && "bg-secondary",
         )}
       >
         {hasChildren ? (
@@ -118,12 +86,14 @@ function TagTreeRow({
           <span className="size-6 shrink-0" aria-hidden="true" />
         )}
 
-        <Link
-          href={getTagHref(node)}
-          aria-current={isActive || undefined}
+        <button
+          type="button"
+          data-tag-row={node.id}
+          aria-pressed={isSelected}
+          onClick={() => onSelect(node)}
           className={cn(
-            "group/tagitem text-label-md flex min-w-0 flex-1 items-center gap-2 rounded px-1.5 py-1 transition-[transform,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.98] motion-reduce:active:scale-100",
-            isActive
+            "group/tagitem text-label-md flex min-w-0 flex-1 items-center gap-2 rounded px-1.5 py-1 text-left transition-[transform,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.98] motion-reduce:active:scale-100",
+            isSelected
               ? "font-medium text-foreground"
               : "text-muted-foreground hover:text-foreground",
           )}
@@ -138,37 +108,14 @@ function TagTreeRow({
           <span dir="auto" className="truncate">
             {node.name}
           </span>
-        </Link>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                className="shrink-0 opacity-100 transition-[opacity,transform] duration-(--motion-fast) ease-out-muvuca focus-visible:opacity-100 active:scale-90 motion-reduce:active:scale-100 [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100"
-              />
-            }
-          >
-            <MoreHorizontalIcon aria-hidden="true" />
-            <span className="sr-only">{t.tags.tree.actions(node.name)}</span>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => actions.onCreateChild(node)}>
-              {t.tags.tree.createChild}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => actions.onEdit(node)}>
-              {t.common.edit}
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={() => actions.onDelete(node)}
-            >
-              {t.common.delete}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+          {/* Selection is weight + background + this marker, never hue alone. */}
+          {isSelected && (
+            <span
+              aria-hidden="true"
+              className="ml-auto h-4 w-1 shrink-0 rounded-full bg-primary"
+            />
+          )}
+        </button>
       </div>
 
       {hasChildren && (
@@ -181,9 +128,9 @@ function TagTreeRow({
                 key={child.id}
                 node={child}
                 depth={depth + 1}
-                activeTagId={activeTagId}
                 filtering={filtering}
-                actions={actions}
+                selectedId={selectedId}
+                onSelect={onSelect}
               />
             ))}
           </ul>

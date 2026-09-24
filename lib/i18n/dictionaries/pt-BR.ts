@@ -145,10 +145,6 @@ export const ptBR = {
     },
     editor: {
       createTitle: "Nova tag",
-      editTitle: "Editar tag",
-      createDescription:
-        "Tags ajudam a organizar e reencontrar itens da biblioteca.",
-      editDescription: "As associações existentes com itens são preservadas.",
       nameLabel: "Nome",
       descriptionLabel: "Descrição",
       optional: "(opcional)",
@@ -174,8 +170,6 @@ export const ptBR = {
     tree: {
       collapse: (name: string) => `Recolher ${name}`,
       expand: (name: string) => `Expandir ${name}`,
-      actions: (name: string) => `Ações da tag ${name}`,
-      createChild: "Criar tag filha",
     },
     page: {
       heading: "Tags",
@@ -195,6 +189,23 @@ export const ptBR = {
       emptyItemsTitle: "Nenhum item nesta tag",
       emptyItemsDescription:
         "Itens associados a esta tag e às tags filhas aparecem aqui.",
+      editTag: "Editar tag",
+    },
+    inspector: {
+      emptyTitle: "Nenhuma tag selecionada",
+      emptyDescription:
+        "Escolha uma tag na árvore para editar nome, cor, tag pai e descrição.",
+      pathLabel: "Caminho",
+      children: "Tags filhas",
+      noChildren: "Nenhuma tag filha.",
+      addChild: "Nova tag filha",
+      maxDepthReached: "Limite de 6 níveis atingido.",
+      openItems: "Abrir itens",
+      moreActions: (name: string) => `Mais ações para ${name}`,
+      discardTitle: "Descartar alterações?",
+      discardDescription: "As alterações não salvas nesta tag serão perdidas.",
+      discardConfirm: "Descartar",
+      keepEditing: "Continuar editando",
     },
   },
   bookmarks: {

@@ -124,10 +124,6 @@ export const en: Dictionary = {
     },
     editor: {
       createTitle: "New tag",
-      editTitle: "Edit tag",
-      createDescription:
-        "Tags help you organize and find items in your library.",
-      editDescription: "Existing item associations are preserved.",
       nameLabel: "Name",
       descriptionLabel: "Description",
       optional: "(optional)",
@@ -151,8 +147,6 @@ export const en: Dictionary = {
     tree: {
       collapse: (name: string) => `Collapse ${name}`,
       expand: (name: string) => `Expand ${name}`,
-      actions: (name: string) => `Actions for tag ${name}`,
-      createChild: "Create child tag",
     },
     page: {
       heading: "Tags",
@@ -172,6 +166,23 @@ export const en: Dictionary = {
       emptyItemsTitle: "No items in this tag",
       emptyItemsDescription:
         "Items linked to this tag and its child tags show up here.",
+      editTag: "Edit tag",
+    },
+    inspector: {
+      emptyTitle: "No tag selected",
+      emptyDescription:
+        "Pick a tag in the tree to edit its name, color, parent and description.",
+      pathLabel: "Path",
+      children: "Child tags",
+      noChildren: "No child tags.",
+      addChild: "New child tag",
+      maxDepthReached: "6-level limit reached.",
+      openItems: "Open items",
+      moreActions: (name: string) => `More actions for ${name}`,
+      discardTitle: "Discard changes?",
+      discardDescription: "Unsaved changes to this tag will be lost.",
+      discardConfirm: "Discard",
+      keepEditing: "Keep editing",
     },
   },
   bookmarks: {
