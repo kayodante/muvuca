@@ -53,22 +53,24 @@ describe("bookmark actions", () => {
     mockSupabase.from.mockReturnValue({
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
-          in: vi.fn().mockImplementation(async (field: string, chunk: string[]) => {
-            activeRequests++;
-            if (activeRequests > maxActiveRequests) {
-              maxActiveRequests = activeRequests;
-            }
+          in: vi
+            .fn()
+            .mockImplementation(async (field: string, chunk: string[]) => {
+              activeRequests++;
+              if (activeRequests > maxActiveRequests) {
+                maxActiveRequests = activeRequests;
+              }
 
-            await new Promise(resolve => setTimeout(resolve, 10));
+              await new Promise((resolve) => setTimeout(resolve, 10));
 
-            activeRequests--;
+              activeRequests--;
 
-            // Return the first item of each chunk to verify all chunks were processed
-            return {
-              data: [{ normalized_url: chunk[0] }],
-              error: null,
-            };
-          }),
+              // Return the first item of each chunk to verify all chunks were processed
+              return {
+                data: [{ normalized_url: chunk[0] }],
+                error: null,
+              };
+            }),
         }),
       }),
     });

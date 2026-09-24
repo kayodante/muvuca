@@ -36,14 +36,18 @@ export async function findExistingBookmarkUrls(
   const urlChunks = chunkArray(parsed.data, DUPLICATE_CHECK_CHUNK_SIZE);
   const foundUrls: string[] = [];
 
-  const results = await processInChunks(urlChunks, DUPLICATE_CHECK_CONCURRENCY, async (chunk) => {
-    const res = await supabase
-      .from("library_items")
-      .select("normalized_url")
-      .eq("type", "link")
-      .in("normalized_url", chunk);
-    return res;
-  });
+  const results = await processInChunks(
+    urlChunks,
+    DUPLICATE_CHECK_CONCURRENCY,
+    async (chunk) => {
+      const res = await supabase
+        .from("library_items")
+        .select("normalized_url")
+        .eq("type", "link")
+        .in("normalized_url", chunk);
+      return res;
+    },
+  );
 
   for (const { data, error } of results) {
     if (error) {

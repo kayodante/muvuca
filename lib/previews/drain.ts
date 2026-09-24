@@ -26,8 +26,6 @@ const BLOCKED_ERROR_CODES = new Set([
 ]);
 const IMAGE_ERROR_CODES = new Set(["image_rejected", "decode_failed"]);
 
-
-
 /** Best-effort: a Storage remove failure here only logs, never throws (it must not fail an otherwise-successful job). */
 async function bestEffortRemove(
   supabase: SupabaseServerClient,
