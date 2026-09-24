@@ -234,6 +234,7 @@ export const ptBR = {
       deleteDescription:
         "As tags filhas que não estiverem selecionadas passam a ficar sob o ancestral mais próximo que continuar existindo. Os itens associados não são excluídos.",
       deleteConfirm: "Excluir tags",
+      deleteOverCap: "Excluir aceita até 500 tags por vez.",
       deleting: "Excluindo...",
       deleted: (n: number) =>
         n === 1 ? "1 tag excluída." : `${n} tags excluídas.`,

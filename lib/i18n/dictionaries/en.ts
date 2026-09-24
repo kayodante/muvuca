@@ -211,6 +211,7 @@ export const en: Dictionary = {
       deleteDescription:
         "Unselected child tags move under the nearest ancestor that still exists. Associated items are not deleted.",
       deleteConfirm: "Delete tags",
+      deleteOverCap: "Delete accepts up to 500 tags at a time.",
       deleting: "Deleting...",
       deleted: (n: number) =>
         n === 1 ? "1 tag deleted." : `${n} tags deleted.`,

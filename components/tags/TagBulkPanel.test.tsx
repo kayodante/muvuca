@@ -307,5 +307,12 @@ describe("TagBulkPanel", () => {
 
     expect(button("Mover para…")?.disabled).toBe(false);
     expect(button("Excluir")?.disabled).toBe(true);
+    // The warning names the action that is over the cap, not both.
+    expect(document.body.textContent).toContain(
+      "Excluir aceita até 500 tags por vez.",
+    );
+    expect(document.body.textContent).not.toContain(
+      "Selecione entre 1 e 500 tags.",
+    );
   });
 });

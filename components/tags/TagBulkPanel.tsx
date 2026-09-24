@@ -85,7 +85,9 @@ export function TagBulkPanel({
       </p>
       {deleteOverCap && (
         <p role="alert" className="text-sm text-destructive">
-          {t.errors.tagBatchInvalid}
+          {/* Move can still fit (checked descendants ride along): then
+              only delete is over the cap, and the warning says so. */}
+          {moveOverCap ? t.errors.tagBatchInvalid : t.tags.bulk.deleteOverCap}
         </p>
       )}
       <div className="flex flex-wrap gap-2">
