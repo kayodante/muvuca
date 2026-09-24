@@ -7,14 +7,12 @@ import { TagTree } from "./TagTree";
 
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
-const onSelect = vi.fn();
 
 afterEach(async () => {
   await act(async () => root?.unmount());
   container?.remove();
   root = null;
   container = null;
-  vi.clearAllMocks();
 });
 
 const nodes: TagNode[] = [
@@ -48,8 +46,11 @@ async function renderTagTree(filtering = false) {
       <TagTree
         nodes={nodes}
         filtering={filtering}
-        selectedId={null}
-        onSelect={onSelect}
+        actions={{
+          onCreateChild: vi.fn(),
+          onEdit: vi.fn(),
+          onDelete: vi.fn(),
+        }}
       />,
     );
   });
@@ -78,7 +79,7 @@ describe("TagTree", () => {
   it("filtrar com um ramo recolhido mantém o descendente que combina alcançável", async () => {
     const dom = await renderTagTree();
     const subtreeOf = (node: ParentNode) =>
-      node.querySelector('[data-tag-row="frontend"]')?.closest("ul");
+      node.querySelector('a[href="/t/dev/frontend"]')?.closest("ul");
 
     const toggle = dom.querySelector(
       'button[aria-label="Recolher Dev"]',
@@ -93,8 +94,11 @@ describe("TagTree", () => {
         <TagTree
           nodes={nodes}
           filtering
-          selectedId={null}
-          onSelect={onSelect}
+          actions={{
+            onCreateChild: vi.fn(),
+            onEdit: vi.fn(),
+            onDelete: vi.fn(),
+          }}
         />,
       );
     });
@@ -108,7 +112,7 @@ describe("TagTree", () => {
   it("limpar a busca devolve o ramo ao estado recolhido pelo usuário", async () => {
     const dom = await renderTagTree(true);
     const subtreeOf = (node: ParentNode) =>
-      node.querySelector('[data-tag-row="frontend"]')?.closest("ul");
+      node.querySelector('a[href="/t/dev/frontend"]')?.closest("ul");
 
     const toggle = dom.querySelector(
       'button[aria-label="Recolher Dev"]',
@@ -124,71 +128,15 @@ describe("TagTree", () => {
         <TagTree
           nodes={nodes}
           filtering={false}
-          selectedId={null}
-          onSelect={onSelect}
+          actions={{
+            onCreateChild: vi.fn(),
+            onEdit: vi.fn(),
+            onDelete: vi.fn(),
+          }}
         />,
       );
     });
 
     expect(subtreeOf(dom)?.hasAttribute("inert")).toBe(true);
-  });
-
-  it("seleciona a tag pelo botão da linha e marca a selecionada", async () => {
-    const dom = await renderTagTree();
-    const row = dom.querySelector(
-      '[data-tag-row="frontend"]',
-    ) as HTMLButtonElement;
-
-    await act(async () => row.click());
-    expect(onSelect).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "frontend" }),
-    );
-
-    await act(async () => {
-      root?.render(
-        <TagTree
-          nodes={nodes}
-          filtering={false}
-          selectedId="frontend"
-          onSelect={onSelect}
-        />,
-      );
-    });
-    expect(row.getAttribute("aria-pressed")).toBe("true");
-    expect(
-      dom.querySelector('[data-tag-row="dev"]')?.getAttribute("aria-pressed"),
-    ).toBe("false");
-  });
-
-  it("no modo seleção cada linha vira um checkbox rotulado pelo nome", async () => {
-    const onToggleChecked = vi.fn();
-    container = document.createElement("div");
-    document.body.append(container);
-    root = createRoot(container);
-    await act(async () => {
-      root?.render(
-        <TagTree
-          nodes={nodes}
-          filtering={false}
-          selectedId={null}
-          onSelect={onSelect}
-          checked={new Set(["frontend"])}
-          onToggleChecked={onToggleChecked}
-        />,
-      );
-    });
-
-    const boxes = container.querySelectorAll<HTMLInputElement>(
-      'input[type="checkbox"]',
-    );
-    expect(boxes).toHaveLength(2);
-    expect(boxes[1]?.closest("label")?.textContent).toBe("Frontend");
-    expect(boxes[1]?.checked).toBe(true);
-    expect(container.querySelector("[data-tag-row]")).toBeNull();
-
-    await act(async () => boxes[0]?.click());
-    expect(onToggleChecked).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "dev" }),
-    );
   });
 });

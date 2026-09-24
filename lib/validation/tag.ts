@@ -74,17 +74,3 @@ export const updateTagSchema = createTagSchema.extend({
 export const deleteTagSchema = z.object({
   id: z.uuid(),
 });
-
-/** Mirrors the cap in `move_tags` / `delete_tags_reparent_children` (0032). */
-export const TAG_BULK_MAX = 500;
-
-export const tagIdsSchema = z.array(z.uuid()).min(1).max(TAG_BULK_MAX);
-
-export const moveTagsSchema = z.object({
-  ids: tagIdsSchema,
-  parentId: tagParentIdSchema,
-});
-
-export const deleteTagsSchema = z.object({
-  ids: tagIdsSchema,
-});

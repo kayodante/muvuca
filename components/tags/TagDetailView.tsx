@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { swatchClassFor } from "@/lib/tags/colors";
 import { cn } from "@/lib/utils";
 import type { Tag, TagAncestor } from "@/lib/database/queries/tags";
@@ -12,7 +10,8 @@ import { ItemsPage } from "@/components/items/ItemsPage";
 /**
  * `/t/[...tagPath]`: breadcrumb, this tag's own head (name, badge, item/subtag
  * counts) and its indexed, deduplicated item rollup for the subtree.
- * Editing happens in the `/tags` inspector, linked from here.
+ * Creating/editing/deleting tags and browsing the child tree happen on
+ * `/tags`, not here.
  *
  * `t` is optional (default `ptBR`), same pattern as `Breadcrumb`: its own
  * unit test renders it directly through `createRoot()` (plain client
@@ -63,12 +62,6 @@ export function TagDetailView({
               <span className="truncate">{tag.name}</span>
             </span>
           </h1>
-          <Link
-            href={`/tags?${new URLSearchParams({ tag: tag.path })}`}
-            className="text-label-md self-start rounded text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          >
-            {t.tags.detail.editTag}
-          </Link>
         </div>
 
         <div className="flex gap-2 p-1">

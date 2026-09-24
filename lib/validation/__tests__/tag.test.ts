@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   createTagSchema,
-  deleteTagsSchema,
-  moveTagsSchema,
-  TAG_BULK_MAX,
   tagColorSchema,
   tagDescriptionSchema,
   tagNameSchema,
@@ -141,26 +138,5 @@ describe("updateTagSchema", () => {
       parentId: "",
     });
     expect(parsed.success).toBe(true);
-  });
-});
-
-describe("bulk tag schemas", () => {
-  const id = "123e4567-e89b-12d3-a456-426614174000";
-
-  it("accepts a root move with an empty parentId", () => {
-    const parsed = moveTagsSchema.safeParse({ ids: [id], parentId: "" });
-    expect(parsed.success && parsed.data.parentId).toBe(null);
-  });
-
-  it("rejects an empty batch and one over the cap", () => {
-    expect(deleteTagsSchema.safeParse({ ids: [] }).success).toBe(false);
-    expect(
-      deleteTagsSchema.safeParse({ ids: Array(TAG_BULK_MAX + 1).fill(id) })
-        .success,
-    ).toBe(false);
-  });
-
-  it("rejects a non-uuid id", () => {
-    expect(deleteTagsSchema.safeParse({ ids: ["nope"] }).success).toBe(false);
   });
 });
