@@ -7,10 +7,10 @@ import { describe, expect, it } from "vitest";
  * The E2E port is written down twice: as `E2E_PORT` in playwright.config.ts
  * and inside `additional_redirect_urls` in supabase/config.toml. Nothing
  * connects them, and a mismatch does not fail loudly -- Supabase Auth simply
- * refuses the magic link's `emailRedirectTo`, falls back to `site_url`, and
- * the sign-in callback lands on whatever is listening on that other port.
- * The suite then fails deep inside the first test, looking like a product
- * bug rather than a config typo.
+ * refuses the auth email redirect (used by "forgot password"), falls back
+ * to `site_url`, and the callback lands on whatever is listening on that
+ * other port. The suite then fails deep inside the first test, looking like
+ * a product bug rather than a config typo.
  */
 const ROOT = process.cwd();
 

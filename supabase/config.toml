@@ -202,7 +202,10 @@ enable_anonymous_sign_ins = false
 # Allow/disallow testing manual linking of accounts
 enable_manual_linking = false
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
-minimum_password_length = 6
+# Set to 12 for AAA-222 (email + password login). The hosted project's own
+# Auth > Policies setting must be kept at the same value in the Dashboard --
+# this file only governs the local CLI stack.
+minimum_password_length = 12
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
 password_requirements = ""
@@ -234,7 +237,12 @@ anonymous_users = 30
 # Number of sessions that can be refreshed in a 5 minute interval per IP address.
 token_refresh = 150
 # Number of sign up and sign-in requests that can be made in a 5 minute interval per IP address (excludes anonymous users).
-sign_in_sign_ups = 30
+# Raised for the same reason as email_sent above, local/E2E only: AAA-222
+# made e2e/helpers.ts `signIn()` call both `auth.signUp` (per-test account)
+# and the password form's `auth.signInWithPassword` -- two hits per login
+# instead of one magic-link request. ~58 call sites x 2 x up to 3 (CI
+# `retries: 2`) blew past the previous 30.
+sign_in_sign_ups = 450
 # Number of OTP / Magic link verifications that can be made in a 5 minute interval per IP address.
 token_verifications = 30
 # Number of Web3 logins that can be made in a 5 minute interval per IP address.
@@ -278,14 +286,6 @@ otp_expiry = 3600
 # pass = "env(SENDGRID_API_KEY)"
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
-
-# PKCE + Magic Link: the default template links to GoTrue's hosted
-# `/auth/v1/verify` endpoint, which sets cookies on the wrong origin for our
-# own `@supabase/ssr` server client. This template links straight to our
-# app's `/auth/confirm` route instead, per current Supabase SSR guidance.
-[auth.email.template.magic_link]
-subject = "Seu link de acesso ao Muvuca"
-content_path = "./supabase/templates/magic_link.html"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]

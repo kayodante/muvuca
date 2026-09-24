@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { emailSchema, signInSchema } from "@/lib/validation/auth";
+import {
+  emailSchema,
+  passwordSchema,
+  signInSchema,
+} from "@/lib/validation/auth";
 
 describe("emailSchema", () => {
   it("accepts a valid email", () => {
@@ -17,12 +21,63 @@ describe("emailSchema", () => {
 });
 
 describe("signInSchema", () => {
-  it("accepts an email without next", () => {
-    const parsed = signInSchema.safeParse({ email: "user@example.com" });
+  it("accepts an email and password without next", () => {
+    const parsed = signInSchema.safeParse({
+      email: "user@example.com",
+      password: "whatever",
+    });
     expect(parsed.success).toBe(true);
   });
 
   it("rejects a missing email", () => {
-    expect(signInSchema.safeParse({ next: "/library" }).success).toBe(false);
+    expect(
+      signInSchema.safeParse({ password: "whatever", next: "/library" })
+        .success,
+    ).toBe(false);
+  });
+
+  it("rejects a missing password", () => {
+    expect(signInSchema.safeParse({ email: "user@example.com" }).success).toBe(
+      false,
+    );
+  });
+
+  it("rejects an empty password", () => {
+    expect(
+      signInSchema.safeParse({ email: "user@example.com", password: "" })
+        .success,
+    ).toBe(false);
+  });
+
+  it("rejects a password over the 72-char bcrypt/GoTrue limit", () => {
+    expect(
+      signInSchema.safeParse({
+        email: "user@example.com",
+        password: "a".repeat(73),
+      }).success,
+    ).toBe(false);
+  });
+
+  it("accepts a short password (no minimum-length policy at login)", () => {
+    expect(
+      signInSchema.safeParse({ email: "user@example.com", password: "a" })
+        .success,
+    ).toBe(true);
+  });
+});
+
+describe("passwordSchema", () => {
+  it("rejects a password under 12 characters", () => {
+    expect(passwordSchema.safeParse("short-pw1").success).toBe(false);
+  });
+
+  it("accepts a password of 12 or more characters", () => {
+    expect(passwordSchema.safeParse("long-enough-password").success).toBe(
+      true,
+    );
+  });
+
+  it("rejects a password over the 72-char limit", () => {
+    expect(passwordSchema.safeParse("a".repeat(73)).success).toBe(false);
   });
 });

@@ -1,6 +1,11 @@
 import { test, expect } from "@playwright/test";
 
-import { SEEDED_EMAIL, signIn, signInThroughForm } from "./helpers";
+import {
+  SEEDED_EMAIL,
+  SEEDED_PASSWORD,
+  signIn,
+  signInThroughForm,
+} from "./helpers";
 
 test("unauthenticated access to a protected route redirects to /login", async ({
   page,
@@ -44,10 +49,10 @@ test("prefetch headers cannot bypass protected-route authentication", async ({
 });
 
 // Único teste que passa pelo formulário: os demais provisionam a conta pela
-// API (helpers.signIn), porque o produto é single-user e a action manda
-// `shouldCreateUser: false`. Daí o usuário do seed, o único que existe.
-test("full magic-link login and logout", async ({ page }) => {
-  await signInThroughForm(page, SEEDED_EMAIL);
+// API (helpers.signIn), porque o produto é single-user e o formulário nunca
+// cria conta. Daí o usuário do seed, o único que existe de antemão.
+test("full password login and logout", async ({ page }) => {
+  await signInThroughForm(page, SEEDED_EMAIL, SEEDED_PASSWORD);
 
   await expect(page).toHaveURL(/\/library/);
   await expect(page.getByText(SEEDED_EMAIL)).toBeVisible();
@@ -60,6 +65,27 @@ test("full magic-link login and logout", async ({ page }) => {
   // Session is gone: the protected route redirects again.
   await page.goto("/library");
   await expect(page).toHaveURL(/\/login/);
+});
+
+test("wrong password shows a generic error and stays on /login", async ({
+  page,
+}) => {
+  await signInThroughForm(page, SEEDED_EMAIL, "not-the-right-password");
+
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByText("Email ou senha inválidos.")).toBeVisible();
+  await expect(page.getByLabel("Email")).toHaveValue(SEEDED_EMAIL);
+});
+
+test("unknown email shows the same generic error", async ({ page }) => {
+  await signInThroughForm(
+    page,
+    "no-such-account@muvuca.test",
+    "whatever-password",
+  );
+
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page.getByText("Email ou senha inválidos.")).toBeVisible();
 });
 
 test("invalid callback shows a generic recoverable error", async ({ page }) => {

@@ -279,22 +279,15 @@ export const en: Dictionary = {
   },
   auth: {
     login: {
-      linkSentBadge: "LINK SENT",
-      checkEmailTitle: "Check your email",
-      checkEmailBody:
-        "If that email has an account, we've sent a sign-in link. Check your inbox.",
-      useAnotherEmail: "Use another email",
-      resendHint:
-        "Didn't get it? Check your spam folder. Muvuca isn't accepting new accounts yet, so emails without an existing account won't receive a link.",
       personalLibraryBadge: "PERSONAL LIBRARY",
       pitch:
         "Save links and prompts, organize them with nested tags, and find everything again in seconds.",
       emailLabel: "Email",
       emailPlaceholder: "you@email.com",
-      sendingLink: "Sending access link",
-      sendLink: "Send access link",
-      passwordlessHint:
-        "No password — we email you an access link. Muvuca isn't accepting new accounts yet.",
+      passwordLabel: "Password",
+      signIn: "Sign in",
+      signingIn: "Signing in",
+      noSignupHint: "Muvuca isn't accepting new accounts yet.",
     },
     loginFailedMessage:
       "Couldn't complete sign-in. The link may have expired or already been used. Request a new link below.",
@@ -720,6 +713,8 @@ export const en: Dictionary = {
     previewJobsLoadFailed: "Couldn't fetch preview jobs.",
     accountResetFailed: "Couldn't delete your account data.",
     invalidEmail: "Enter a valid email.",
+    invalidCredentials: "Invalid email or password.",
+    tooManyAttempts: "Too many attempts. Wait a few minutes and try again.",
     signOutFailed: "Couldn't sign out. Please try again.",
     invalidTheme: "Invalid theme.",
     themeUpdateFailed: "Couldn't update the appearance.",

@@ -3,28 +3,31 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { signInSchema } from "@/lib/validation/auth";
-import { getEnv } from "@/lib/validation/env";
-import { DEFAULT_REDIRECT } from "@/lib/security/redirects";
+import { safeRedirectTarget } from "@/lib/security/redirects";
 import { getDictionary } from "@/lib/i18n/server";
 import { translateFieldErrors } from "@/lib/i18n/validation";
 import { logEvent } from "@/lib/security/logging";
-import { ok, fail, type ActionResult } from "@/lib/utils/result";
+import { fail, type ActionResult } from "@/lib/utils/result";
 
 /**
- * Requests a magic link. Always returns the same generic
- * success shape regardless of whether the email exists, is rate-limited,
- * or Supabase Auth returns an error -- account enumeration through the
- * login response is a listed threat. Validation
- * failures (malformed email) are the one case that surfaces a real error,
- * since those reveal nothing about account existence.
+ * Signs in with email + password. On any authentication failure this
+ * returns one generic message regardless of cause -- unknown email, wrong
+ * password, unconfirmed email, or anything else Supabase reports -- because
+ * account enumeration through the login response is a listed threat. The
+ * one exception is rate limiting (HTTP 429): its message is also generic,
+ * but distinct, since being told to slow down reveals nothing about
+ * whether the account exists either. Validation failures (malformed email,
+ * empty password) are a third case that surfaces field-level detail, again
+ * for the same reason -- they reveal nothing about account existence.
  */
-export async function signInWithMagicLink(
+export async function signInWithPassword(
   _prevState: ActionResult<null> | null,
   formData: FormData,
 ): Promise<ActionResult<null>> {
   const t = await getDictionary();
   const parsed = signInSchema.safeParse({
     email: formData.get("email"),
+    password: formData.get("password"),
     next: formData.get("next") || undefined,
   });
 
@@ -36,32 +39,27 @@ export async function signInWithMagicLink(
     );
   }
 
-  // The exact callback is allowlisted in hosted Supabase. Production's
-  // default email template uses it for the PKCE code redirect, while the
-  // local custom template still sends token_hash directly to the same route.
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithOtp({
+  const { error } = await supabase.auth.signInWithPassword({
     email: parsed.data.email,
-    options: {
-      // Single-user deploy: never provision a new account from this form.
-      shouldCreateUser: false,
-      emailRedirectTo: (() => {
-        const url = new URL("/auth/confirm", getEnv().NEXT_PUBLIC_APP_URL);
-        url.searchParams.set("next", parsed.data.next ?? DEFAULT_REDIRECT);
-        return url.toString();
-      })(),
-    },
+    password: parsed.data.password,
   });
 
   if (error) {
     logEvent({
-      event: "auth.magic_link_request_failed",
+      event: "auth.password_sign_in_failed",
       status: "failure",
       errorClass: error.name,
     });
+
+    if (error.status === 429) {
+      return fail("UNKNOWN", t.errors.tooManyAttempts);
+    }
+
+    return fail("INVALID_CREDENTIALS", t.errors.invalidCredentials);
   }
 
-  return ok(null);
+  redirect(safeRedirectTarget(parsed.data.next));
 }
 
 /** Signs the user out and redirects to `/login`. */

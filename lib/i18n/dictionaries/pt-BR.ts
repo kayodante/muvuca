@@ -302,22 +302,15 @@ export const ptBR = {
   },
   auth: {
     login: {
-      linkSentBadge: "LINK ENVIADO",
-      checkEmailTitle: "Verifique seu email",
-      checkEmailBody:
-        "Se esse email tiver uma conta, enviamos um link de acesso. Confira sua caixa de entrada.",
-      useAnotherEmail: "Usar outro email",
-      resendHint:
-        "Não recebeu? Verifique a pasta de spam. O Muvuca ainda não está aceitando novas contas, então emails sem cadastro não recebem link.",
       personalLibraryBadge: "BIBLIOTECA PESSOAL",
       pitch:
         "Salve links e prompts, organize por tags aninhadas e reencontre tudo em segundos.",
       emailLabel: "Email",
       emailPlaceholder: "voce@email.com",
-      sendingLink: "Enviando link de acesso",
-      sendLink: "Enviar link de acesso",
-      passwordlessHint:
-        "Sem senha — enviamos um link de acesso por email. O Muvuca ainda não está aceitando novas contas.",
+      passwordLabel: "Senha",
+      signIn: "Entrar",
+      signingIn: "Entrando",
+      noSignupHint: "O Muvuca ainda não está aceitando novas contas.",
     },
     loginFailedMessage:
       "Não foi possível concluir o login. O link pode ter expirado ou já ter sido usado. Solicite um novo link abaixo.",
@@ -772,6 +765,9 @@ export const ptBR = {
     previewJobsLoadFailed: "Não foi possível buscar jobs de preview.",
     accountResetFailed: "Não foi possível apagar os dados da conta.",
     invalidEmail: "Informe um email válido.",
+    invalidCredentials: "Email ou senha inválidos.",
+    tooManyAttempts:
+      "Muitas tentativas. Aguarde alguns minutos e tente de novo.",
     signOutFailed: "Não foi possível sair. Tente novamente.",
     invalidTheme: "Tema inválido.",
     themeUpdateFailed: "Não foi possível atualizar a aparência.",

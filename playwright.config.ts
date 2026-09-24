@@ -11,8 +11,8 @@ import { defineConfig, devices } from "@playwright/test";
  * application and every test fails in a way that looks like a product bug.
  *
  * Any port set here must also be allowlisted in `additional_redirect_urls`
- * (supabase/config.toml), or Supabase Auth rejects the magic link's
- * `emailRedirectTo` and falls back to `site_url`, sending the sign-in
+ * (supabase/config.toml), or Supabase Auth rejects the auth email redirect
+ * (used by "forgot password") and falls back to `site_url`, sending the
  * callback to whatever lives on that other port. That pairing is asserted by
  * `__tests__/e2e-port-allowlist.test.ts`.
  *
@@ -24,8 +24,6 @@ import { defineConfig, devices } from "@playwright/test";
  * while `next start` listened on :3210, timing out before a single test ran.
  */
 const E2E_PORT = process.env.E2E_PORT ?? "3210";
-// Exported so `e2e/helpers.ts` builds the magic link's `emailRedirectTo`
-// from the same value, instead of keeping a second copy of the port.
 export const E2E_APP_URL = `http://127.0.0.1:${E2E_PORT}`;
 
 export default defineConfig({
