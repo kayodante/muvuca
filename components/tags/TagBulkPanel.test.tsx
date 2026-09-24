@@ -269,4 +269,43 @@ describe("TagBulkPanel", () => {
     expect(button("Mover para…")?.disabled).toBe(true);
     expect(button("Excluir")?.disabled).toBe(true);
   });
+
+  it("caps move on the ids it sends: checked descendants ride along and don't count", async () => {
+    // One root with TAG_BULK_MAX children, all checked: delete sends
+    // TAG_BULK_MAX + 1 ids, move sends only the root.
+    const root_: FlatTag = {
+      id: "root",
+      parentId: null,
+      path: "root",
+      name: "Root",
+      colorToken: "lime",
+      description: null,
+    };
+    const children: FlatTag[] = Array.from(
+      { length: TAG_BULK_MAX },
+      (_, index) => ({
+        id: `child-${index}`,
+        parentId: "root",
+        path: `root/child-${index}`,
+        name: `Child ${index}`,
+        colorToken: "lime",
+        description: null,
+      }),
+    );
+    const flat = [root_, ...children];
+
+    await act(async () =>
+      root?.render(
+        <TagBulkPanel
+          selectedIds={flat.map((tag) => tag.id)}
+          flatTags={flat}
+          onDone={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      ),
+    );
+
+    expect(button("Mover para…")?.disabled).toBe(false);
+    expect(button("Excluir")?.disabled).toBe(true);
+  });
 });

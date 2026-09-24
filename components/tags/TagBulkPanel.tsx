@@ -67,7 +67,11 @@ export function TagBulkPanel({
   const [moveOpen, setMoveOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const count = selectedIds.length;
-  const overCap = count > TAG_BULK_MAX;
+  // Each action is capped on what it sends: delete sends every checked id,
+  // move only the ones whose ancestor isn't checked too.
+  const deleteOverCap = count > TAG_BULK_MAX;
+  const moveOverCap =
+    normalizeMoveSelection(selectedIds, flatTags).length > TAG_BULK_MAX;
 
   return (
     <section aria-labelledby="tag-bulk-heading" className="flex flex-col gap-3">
@@ -79,7 +83,7 @@ export function TagBulkPanel({
           ? t.tags.bulk.noneSelected
           : t.tags.bulk.selectedCount(count)}
       </p>
-      {overCap && (
+      {deleteOverCap && (
         <p role="alert" className="text-sm text-destructive">
           {t.errors.tagBatchInvalid}
         </p>
@@ -88,7 +92,7 @@ export function TagBulkPanel({
         <Button
           variant="outline"
           size="sm"
-          disabled={count === 0 || overCap}
+          disabled={count === 0 || moveOverCap}
           onClick={() => setMoveOpen(true)}
         >
           {t.tags.bulk.move}
@@ -96,7 +100,7 @@ export function TagBulkPanel({
         <Button
           variant="destructive"
           size="sm"
-          disabled={count === 0 || overCap}
+          disabled={count === 0 || deleteOverCap}
           onClick={() => setDeleteOpen(true)}
         >
           {t.tags.bulk.delete}
