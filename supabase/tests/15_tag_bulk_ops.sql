@@ -4,7 +4,7 @@
 
 begin;
 
-select plan(23);
+select plan(25);
 
 create temporary table fixture_ids (label text primary key, id uuid not null);
 grant select, insert, update, delete on fixture_ids to authenticated;
@@ -104,6 +104,13 @@ select throws_ok(
   'a batch over 500 ids is rejected'
 );
 
+-- 12. A NULL id is an invalid batch, not a silent no-op for that element.
+select throws_ok(
+  'select public.move_tags(array[null]::uuid[])',
+  'lote de tags inválido',
+  'a batch containing a NULL id is rejected'
+);
+
 -- Delete: Dest -> A -> B -> C, item on A. Deleting A and B leaves C under Dest.
 select pg_temp.add_tag('a', 'A', 'dest');
 select pg_temp.add_tag('b', 'B', 'a');
@@ -121,7 +128,7 @@ values ((select auth.uid()), pg_temp.fid('item'), pg_temp.fid('a'));
 
 select public.delete_tags_reparent_children(array[pg_temp.fid('a'), pg_temp.fid('b')]);
 
--- 12-14.
+-- 13-15.
 select is(
   (select count(*)::int from public.tags where id in (pg_temp.fid('a'), pg_temp.fid('b'))),
   0,
@@ -134,11 +141,18 @@ select is(
   'items are never deleted by a bulk tag delete'
 );
 
--- 15.
+-- 16.
 select throws_ok(
   'select public.delete_tags_reparent_children(array[]::uuid[])',
   'lote de tags inválido',
   'an empty delete batch is rejected'
+);
+
+-- 17. Same NULL-id guard as move_tags.
+select throws_ok(
+  'select public.delete_tags_reparent_children(array[null]::uuid[])',
+  'lote de tags inválido',
+  'a delete batch containing a NULL id is rejected'
 );
 
 -- Cross-user: B owns BRoot -> BChild.
@@ -146,7 +160,7 @@ select tests.authenticate_as((select id from fixture_ids where label = 'user_b')
 select pg_temp.add_tag('b_root', 'B Root', null);
 select pg_temp.add_tag('b_child', 'B Child', 'b_root');
 
--- 16-20.
+-- 18-22.
 select throws_ok(
   format('select public.move_tags(array[%L]::uuid[])', pg_temp.fid('r1')),
   'tag não encontrada',
@@ -169,7 +183,7 @@ select throws_ok(
   'B cannot delete A''s tag'
 );
 
--- 21.
+-- 23.
 select tests.authenticate_as((select id from fixture_ids where label = 'user_a'));
 select is(
   (select count(*)::int from public.tags where id = pg_temp.fid('r1')),
@@ -177,7 +191,7 @@ select is(
   'A''s tag survives B''s delete attempt'
 );
 
--- 22-23. anon has no EXECUTE at all.
+-- 24-25. anon has no EXECUTE at all.
 select ok(
   not has_function_privilege('anon', 'public.move_tags(uuid[], uuid)', 'EXECUTE'),
   'anon cannot execute move_tags'

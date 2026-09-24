@@ -20,7 +20,7 @@ declare
   v_visible int;
   v_roots uuid[];
 begin
-  if p_tag_ids is null or cardinality(p_tag_ids) = 0 or cardinality(p_tag_ids) > 500 then
+  if p_tag_ids is null or cardinality(p_tag_ids) = 0 or cardinality(p_tag_ids) > 500 or array_position(p_tag_ids, null) is not null then
     raise exception 'lote de tags inválido';
   end if;
 
@@ -75,7 +75,7 @@ declare
   v_visible int;
   v_tag_id uuid;
 begin
-  if p_tag_ids is null or cardinality(p_tag_ids) = 0 or cardinality(p_tag_ids) > 500 then
+  if p_tag_ids is null or cardinality(p_tag_ids) = 0 or cardinality(p_tag_ids) > 500 or array_position(p_tag_ids, null) is not null then
     raise exception 'lote de tags inválido';
   end if;
 
