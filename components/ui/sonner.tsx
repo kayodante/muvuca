@@ -22,18 +22,10 @@ import { cn } from "@/lib/utils";
  * consistent with the account-based theme system and the no-inline-script
  * CSP.
  */
-// Default position bottom-center: bottom-right sits behind the /tags sticky
-// inspector's submit button and swallows real clicks on it (AAA-219).
-const Toaster = ({
-  className,
-  toastOptions,
-  position = "bottom-center",
-  ...props
-}: ToasterProps) => {
+const Toaster = ({ className, toastOptions, ...props }: ToasterProps) => {
   return (
     <Sonner
       theme="system"
-      position={position}
       className={cn("toaster group", className)}
       toastOptions={{
         ...toastOptions,

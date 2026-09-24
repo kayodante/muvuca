@@ -23,7 +23,8 @@ import { toastSuccess } from "@/components/states/Toast";
  * of deleting a tag up front -- children are promoted to this tag's own
  * parent, items keep existing but lose only this one association -- so
  * "excluir" never reads as "excluir os itens".
- * Controlled: its trigger lives inside the inspector's DropdownMenu.
+ * Controlled for the same reason as `TagEditor`: its trigger lives inside a
+ * row's DropdownMenu.
  */
 export function DeleteTagAlertDialog({
   open,

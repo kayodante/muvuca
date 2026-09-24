@@ -121,47 +121,45 @@ export async function signInThroughForm(page: Page, email: string) {
   await page.goto(await fetchMagicLink(email));
 }
 
-/** Cria uma tag raiz pelo inspetor de `/tags`. */
+/**
+ * Cria uma tag raiz pela interface de `/tags`. O botão do cabeçalho e o do
+ * estado vazio compartilham o nome acessível "Criar tag", e o submit do
+ * diálogo também -- daí o `.first()` antes de abrir e o escopo no diálogo
+ * depois.
+ */
 export async function createRootTag(page: Page, name: string) {
   await page.goto("/tags");
   await page.getByRole("button", { name: "Criar tag" }).first().click();
 
-  const inspector = page.getByRole("region", { name: "Nova tag" });
-  await expect(inspector).toBeVisible();
-  await inspector.getByLabel("Nome").fill(name);
-  await inspector.getByRole("button", { name: "Criar tag" }).click();
+  const dialog = page.getByRole("dialog", { name: "Nova tag" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel("Nome").fill(name);
+  await dialog.getByRole("button", { name: "Criar tag" }).click();
 
   await expect(page.getByText("Tag criada.")).toBeVisible();
-  await expect(page.getByRole("region", { name })).toBeVisible();
+  await expect(dialog).toBeHidden();
 }
 
-/** Seleciona uma tag na árvore de `/tags`, abrindo-a no inspetor. */
-export async function selectTag(page: Page, name: string) {
-  await page
-    .getByRole("region", { name: "Árvore de tags" })
-    .getByRole("button", { name, exact: true })
-    .click();
-  await expect(page.getByRole("region", { name })).toBeVisible();
-}
-
-/** Cria uma tag filha pelo "Nova tag filha" do inspetor do pai. */
+/**
+ * Cria uma tag filha pelo menu da linha do pai, que já preenche o parentId.
+ * Evita o Select "Tag pai" e evita navegar para a página da tag.
+ */
 export async function createChildTag(
   page: Page,
   parentName: string,
   name: string,
 ) {
   await page.goto("/tags");
-  await selectTag(page, parentName);
   await page
-    .getByRole("region", { name: parentName })
-    .getByRole("button", { name: "Nova tag filha" })
+    .getByRole("button", { name: `Ações da tag ${parentName}` })
     .click();
+  await page.getByRole("menuitem", { name: "Criar tag filha" }).click();
 
-  const inspector = page.getByRole("region", { name: "Nova tag" });
-  await expect(inspector).toBeVisible();
-  await inspector.getByLabel("Nome").fill(name);
-  await inspector.getByRole("button", { name: "Criar tag" }).click();
+  const dialog = page.getByRole("dialog", { name: "Nova tag" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel("Nome").fill(name);
+  await dialog.getByRole("button", { name: "Criar tag" }).click();
 
   await expect(page.getByText("Tag criada.")).toBeVisible();
-  await expect(page.getByRole("region", { name })).toBeVisible();
+  await expect(dialog).toBeHidden();
 }

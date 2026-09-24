@@ -1,10 +1,8 @@
 /**
- * Pure tree helpers shared by TagTree (rendering), TagForm (parent picker)
- * and the bulk panel. No I/O, no Supabase types -- operate on the flat tag
- * list the page already fetched once.
+ * Pure tree helpers shared by TagTree (rendering) and TagEditor (parent
+ * picker). No I/O, no Supabase types -- operate on the flat tag list the
+ * page already fetched once.
  */
-
-import { TAG_MAX_DEPTH } from "@/lib/tags/routes";
 
 export type FlatTag = {
   id: string;
@@ -141,117 +139,4 @@ export function filterTagTree(nodes: TagNode[], query: string): TagNode[] {
   };
 
   return nodes.map(filterNode).filter((node): node is TagNode => node !== null);
-}
-
-/** Depth of every tag in the flat list, root = 1. */
-function getDepths(flat: FlatTag[]): Map<string, number> {
-  const byId = new Map(flat.map((tag) => [tag.id, tag]));
-  const depths = new Map<string, number>();
-
-  const depthOf = (tag: FlatTag, hops: number): number => {
-    const known = depths.get(tag.id);
-    if (known !== undefined) return known;
-    const parent = tag.parentId ? byId.get(tag.parentId) : undefined;
-    // `hops` bound: malformed/cyclic input must not recurse forever.
-    const depth =
-      parent && hops < flat.length ? depthOf(parent, hops + 1) + 1 : 1;
-    depths.set(tag.id, depth);
-    return depth;
-  };
-
-  for (const tag of flat) depthOf(tag, 0);
-  return depths;
-}
-
-/**
- * Drops every id whose ancestor is also selected: moving the ancestor
- * already carries it. Mirrors `move_tags` (0032), which stays the
- * authority. Input order is kept.
- */
-export function normalizeMoveSelection(
-  ids: readonly string[],
-  flat: FlatTag[],
-): string[] {
-  const selected = new Set(ids);
-  const parentOf = new Map(flat.map((tag) => [tag.id, tag.parentId]));
-
-  return ids.filter((id) => {
-    let current = parentOf.get(id) ?? null;
-    for (let hops = 0; current !== null && hops < flat.length; hops += 1) {
-      if (selected.has(current)) return false;
-      current = parentOf.get(current) ?? null;
-    }
-    return true;
-  });
-}
-
-/**
- * Tags that cannot receive `ids` as children: the selection itself, its
- * descendants (a cycle) and every tag deep enough that the tallest moved
- * subtree would pass TAG_MAX_DEPTH. UX guard only -- the hierarchy trigger
- * (0008) enforces it.
- */
-export function getInvalidMoveTargets(
-  ids: readonly string[],
-  flat: FlatTag[],
-): Set<string> {
-  const invalid = new Set<string>();
-  const depths = getDepths(flat);
-  let tallest = 0;
-
-  for (const id of normalizeMoveSelection(ids, flat)) {
-    invalid.add(id);
-    const ownDepth = depths.get(id) ?? 1;
-    let height = 1;
-    for (const descendantId of getDescendantIds(id, flat)) {
-      invalid.add(descendantId);
-      height = Math.max(
-        height,
-        (depths.get(descendantId) ?? ownDepth) - ownDepth + 1,
-      );
-    }
-    tallest = Math.max(tallest, height);
-  }
-
-  for (const tag of flat) {
-    if ((depths.get(tag.id) ?? 1) + tallest > TAG_MAX_DEPTH)
-      invalid.add(tag.id);
-  }
-
-  return invalid;
-}
-
-/**
- * Moved tags whose name would collide at `parentId` -- with a tag that
- * stays there, or with another moved tag. Same comparison as the
- * `name_normalized` column (lower(btrim(name))); the per-level unique
- * indexes stay the authority.
- */
-export function findMoveNameCollisions(
-  ids: readonly string[],
-  parentId: string | null,
-  flat: FlatTag[],
-): FlatTag[] {
-  const moving = normalizeMoveSelection(ids, flat);
-  const movingSet = new Set(moving);
-  const byId = new Map(flat.map((tag) => [tag.id, tag]));
-  const key = (name: string) => name.trim().toLowerCase();
-
-  const taken = new Set(
-    flat
-      .filter((tag) => tag.parentId === parentId && !movingSet.has(tag.id))
-      .map((tag) => key(tag.name)),
-  );
-
-  const collisions: FlatTag[] = [];
-  for (const id of moving) {
-    const tag = byId.get(id);
-    if (!tag) continue;
-    if (taken.has(key(tag.name))) {
-      collisions.push(tag);
-    } else {
-      taken.add(key(tag.name));
-    }
-  }
-  return collisions;
 }

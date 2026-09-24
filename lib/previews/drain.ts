@@ -10,6 +10,7 @@ import {
 } from "@/lib/storage/previews";
 import { createClient } from "@/lib/supabase/server";
 import { PREVIEW_CLAIM_LIMIT, previewScopeSchema } from "@/lib/validation/item";
+import { processInChunks } from "@/lib/utils/concurrency";
 import { fail, ok, type ActionResult } from "@/lib/utils/result";
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
@@ -25,18 +26,7 @@ const BLOCKED_ERROR_CODES = new Set([
 ]);
 const IMAGE_ERROR_CODES = new Set(["image_rejected", "decode_failed"]);
 
-async function processInChunks<T, R>(
-  items: readonly T[],
-  size: number,
-  worker: (item: T) => Promise<R>,
-): Promise<R[]> {
-  const results: R[] = [];
-  for (let start = 0; start < items.length; start += size) {
-    const chunk = items.slice(start, start + size);
-    results.push(...(await Promise.all(chunk.map(worker))));
-  }
-  return results;
-}
+
 
 /** Best-effort: a Storage remove failure here only logs, never throws (it must not fail an otherwise-successful job). */
 async function bestEffortRemove(
