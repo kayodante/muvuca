@@ -1,5 +1,6 @@
 import { PreviewError } from "@/lib/metadata/errors";
 import type { createClient } from "@/lib/supabase/server";
+import { processInChunks } from "@/lib/utils/concurrency";
 
 /**
  * Storage helpers for the `link-previews` bucket (0023_link_previews.sql).
@@ -81,6 +82,8 @@ const STORAGE_LIST_PAGE_SIZE = 100;
 /** Loop guard for removeAllUserPreviewObjects -- 100k item-folders is far beyond any real account, so hitting this means folders aren't actually being removed between pages (a real bug) rather than a legitimately huge account. */
 const STORAGE_LIST_MAX_PAGES = 1000;
 
+const STORAGE_DELETE_CONCURRENCY = 3;
+
 /**
  * Removes every preview object for every item folder under `${userId}/`
  * (account reset). A page is always re-listed at offset 0, never advanced
@@ -108,9 +111,9 @@ export async function removeAllUserPreviewObjects(
     }
     if (!data || data.length === 0) return;
 
-    for (const folder of data) {
-      await deletePreviewObjects(supabase, userId, folder.name);
-    }
+    await processInChunks(data, STORAGE_DELETE_CONCURRENCY, (folder) =>
+      deletePreviewObjects(supabase, userId, folder.name),
+    );
   }
 
   throw new PreviewError(
