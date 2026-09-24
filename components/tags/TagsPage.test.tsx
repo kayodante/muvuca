@@ -4,6 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { FlatTag } from "@/lib/tags/tree";
 
+const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }));
+
 vi.mock("@/lib/actions/tags", () => ({
   createTag: vi.fn(),
   updateTag: vi.fn(),
@@ -12,7 +14,11 @@ vi.mock("@/lib/actions/tags", () => ({
   deleteTags: vi.fn(),
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn() } }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: pushMock }),
+}));
 
+import { deleteTag } from "@/lib/actions/tags";
 import { TagsPage, type TagsPageInitial } from "./TagsPage";
 
 const TAGS: FlatTag[] = [
@@ -62,6 +68,7 @@ afterEach(async () => {
   await act(async () => root?.unmount());
   container?.remove();
   document.body.innerHTML = "";
+  vi.resetAllMocks();
 });
 
 async function render(flatTags: FlatTag[], initial: TagsPageInitial = NONE) {
@@ -197,5 +204,50 @@ describe("TagsPage", () => {
     await act(async () => panelCancel?.click());
     expect(document.getElementById("tag-inspector-heading")).not.toBeNull();
     expect(document.activeElement).toBe(selectButton);
+  });
+
+  it("a single delete from the inspector focuses the empty-state heading", async () => {
+    vi.mocked(deleteTag).mockResolvedValue({ ok: true, data: null });
+    await render(TAGS, { ...NONE, tagPath: "dev" });
+
+    const menuButton = [...document.querySelectorAll("button")].find((b) =>
+      b.textContent?.includes("Mais ações para Dev"),
+    ) as HTMLButtonElement;
+    await act(async () => menuButton.click());
+
+    const deleteItem = [
+      ...document.body.querySelectorAll('[role="menuitem"]'),
+    ].find((el) => el.textContent === "Excluir") as HTMLElement;
+    await act(async () => deleteItem.click());
+
+    const alert = document.querySelector('[role="alertdialog"]');
+    const confirm = [...(alert?.querySelectorAll("button") ?? [])].find(
+      (b) => b.textContent === "Excluir tag",
+    );
+    await act(async () => confirm?.click());
+
+    expect(heading()).toBe("Nenhuma tag selecionada");
+    expect(document.activeElement?.id).toBe("tag-inspector-heading");
+  });
+
+  it("'Abrir itens' with unsaved edits asks before navigating away", async () => {
+    await render(TAGS, { ...NONE, tagPath: "dev" });
+
+    await act(async () => typeName("Dev renomeado"));
+    const openItems = [...document.querySelectorAll("a")].find((a) =>
+      a.textContent?.includes("Abrir itens"),
+    ) as HTMLAnchorElement;
+    await act(async () => openItems.click());
+
+    expect(pushMock).not.toHaveBeenCalled();
+    const alert = document.querySelector('[role="alertdialog"]');
+    expect(alert?.textContent).toContain("Descartar alterações?");
+
+    const discard = [...(alert?.querySelectorAll("button") ?? [])].find(
+      (button) => button.textContent === "Descartar",
+    );
+    await act(async () => discard?.click());
+
+    expect(pushMock).toHaveBeenCalledWith("/t/dev");
   });
 });

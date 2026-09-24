@@ -46,6 +46,7 @@ export function TagInspector({
   onDeleted,
   onDirtyChange,
   onEscape,
+  onNavigate,
 }: {
   target: InspectorTarget;
   flatTags: FlatTag[];
@@ -55,6 +56,12 @@ export function TagInspector({
   onDeleted: () => void;
   onDirtyChange: (dirty: boolean) => void;
   onEscape: () => void;
+  /**
+   * "Abrir itens" goes to a different route, so it can't reuse `onSelect`
+   * (an in-page target change). The page still owns the unsaved-changes
+   * guard, so this hands it the destination instead of navigating directly.
+   */
+  onNavigate: (href: string) => void;
 }) {
   const t = useDictionary();
   // A snapshot, not a live lookup: `deleteTag`'s own `revalidatePath` makes
@@ -165,6 +172,23 @@ export function TagInspector({
 
           <Link
             href={getTagHref(tag)}
+            onClick={(event) => {
+              // A modified click (new tab, new window, middle click) is the
+              // browser's own navigation, never the guard's: intercepting it
+              // would silently swallow "open in a new tab".
+              if (
+                event.defaultPrevented ||
+                event.button !== 0 ||
+                event.metaKey ||
+                event.ctrlKey ||
+                event.shiftKey ||
+                event.altKey
+              ) {
+                return;
+              }
+              event.preventDefault();
+              onNavigate(getTagHref(tag));
+            }}
             className="text-label-md inline-flex items-center gap-1.5 self-start rounded text-foreground underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
             {t.tags.inspector.openItems}

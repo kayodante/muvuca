@@ -98,6 +98,41 @@ test("o inspetor de nova tag não tem violações de a11y", async ({ page }) => 
   await expectNoViolations(page, "/tags com o inspetor Nova tag aberto");
 });
 
+test("o inspetor de edição com uma tag selecionada não tem violações de a11y", async ({
+  page,
+}) => {
+  await signIn(page, `e2e-a11y-edit-${Date.now()}@muvuca.test`);
+  await createRootTag(page, "Inspecionada");
+
+  await page.goto("/tags");
+  await page
+    .getByRole("region", { name: "Árvore de tags" })
+    .getByRole("button", { name: "Inspecionada", exact: true })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "Inspecionada" }),
+  ).toBeVisible();
+
+  await expectNoViolations(page, "/tags com o inspetor de edição aberto");
+});
+
+test("o modo de seleção com uma tag marcada não tem violações de a11y", async ({
+  page,
+}) => {
+  await signIn(page, `e2e-a11y-selection-${Date.now()}@muvuca.test`);
+  await createRootTag(page, "Selecionável");
+
+  await page.goto("/tags");
+  await page.getByRole("button", { name: "Selecionar" }).click();
+  await page
+    .getByRole("region", { name: "Árvore de tags" })
+    .getByRole("checkbox", { name: "Selecionável" })
+    .check();
+  await expect(page.getByText("1 tag selecionada")).toBeVisible();
+
+  await expectNoViolations(page, "/tags no modo de seleção com 1 tag marcada");
+});
+
 test("o tema escuro não tem violações de contraste", async ({ page }) => {
   await signIn(page, `e2e-a11y-dark-${Date.now()}@muvuca.test`);
 

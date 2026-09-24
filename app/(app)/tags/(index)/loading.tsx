@@ -11,7 +11,10 @@ export default async function TagsLoading() {
     >
       <div className="flex items-center justify-between gap-3">
         <Skeleton className="h-8 w-24" />
-        <Skeleton className="h-10 w-28 rounded-md" />
+        <div className="flex gap-2">
+          <Skeleton className="h-10 w-28 rounded-md" />
+          <Skeleton className="h-10 w-28 rounded-md" />
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-start">

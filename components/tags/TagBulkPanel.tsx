@@ -300,10 +300,17 @@ function DeleteTagsAlertDialog({
             {t.tags.bulk.deleteDescription}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <ul className="text-body-sm flex max-h-64 flex-col gap-1 overflow-y-auto">
+        <ul className="text-body-sm flex max-h-64 flex-col gap-1.5 overflow-y-auto">
           {selected.map((tag) => (
-            <li key={tag.id} dir="auto" className="truncate">
-              {tag.name}
+            <li
+              key={tag.id}
+              dir="auto"
+              className="flex flex-col [overflow-wrap:anywhere]"
+            >
+              <span>{tag.name}</span>
+              <span className="font-mono text-muted-foreground">
+                {tag.path.split("/").join(" / ")}
+              </span>
             </li>
           ))}
         </ul>

@@ -382,6 +382,36 @@ test("no celular o inspetor abre num painel lateral", async ({ page }) => {
   await expect(page).toHaveURL(/\/tags$/);
 });
 
+test("no celular o Escape com alterações pendentes pede confirmação sem fechar o painel", async ({
+  page,
+}) => {
+  await signIn(page, `e2e-tags-mobile-dirty-${Date.now()}@muvuca.test`);
+  await createRootTag(page, "Rascunho móvel");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/tags");
+  await page
+    .getByRole("region", { name: "Árvore de tags" })
+    .getByRole("button", { name: "Rascunho móvel", exact: true })
+    .click();
+
+  const sheet = page.getByRole("dialog", { name: "Rascunho móvel" });
+  await expect(sheet).toBeVisible();
+
+  const nameInput = sheet.getByLabel("Nome");
+  await nameInput.fill("Rascunho editado");
+  await page.keyboard.press("Escape");
+
+  const confirm = page.getByRole("alertdialog", {
+    name: "Descartar alterações?",
+  });
+  await expect(confirm).toBeVisible();
+  await confirm.getByRole("button", { name: "Continuar editando" }).click();
+
+  await expect(sheet).toBeVisible();
+  await expect(nameInput).toHaveValue("Rascunho editado");
+});
+
 test("no celular excluir uma tag fecha o painel e mostra o toast", async ({
   page,
 }) => {
@@ -408,6 +438,48 @@ test("no celular excluir uma tag fecha o painel e mostra o toast", async ({
 
   await expect(page.getByText("Tag excluída.")).toBeVisible();
   await expect(sheet).toBeHidden();
+});
+
+test("o inspetor sticky no desktop cabe sob o topbar com uma árvore longa", async ({
+  page,
+}) => {
+  // Creating 30 tags through the real UI, one at a time, is the slow part
+  // of this test -- well past the suite's default 30s budget. Each creation
+  // goes through a full `page.goto("/tags")` (same as `createRootTag`
+  // elsewhere in this file) rather than reusing the open inspector across
+  // iterations: staying on the same client instance races the Server
+  // Action's own revalidation against the next click and can leave the
+  // create form's own submit unreachable -- a client-state issue on its own,
+  // out of scope for this test, which only needs 30 tags to exist.
+  test.setTimeout(180_000);
+  await signIn(page, `e2e-tags-sticky-${Date.now()}@muvuca.test`);
+
+  for (let i = 1; i <= 30; i += 1) {
+    await createRootTag(page, `Overflow ${i.toString().padStart(2, "0")}`);
+  }
+
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/tags");
+
+  // Name-sorted, so "Overflow 25" sits well below the fold of a 30-tag tree.
+  await page
+    .getByRole("region", { name: "Árvore de tags" })
+    .getByRole("button", { name: "Overflow 25", exact: true })
+    .click();
+
+  const heading = page.getByRole("heading", { level: 2, name: "Overflow 25" });
+  const saveButton = page.getByRole("button", { name: "Salvar alterações" });
+  await expect(heading).toBeVisible();
+
+  // Scroll the page roughly to the middle of the tree column, as someone
+  // browsing a long list before picking a tag near the bottom would.
+  await page.mouse.wheel(0, 600);
+
+  // The sticky aside must offset below the sticky Topbar and scroll within
+  // its own bounds -- not spill its lower half (Save, "Abrir itens") off
+  // the bottom of the viewport under the AppShell's decorative fade.
+  await expect(heading).toBeInViewport();
+  await expect(saveButton).toBeInViewport();
 });
 
 test("move várias tags de uma vez levando as filhas junto", async ({

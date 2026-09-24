@@ -7,6 +7,7 @@ import {
   useSyncExternalStore,
   type RefObject,
 } from "react";
+import { useRouter } from "next/navigation";
 import { PlusIcon, TagIcon } from "lucide-react";
 
 import { buildTagTree, filterTagTree, type FlatTag } from "@/lib/tags/tree";
@@ -115,6 +116,7 @@ export function TagsPage({
   initial: TagsPageInitial;
 }) {
   const t = useDictionary();
+  const router = useRouter();
   const isDesktop = useIsDesktop();
   const [target, setTarget] = useState<InspectorTarget>(() =>
     initialTarget(initial, flatTags),
@@ -128,6 +130,10 @@ export function TagsPage({
   const focusInspector = useRef(false);
   const selectToggleRef = useRef<HTMLButtonElement>(null);
   const focusSelectToggle = useRef(false);
+  // Fallback landing spot for `focusSelectToggle` when a bulk delete empties
+  // `flatTags`: the toggle itself unmounts (`flatTags.length > 0 &&` below),
+  // so there is no row left to return focus to.
+  const createButtonRef = useRef<HTMLButtonElement>(null);
 
   const byId = new Map(flatTags.map((tag) => [tag.id, tag]));
   // A selection whose tag is gone (deleted here or elsewhere) is no selection.
@@ -167,7 +173,7 @@ export function TagsPage({
   useEffect(() => {
     if (!focusSelectToggle.current) return;
     focusSelectToggle.current = false;
-    selectToggleRef.current?.focus();
+    (selectToggleRef.current ?? createButtonRef.current)?.focus();
   });
 
   const apply = (next: InspectorTarget) => {
@@ -241,11 +247,20 @@ export function TagsPage({
       headingRef={headingRef}
       onSelect={select}
       onSaved={(id) => apply({ kind: "edit", id })}
-      onDeleted={() => apply({ kind: "none" })}
+      onDeleted={() => {
+        apply({ kind: "none" });
+        // A single delete is a result, not a user-initiated selection change,
+        // so `apply` itself leaves `focusInspector` false for "none" -- set
+        // it after, so the empty-state heading still gets focus instead of
+        // letting it fall to <body> (desktop only; on mobile the Sheet
+        // closes and unmounts the heading before this effect runs).
+        focusInspector.current = true;
+      }}
       onDirtyChange={setDirty}
       onEscape={() => {
         if (current.kind === "edit") focusRow(current.id);
       }}
+      onNavigate={(href) => guard(() => router.push(href))}
     />
   );
 
@@ -260,13 +275,13 @@ export function TagsPage({
             <Button
               ref={selectToggleRef}
               variant="outline"
-              aria-pressed={selecting}
               onClick={selecting ? endSelecting : startSelecting}
             >
               {selecting ? t.tags.page.cancelSelection : t.tags.page.select}
             </Button>
           )}
           <Button
+            ref={createButtonRef}
             onClick={() => {
               stopSelecting();
               select({ kind: "create", parentId: null });
@@ -336,7 +351,20 @@ export function TagsPage({
         </div>
 
         {isDesktop && (
-          <aside className="hidden rounded-2xl border border-border bg-card p-5 lg:sticky lg:top-6 lg:block">
+          <aside
+            className={cn(
+              "hidden rounded-2xl border border-border bg-card p-5 pb-32 lg:block",
+              // Offset below the sticky Topbar (--layout-topbar-min-height,
+              // Topbar.tsx) instead of a bare `top-6`, which let the panel
+              // stick 24px under the header with its lower half (Save,
+              // children, "Abrir itens") off-screen. Bounded height + its
+              // own scroll keeps a long tree from pushing the panel taller
+              // than the viewport; `pb-32` mirrors `main`'s own bottom
+              // padding (AppShell.tsx) so the decorative bottom fade never
+              // sits over the Save button once scrolled to the end.
+              "lg:sticky lg:top-[calc(var(--layout-topbar-min-height)+1.5rem)] lg:max-h-[calc(100dvh-var(--layout-topbar-min-height)-3rem)] lg:overflow-y-auto",
+            )}
+          >
             {selecting ? bulkPanel : inspector}
           </aside>
         )}
