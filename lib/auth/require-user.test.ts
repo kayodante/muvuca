@@ -16,7 +16,45 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: createClientMock,
 }));
 
-import { requireUser, getOptionalUser } from "./require-user";
+import {
+  requireUser,
+  getOptionalUser,
+  hasFreshRecoveryEntry,
+} from "./require-user";
+
+describe("hasFreshRecoveryEntry", () => {
+  const now = 1_790_000_000;
+
+  it("aceita uma entrada recovery recente", () => {
+    expect(
+      hasFreshRecoveryEntry([{ method: "recovery", timestamp: now - 60 }], now),
+    ).toBe(true);
+  });
+
+  it("recusa recovery fora da janela de 15 minutos", () => {
+    expect(
+      hasFreshRecoveryEntry(
+        [{ method: "recovery", timestamp: now - 15 * 60 - 1 }],
+        now,
+      ),
+    ).toBe(false);
+  });
+
+  it("recusa sessão de login por senha", () => {
+    expect(
+      hasFreshRecoveryEntry([{ method: "password", timestamp: now }], now),
+    ).toBe(false);
+  });
+
+  it("recusa formatos inesperados", () => {
+    expect(hasFreshRecoveryEntry(undefined, now)).toBe(false);
+    expect(hasFreshRecoveryEntry(["recovery"], now)).toBe(false);
+    expect(hasFreshRecoveryEntry([{ method: "recovery" }], now)).toBe(false);
+    expect(
+      hasFreshRecoveryEntry([{ method: "recovery", timestamp: "1" }], now),
+    ).toBe(false);
+  });
+});
 
 describe("require-user", () => {
   beforeEach(() => {

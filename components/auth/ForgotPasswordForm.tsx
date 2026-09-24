@@ -10,11 +10,9 @@ import { Input } from "@/components/ui/input";
 import { AuthCard } from "@/components/auth/AuthCard";
 
 /**
- * "Esqueci a senha" card. Reaproveita o padrão de duas telas (formulário /
- * confirmação de envio) do antigo LoginForm de magic link
- * (`git show HEAD~1:components/auth/LoginForm.tsx`) porque a resposta da
- * action é deliberadamente idêntica sempre, exista ou não a conta
- * (anti-enumeração) -- exatamente a mesma UX que fazia sentido lá.
+ * "Esqueci a senha" card, em duas telas (formulário / confirmação de envio).
+ * A confirmação é sempre a mesma, exista ou não a conta, porque a resposta
+ * da action é deliberadamente idêntica (anti-enumeração).
  */
 export function ForgotPasswordForm() {
   const t = useDictionary();

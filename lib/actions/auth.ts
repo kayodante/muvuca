@@ -71,12 +71,10 @@ export async function signInWithPassword(
 /**
  * Requests a password-recovery email. Always returns the same generic
  * success shape regardless of whether the account exists or Supabase's
- * rate limit kicked in -- account enumeration through this response is the
- * same threat `signInWithMagicLink` guarded against for the old
- * passwordless flow (`git show HEAD~1:lib/actions/auth.ts`), and it applies
- * just as much here. Validation failures (malformed email) are the one
- * case that surfaces a real error, since those reveal nothing about
- * account existence.
+ * rate limit kicked in -- account enumeration through this response is a
+ * listed threat. Validation failures (malformed email) are the one case
+ * that surfaces a real error, since those reveal nothing about account
+ * existence.
  */
 export async function requestPasswordReset(
   _prevState: ActionResult<null> | null,
