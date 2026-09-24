@@ -148,4 +148,28 @@ describe("TagDetailView", () => {
     expect(container?.textContent).toContain("Seus itens");
     expect(container?.textContent).toContain("Nenhum item nesta tag");
   });
+
+  it("linka de volta para o inspetor de /tags pelo caminho da tag", async () => {
+    await act(async () => {
+      root?.render(
+        <TagDetailView
+          tag={currentTag}
+          childCount={0}
+          tags={[currentTag]}
+          ancestors={[]}
+          items={[]}
+          itemsCount={0}
+          nextCursor={null}
+          prevCursor={null}
+        />,
+      );
+    });
+
+    const edit = [...container!.querySelectorAll("a")].find(
+      (a) => a.textContent === "Editar tag",
+    );
+    expect(edit?.getAttribute("href")).toBe(
+      `/tags?tag=${encodeURIComponent(currentTag.path)}`,
+    );
+  });
 });

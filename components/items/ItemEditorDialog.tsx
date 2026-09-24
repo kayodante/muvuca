@@ -351,7 +351,7 @@ export function ItemEditorDialog({
                     }
                     aria-invalid={!!fieldError("language") || undefined}
                   >
-                    {/* Vale o mesmo do Select de tag pai em TagEditor: Value
+                    {/* Vale o mesmo do Select de tag pai em TagForm: Value
                         resolve o rótulo pelo mapeamento local, não pelo
                         registro dos items, que só montam quando o popup abre
                         (e no primeiro paint o popup está fechado). */}

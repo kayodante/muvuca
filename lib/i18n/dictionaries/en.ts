@@ -124,10 +124,6 @@ export const en: Dictionary = {
     },
     editor: {
       createTitle: "New tag",
-      editTitle: "Edit tag",
-      createDescription:
-        "Tags help you organize and find items in your library.",
-      editDescription: "Existing item associations are preserved.",
       nameLabel: "Name",
       descriptionLabel: "Description",
       optional: "(optional)",
@@ -151,8 +147,6 @@ export const en: Dictionary = {
     tree: {
       collapse: (name: string) => `Collapse ${name}`,
       expand: (name: string) => `Expand ${name}`,
-      actions: (name: string) => `Actions for tag ${name}`,
-      createChild: "Create child tag",
     },
     page: {
       heading: "Tags",
@@ -164,6 +158,8 @@ export const en: Dictionary = {
       treeRegionLabel: "Tag tree",
       noneFound: (query: string) => `No tags found for “${query}”.`,
       clearSearch: "Clear search",
+      select: "Select",
+      cancelSelection: "Cancel selection",
     },
     detail: {
       headingPrefix: "Your Muvuca in",
@@ -172,6 +168,53 @@ export const en: Dictionary = {
       emptyItemsTitle: "No items in this tag",
       emptyItemsDescription:
         "Items linked to this tag and its child tags show up here.",
+      editTag: "Edit tag",
+    },
+    inspector: {
+      emptyTitle: "No tag selected",
+      emptyDescription:
+        "Pick a tag in the tree to edit its name, color, parent and description.",
+      pathLabel: "Path",
+      children: "Child tags",
+      noChildren: "No child tags.",
+      addChild: "New child tag",
+      maxDepthReached: "6-level limit reached.",
+      openItems: "Open items",
+      moreActions: (name: string) => `More actions for ${name}`,
+      discardTitle: "Discard changes?",
+      discardDescription: "Unsaved changes to this tag will be lost.",
+      discardConfirm: "Discard",
+      keepEditing: "Keep editing",
+    },
+    bulk: {
+      panelLabel: "Bulk actions",
+      noneSelected: "Check the tags you want to move or delete.",
+      selectedCount: (n: number) =>
+        n === 1 ? "1 tag selected" : `${n} tags selected`,
+      move: "Move to…",
+      delete: "Delete",
+      moveTitle: (n: number) => (n === 1 ? "Move 1 tag" : `Move ${n} tags`),
+      moveDescription: "Each tag takes its own children along.",
+      destinationLabel: "Destination",
+      chooseDestination: "Choose a destination",
+      includedByParent: (n: number) =>
+        n === 1
+          ? "1 tag already goes along with its parent."
+          : `${n} tags already go along with their parents.`,
+      nameCollision: (names: string) =>
+        `A tag named ${names} already exists at that destination. Rename it before moving.`,
+      moveConfirm: "Move",
+      moving: "Moving...",
+      moved: (n: number) => (n === 1 ? "1 tag moved." : `${n} tags moved.`),
+      deleteTitle: (n: number) =>
+        n === 1 ? "Delete 1 tag?" : `Delete ${n} tags?`,
+      deleteDescription:
+        "Unselected child tags move under the nearest ancestor that still exists. Associated items are not deleted.",
+      deleteConfirm: "Delete tags",
+      deleteOverCap: "Delete accepts up to 500 tags at a time.",
+      deleting: "Deleting...",
+      deleted: (n: number) =>
+        n === 1 ? "1 tag deleted." : `${n} tags deleted.`,
     },
   },
   bookmarks: {
@@ -660,6 +703,9 @@ export const en: Dictionary = {
     tagDescendantMaxDepth:
       "This change would push descendant tags past the maximum depth of 6 levels.",
     tagNotFound: "Tag not found.",
+    tagBatchInvalid: "Select between 1 and 500 tags.",
+    tagMoveNameCollision:
+      "One of the tags has the same name as another tag at the destination.",
     checkTagFields: "Check the tag's fields.",
     invalidTag: "Invalid tag.",
     invalidParentTag: "Invalid parent tag.",
