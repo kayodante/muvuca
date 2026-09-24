@@ -300,6 +300,14 @@ export async function moveTags(
       return fail("DUPLICATE", t.errors.tagMoveNameCollision);
     }
 
+    // `move_tags` raises the same P0001 sentence for an invisible moved tag
+    // id and for a destination that no longer exists (e.g. deleted in
+    // another tab) -- both are the caller's stale reference, not a
+    // constraint violation.
+    if (error.code === "P0001" && error.message === "tag não encontrada") {
+      return fail("NOT_FOUND", t.errors.tagNotFound);
+    }
+
     return mapTagError(error, t);
   }
 

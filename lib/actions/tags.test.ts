@@ -418,6 +418,20 @@ describe("bulk tag actions", () => {
     expect(result).toMatchObject({ ok: false, message: ptBR.errors.tagCycle });
   });
 
+  it("moveTags maps 'tag não encontrada' to NOT_FOUND", async () => {
+    rpcMock.mockResolvedValue({
+      error: { code: "P0001", message: "tag não encontrada" },
+    });
+
+    const result = await moveTags(null, formWith([idA], idB));
+
+    expect(result).toEqual({
+      ok: false,
+      code: "NOT_FOUND",
+      message: ptBR.errors.tagNotFound,
+    });
+  });
+
   it("rejects an empty batch without touching the database", async () => {
     const result = await deleteTags(null, formWith([]));
 
