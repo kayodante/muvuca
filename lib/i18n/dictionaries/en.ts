@@ -660,6 +660,9 @@ export const en: Dictionary = {
     tagDescendantMaxDepth:
       "This change would push descendant tags past the maximum depth of 6 levels.",
     tagNotFound: "Tag not found.",
+    tagBatchInvalid: "Select between 1 and 500 tags.",
+    tagMoveNameCollision:
+      "One of the tags has the same name as another tag at the destination.",
     checkTagFields: "Check the tag's fields.",
     invalidTag: "Invalid tag.",
     invalidParentTag: "Invalid parent tag.",

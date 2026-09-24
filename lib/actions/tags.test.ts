@@ -48,7 +48,9 @@ vi.mock("@/lib/i18n/server", () => ({ getDictionary: getDictionaryMock }));
 import {
   createTag,
   deleteTag,
+  deleteTags,
   listTagsForSelect,
+  moveTags,
   updateTag,
 } from "@/lib/actions/tags";
 
@@ -346,6 +348,105 @@ describe("listTagsForSelect", () => {
       status: "failure",
       errorClass: "Error",
       userId: dummyUser.id,
+    });
+  });
+});
+
+describe("bulk tag actions", () => {
+  const dummyUser = {
+    id: "a1b2c3d4-e5f6-4a1b-8c2d-3e4f5a6b7c8d",
+    email: "user@muvuca.test",
+  };
+  const idA = "123e4567-e89b-12d3-a456-426614174000";
+  const idB = "123e4567-e89b-12d3-a456-426614174001";
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    requireUserMock.mockResolvedValue(dummyUser);
+    getDictionaryMock.mockResolvedValue(ptBR);
+    rpcMock.mockResolvedValue({ error: null });
+    createClientMock.mockResolvedValue({ rpc: rpcMock, from: fromMock });
+  });
+
+  function formWith(ids: string[], parentId?: string) {
+    const formData = new FormData();
+    for (const id of ids) formData.append("ids", id);
+    if (parentId !== undefined) formData.set("parentId", parentId);
+    return formData;
+  }
+
+  it("moveTags sends every id and omits the parent for root", async () => {
+    const result = await moveTags(null, formWith([idA, idB], ""));
+
+    expect(result).toEqual({ ok: true, data: null });
+    expect(rpcMock).toHaveBeenCalledWith("move_tags", {
+      p_tag_ids: [idA, idB],
+      p_parent_id: undefined,
+    });
+    expect(revalidatePathMock).toHaveBeenCalledWith("/tags", "layout");
+    expect(revalidatePathMock).toHaveBeenCalledWith("/t", "layout");
+  });
+
+  it("moveTags maps 23505 to the destination collision message", async () => {
+    rpcMock.mockResolvedValue({ error: { code: "23505", message: "dup" } });
+
+    const result = await moveTags(null, formWith([idA], idB));
+
+    expect(result).toEqual({
+      ok: false,
+      code: "DUPLICATE",
+      message: ptBR.errors.tagMoveNameCollision,
+    });
+    expect(logEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "tags.bulk_move_failed",
+        status: "failure",
+      }),
+    );
+  });
+
+  it("moveTags maps a trigger P0001 to its translated sentence", async () => {
+    rpcMock.mockResolvedValue({
+      error: {
+        code: "P0001",
+        message: "esta alteração criaria um ciclo na hierarquia de tags",
+      },
+    });
+
+    const result = await moveTags(null, formWith([idA], idB));
+
+    expect(result).toMatchObject({ ok: false, message: ptBR.errors.tagCycle });
+  });
+
+  it("rejects an empty batch without touching the database", async () => {
+    const result = await deleteTags(null, formWith([]));
+
+    expect(result).toMatchObject({ ok: false, code: "VALIDATION_FAILED" });
+    expect(rpcMock).not.toHaveBeenCalled();
+  });
+
+  it("deleteTags calls the bulk RPC and revalidates", async () => {
+    const result = await deleteTags(null, formWith([idA, idB]));
+
+    expect(result).toEqual({ ok: true, data: null });
+    expect(rpcMock).toHaveBeenCalledWith("delete_tags_reparent_children", {
+      p_tag_ids: [idA, idB],
+    });
+    expect(revalidatePathMock).toHaveBeenCalledWith("/tags", "layout");
+  });
+
+  it("deleteTags maps 'tag não encontrada' to NOT_FOUND in English too", async () => {
+    getDictionaryMock.mockResolvedValue(en);
+    rpcMock.mockResolvedValue({
+      error: { code: "P0001", message: "tag não encontrada" },
+    });
+
+    const result = await deleteTags(null, formWith([idA]));
+
+    expect(result).toEqual({
+      ok: false,
+      code: "NOT_FOUND",
+      message: en.errors.tagNotFound,
     });
   });
 });

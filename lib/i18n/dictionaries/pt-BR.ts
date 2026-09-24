@@ -712,6 +712,9 @@ export const ptBR = {
     tagDescendantMaxDepth:
       "Esta alteração excederia a profundidade máxima de 6 níveis para tags descendentes.",
     tagNotFound: "Tag não encontrada.",
+    tagBatchInvalid: "Selecione entre 1 e 500 tags.",
+    tagMoveNameCollision:
+      "Uma das tags tem o mesmo nome de outra tag no destino.",
     checkTagFields: "Verifique os campos da tag.",
     invalidTag: "Tag inválida.",
     invalidParentTag: "Tag pai inválida.",
