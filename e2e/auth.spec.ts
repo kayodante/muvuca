@@ -91,9 +91,7 @@ test("unknown email shows the same generic error", async ({ page }) => {
 test("invalid callback shows a generic recoverable error", async ({ page }) => {
   await page.goto("/auth/confirm?token_hash=invalid&type=email");
   await expect(page).toHaveURL(/\/login\?error=auth_failed/);
-  await expect(
-    page.getByText("Não foi possível validar o link"),
-  ).toBeVisible();
+  await expect(page.getByText("Não foi possível validar o link")).toBeVisible();
 });
 
 test("open-redirect attempts on the confirm callback are ignored", async ({

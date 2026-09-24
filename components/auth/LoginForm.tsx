@@ -14,10 +14,7 @@ import { AuthCard } from "@/components/auth/AuthCard";
  */
 export function LoginForm({ next }: { next: string }) {
   const t = useDictionary();
-  const [state, formAction, pending] = useActionState(
-    signInWithPassword,
-    null,
-  );
+  const [state, formAction, pending] = useActionState(signInWithPassword, null);
   // Controlado só para sobreviver ao reset de formulário do React 19 após a
   // action rodar -- assim o email digitado continua visível num submit que
   // falhou. A senha fica não controlada de propósito: deve ser limpa.
@@ -81,7 +78,7 @@ export function LoginForm({ next }: { next: string }) {
           )}
           <Link
             href="/forgot-password"
-            className="self-start text-body-sm text-muted-foreground underline-offset-4 outline-none hover:text-foreground hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+            className="text-body-sm self-start text-muted-foreground underline-offset-4 outline-none hover:text-foreground hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             {t.auth.login.forgotPasswordLink}
           </Link>

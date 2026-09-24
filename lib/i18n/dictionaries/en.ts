@@ -744,7 +744,8 @@ export const en: Dictionary = {
     signOutFailed: "Couldn't sign out. Please try again.",
     recoverySessionExpired:
       'Your reset session expired or is invalid. Request a new link from "Forgot password".',
-    passwordSameAsCurrent: "The new password must be different from the current one.",
+    passwordSameAsCurrent:
+      "The new password must be different from the current one.",
     weakPassword: "That password is too weak. Choose a stronger password.",
     invalidTheme: "Invalid theme.",
     themeUpdateFailed: "Couldn't update the appearance.",

@@ -39,11 +39,7 @@ export function ForgotPasswordForm() {
           >
             <CheckIcon className="size-4" />
           </div>
-          <div
-            role="status"
-            aria-live="polite"
-            className="flex flex-col gap-3"
-          >
+          <div role="status" aria-live="polite" className="flex flex-col gap-3">
             <p className="text-brand-pixel text-brand-accent">
               {t.auth.forgotPassword.linkSentBadge}
             </p>
@@ -72,9 +68,7 @@ export function ForgotPasswordForm() {
             <p className="text-brand-pixel text-brand-accent">
               {t.auth.forgotPassword.badge}
             </p>
-            <h1 className="text-headline-lg">
-              {t.auth.forgotPassword.title}
-            </h1>
+            <h1 className="text-headline-lg">{t.auth.forgotPassword.title}</h1>
             <p className="text-body-md text-muted-foreground">
               {t.auth.forgotPassword.pitch}
             </p>
@@ -127,7 +121,7 @@ export function ForgotPasswordForm() {
       )}
       <Link
         href="/login"
-        className="self-center text-body-sm text-muted-foreground underline-offset-4 outline-none hover:text-foreground hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="text-body-sm self-center text-muted-foreground underline-offset-4 outline-none hover:text-foreground hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         {t.auth.forgotPassword.backToLogin}
       </Link>

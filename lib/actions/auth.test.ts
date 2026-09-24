@@ -154,7 +154,11 @@ describe("signInWithPassword", () => {
 
   it("returns a distinct generic message on a 429 without revealing account existence", async () => {
     signInWithPasswordMock.mockResolvedValue({
-      error: { name: "AuthApiError", code: "over_request_rate_limit", status: 429 },
+      error: {
+        name: "AuthApiError",
+        code: "over_request_rate_limit",
+        status: 429,
+      },
     });
 
     const result = await signInWithPassword(
@@ -235,13 +239,10 @@ describe("requestPasswordReset", () => {
   it("builds redirectTo from NEXT_PUBLIC_APP_URL with next=/reset-password", async () => {
     await requestPasswordReset(null, formData({ email: "user@example.com" }));
 
-    expect(resetPasswordForEmailMock).toHaveBeenCalledWith(
-      "user@example.com",
-      {
-        redirectTo:
-          "https://muvuca.example.com/auth/confirm?next=%2Freset-password",
-      },
-    );
+    expect(resetPasswordForEmailMock).toHaveBeenCalledWith("user@example.com", {
+      redirectTo:
+        "https://muvuca.example.com/auth/confirm?next=%2Freset-password",
+    });
   });
 
   it("returns ok even when Supabase returns an error (anti-enumeration)", async () => {
@@ -271,10 +272,7 @@ describe("requestPasswordReset", () => {
       error: { name: "AuthApiError", code: "over_request_rate_limit" },
     });
 
-    await requestPasswordReset(
-      null,
-      formData({ email: "user@example.com" }),
-    );
+    await requestPasswordReset(null, formData({ email: "user@example.com" }));
 
     expect(logEvent).toHaveBeenCalledWith(
       expect.objectContaining({

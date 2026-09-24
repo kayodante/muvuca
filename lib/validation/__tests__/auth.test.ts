@@ -74,9 +74,7 @@ describe("passwordSchema", () => {
   });
 
   it("accepts a password of 12 or more characters", () => {
-    expect(passwordSchema.safeParse("long-enough-password").success).toBe(
-      true,
-    );
+    expect(passwordSchema.safeParse("long-enough-password").success).toBe(true);
   });
 
   it("rejects a password over the 72-char limit", () => {
