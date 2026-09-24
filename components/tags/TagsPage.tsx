@@ -126,6 +126,8 @@ export function TagsPage({
   const [checked, setChecked] = useState<ReadonlySet<string>>(() => new Set());
   const headingRef = useRef<HTMLHeadingElement>(null);
   const focusInspector = useRef(false);
+  const selectToggleRef = useRef<HTMLButtonElement>(null);
+  const focusSelectToggle = useRef(false);
 
   const byId = new Map(flatTags.map((tag) => [tag.id, tag]));
   // A selection whose tag is gone (deleted here or elsewhere) is no selection.
@@ -158,6 +160,16 @@ export function TagsPage({
     headingRef.current?.focus();
   });
 
+  // Selection mode has no inspector heading to land on, so entering it and
+  // every way out of it (bulk success, the panel's own cancel, the header
+  // toggle) returns focus to the toggle button instead of letting it fall
+  // to <body>.
+  useEffect(() => {
+    if (!focusSelectToggle.current) return;
+    focusSelectToggle.current = false;
+    selectToggleRef.current?.focus();
+  });
+
   const apply = (next: InspectorTarget) => {
     focusInspector.current = next.kind !== "none";
     setDirty(false);
@@ -183,10 +195,20 @@ export function TagsPage({
     setChecked(new Set());
   };
 
+  // The header toggle's own click, the panel's "Cancelar seleção" and a
+  // successful bulk action all leave selection mode with no row to return
+  // focus to -- unlike `stopSelecting` alone, used when "Criar tag" leaves
+  // selection mode only to immediately hand focus to the create form.
+  const endSelecting = () => {
+    stopSelecting();
+    focusSelectToggle.current = true;
+  };
+
   const startSelecting = () =>
     guard(() => {
       apply({ kind: "none" });
       setSelecting(true);
+      focusSelectToggle.current = true;
     });
 
   const toggleChecked = (id: string) =>
@@ -204,8 +226,8 @@ export function TagsPage({
     <TagBulkPanel
       selectedIds={checkedIds}
       flatTags={flatTags}
-      onDone={stopSelecting}
-      onCancel={stopSelecting}
+      onDone={endSelecting}
+      onCancel={endSelecting}
     />
   );
 
@@ -236,9 +258,10 @@ export function TagsPage({
         <div className="flex gap-2">
           {flatTags.length > 0 && (
             <Button
+              ref={selectToggleRef}
               variant="outline"
               aria-pressed={selecting}
-              onClick={selecting ? stopSelecting : startSelecting}
+              onClick={selecting ? endSelecting : startSelecting}
             >
               {selecting ? t.tags.page.cancelSelection : t.tags.page.select}
             </Button>

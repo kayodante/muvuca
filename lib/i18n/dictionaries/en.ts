@@ -210,7 +210,6 @@ export const en: Dictionary = {
         n === 1 ? "Delete 1 tag?" : `Delete ${n} tags?`,
       deleteDescription:
         "Unselected child tags move under the nearest ancestor that still exists. Associated items are not deleted.",
-      andMore: (n: number) => `and ${n} more`,
       deleteConfirm: "Delete tags",
       deleting: "Deleting...",
       deleted: (n: number) =>

@@ -115,6 +115,53 @@ describe("TagBulkPanel", () => {
     expect(onDone).toHaveBeenCalled();
   });
 
+  it("freezes the selection at open time: a revalidate racing the action doesn't zero the toast", async () => {
+    // Mirrors the real race: `deleteTags`'s own revalidatePath refreshes the
+    // parent's `flatTags` (and, in the real page, filters the deleted ids
+    // out of `checked`) before the action's own promise resolves. If the
+    // dialog read a live `selectedIds` prop instead of a snapshot taken at
+    // open time, this would report "0 tags excluídas.".
+    let resolveDelete!: (value: { ok: true; data: null }) => void;
+    deleteTagsMock.mockReturnValue(
+      new Promise((resolve) => {
+        resolveDelete = resolve;
+      }),
+    );
+    const onDone = vi.fn();
+    await act(async () =>
+      root?.render(
+        <TagBulkPanel
+          selectedIds={["a", "b"]}
+          flatTags={TAGS}
+          onDone={onDone}
+          onCancel={vi.fn()}
+        />,
+      ),
+    );
+
+    await act(async () => button("Excluir")?.click());
+    const alert = document.querySelector('[role="alertdialog"]');
+    await act(async () => alert?.querySelector("form")?.requestSubmit());
+
+    // The parent re-renders with the selection already gone, before the
+    // Server Action's promise ever settles.
+    await act(async () =>
+      root?.render(
+        <TagBulkPanel
+          selectedIds={[]}
+          flatTags={TAGS.filter((tag) => tag.id !== "a" && tag.id !== "b")}
+          onDone={onDone}
+          onCancel={vi.fn()}
+        />,
+      ),
+    );
+
+    await act(async () => resolveDelete({ ok: true, data: null }));
+
+    expect(toastSuccessMock).toHaveBeenCalledWith("2 tags excluídas.");
+    expect(onDone).toHaveBeenCalled();
+  });
+
   it("the move dialog says a child rides along and waits for a destination", async () => {
     await act(async () =>
       root?.render(

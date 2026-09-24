@@ -233,7 +233,6 @@ export const ptBR = {
         n === 1 ? "Excluir 1 tag?" : `Excluir ${n} tags?`,
       deleteDescription:
         "As tags filhas que não estiverem selecionadas passam a ficar sob o ancestral mais próximo que continuar existindo. Os itens associados não são excluídos.",
-      andMore: (n: number) => `e mais ${n}`,
       deleteConfirm: "Excluir tags",
       deleting: "Excluindo...",
       deleted: (n: number) =>

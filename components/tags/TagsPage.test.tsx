@@ -179,11 +179,23 @@ describe("TagsPage", () => {
       "Marque as tags que quer mover ou excluir.",
     );
     expect(new URLSearchParams(window.location.search).get("tag")).toBeNull();
+    // Entering selection mode has no inspector heading to land on: focus
+    // must not fall to <body>, it returns to the toggle that opened it.
+    expect(document.activeElement).toBe(selectButton);
 
     const box = [
       ...document.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'),
     ].find((input) => input.closest("label")?.textContent === "Design");
     await act(async () => box?.click());
     expect(document.body.textContent).toContain("1 tag selecionada");
+
+    // The header toggle now reads "Cancelar seleção" too -- exclude it to
+    // reach the panel's own cancel button specifically.
+    const panelCancel = [...document.querySelectorAll("button")].find(
+      (b) => b.textContent === "Cancelar seleção" && b !== selectButton,
+    );
+    await act(async () => panelCancel?.click());
+    expect(document.getElementById("tag-inspector-heading")).not.toBeNull();
+    expect(document.activeElement).toBe(selectButton);
   });
 });

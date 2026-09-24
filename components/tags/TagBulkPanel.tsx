@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import { deleteTags, moveTags } from "@/lib/actions/tags";
 import {
@@ -43,7 +43,6 @@ import { toastSuccess } from "@/components/states/Toast";
 
 /** Select value for "move to root"; `parentId=""` is root for the action's Zod too. */
 const ROOT = "";
-const LISTED_NAMES = 8;
 
 /**
  * Selection-mode panel on /tags: how many tags are checked and the two bulk
@@ -134,15 +133,14 @@ function MoveTagsDialog({
   const t = useDictionary();
   const [state, formAction, pending] = useActionState(moveTags, null);
   const [destination, setDestination] = useState<string | null>(null);
-  // A successful move's own revalidatePath refreshes `flatTags` -- but ids
-  // never disappear from it on a move (only `parentId` changes), so this
-  // isn't required for correctness the way it is below. Kept for symmetry:
-  // the toast always names the count the user actually submitted, not
-  // whatever `selectedIds` happens to be by the time the effect runs.
-  const submittedCount = useRef(0);
+  // Frozen at open time (this dialog mounts fresh per opening): a successful
+  // move's own revalidatePath refreshes the parent's `flatTags`/`checked`
+  // while this dialog is still closing, so a live `selectedIds` prop could
+  // already read differently by the time render/the success effect run.
+  const [ids] = useState(selectedIds);
 
-  const moving = normalizeMoveSelection(selectedIds, flatTags);
-  const invalid = getInvalidMoveTargets(selectedIds, flatTags);
+  const moving = normalizeMoveSelection(ids, flatTags);
+  const invalid = getInvalidMoveTargets(ids, flatTags);
   const options = flattenTreeWithDepth(buildTagTree(flatTags)).filter(
     (tag) => !invalid.has(tag.id),
   );
@@ -150,15 +148,15 @@ function MoveTagsDialog({
     destination === null
       ? []
       : findMoveNameCollisions(
-          selectedIds,
+          ids,
           destination === ROOT ? null : destination,
           flatTags,
         );
-  const carried = selectedIds.length - moving.length;
+  const carried = ids.length - moving.length;
 
   useEffect(() => {
     if (!state?.ok) return;
-    toastSuccess(t.tags.bulk.moved(submittedCount.current));
+    toastSuccess(t.tags.bulk.moved(ids.length));
     onOpenChange(false);
     onMoved();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -167,22 +165,14 @@ function MoveTagsDialog({
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
-        <form
-          action={formAction}
-          onSubmit={() => {
-            submittedCount.current = selectedIds.length;
-          }}
-          className="flex flex-col gap-4"
-        >
+        <form action={formAction} className="flex flex-col gap-4">
           {moving.map((id) => (
             <input key={id} type="hidden" name="ids" value={id} />
           ))}
           <input type="hidden" name="parentId" value={destination ?? ROOT} />
 
           <DialogHeader>
-            <DialogTitle>
-              {t.tags.bulk.moveTitle(selectedIds.length)}
-            </DialogTitle>
+            <DialogTitle>{t.tags.bulk.moveTitle(ids.length)}</DialogTitle>
             <DialogDescription>{t.tags.bulk.moveDescription}</DialogDescription>
           </DialogHeader>
 
@@ -279,21 +269,21 @@ function DeleteTagsAlertDialog({
 }) {
   const t = useDictionary();
   const [state, formAction, pending] = useActionState(deleteTags, null);
+  // Frozen at open time (this dialog mounts fresh per opening): a successful
+  // delete's own revalidatePath refreshes the parent's `flatTags`/`checked`
+  // while this dialog is still closing, so a live `selectedIds` prop could
+  // already read empty by the time the success effect runs -- and every tag
+  // named here must stay named even if the tree filter hid it beforehand.
+  const [ids] = useState(selectedIds);
   const byId = new Map(flatTags.map((tag) => [tag.id, tag]));
-  const selected = selectedIds.flatMap((id) => {
+  const selected = ids.flatMap((id) => {
     const tag = byId.get(id);
     return tag ? [tag] : [];
   });
-  // A successful delete's own revalidatePath drops these ids from `flatTags`
-  // in the very window this dialog's success effect runs, and the parent
-  // page filters them straight out of `checked` -- so by the time the effect
-  // reads `selectedIds` it can already be empty. Snapshot the count the user
-  // actually submitted instead of trusting the live prop after the fact.
-  const submittedCount = useRef(0);
 
   useEffect(() => {
     if (!state?.ok) return;
-    toastSuccess(t.tags.bulk.deleted(submittedCount.current));
+    toastSuccess(t.tags.bulk.deleted(ids.length));
     onOpenChange(false);
     onDeleted();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -304,23 +294,18 @@ function DeleteTagsAlertDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            {t.tags.bulk.deleteTitle(selectedIds.length)}
+            {t.tags.bulk.deleteTitle(ids.length)}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {t.tags.bulk.deleteDescription}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <ul className="text-body-sm flex flex-col gap-1">
-          {selected.slice(0, LISTED_NAMES).map((tag) => (
+        <ul className="text-body-sm flex max-h-64 flex-col gap-1 overflow-y-auto">
+          {selected.map((tag) => (
             <li key={tag.id} dir="auto" className="truncate">
               {tag.name}
             </li>
           ))}
-          {selected.length > LISTED_NAMES && (
-            <li className="text-muted-foreground">
-              {t.tags.bulk.andMore(selected.length - LISTED_NAMES)}
-            </li>
-          )}
         </ul>
         {state?.ok === false && (
           <p role="alert" className="text-sm text-destructive">
@@ -329,13 +314,8 @@ function DeleteTagsAlertDialog({
         )}
         <AlertDialogFooter>
           <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
-          <form
-            action={formAction}
-            onSubmit={() => {
-              submittedCount.current = selectedIds.length;
-            }}
-          >
-            {selectedIds.map((id) => (
+          <form action={formAction}>
+            {ids.map((id) => (
               <input key={id} type="hidden" name="ids" value={id} />
             ))}
             <AlertDialogAction
