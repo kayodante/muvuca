@@ -93,11 +93,13 @@ Para usar o Muvuca com um projeto Supabase na nuvem ou self-hosted:
    ```
 
 2. Preencha as três variáveis de `.env.local` com os dados do projeto.
-3. Crie o primeiro usuário em **Authentication → Users** no painel do Supabase.
+3. Crie o primeiro usuário em **Authentication → Users → Add user** no painel do
+   Supabase, com email e senha (mínimo de 12 caracteres).
 4. Faça o build e o deploy seguindo o [guia de deploy](./docs/DEPLOY.md).
 
 O formulário de login não cria novas contas: o Muvuca foi pensado para um deploy
-pessoal, autenticado por Magic Link.
+pessoal, autenticado por email e senha. A senha esquecida é redefinida por um
+link enviado ao email em **Esqueci a senha**.
 
 ## Variáveis de ambiente
 

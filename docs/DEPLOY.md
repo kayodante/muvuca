@@ -80,7 +80,7 @@ As três variáveis `NEXT_PUBLIC_*` são inlined no bundle em tempo de build
 (comportamento padrão do Next.js para variáveis com esse prefixo) — build e
 start precisam usar os mesmos valores, e o valor de `NEXT_PUBLIC_APP_URL`
 precisa ser a URL pública real onde a aplicação vai ficar disponível (usada
-para montar o link de confirmação do magic link).
+para montar o link de redefinição de senha enviado por email).
 
 Isso funciona em qualquer plataforma que rode `pnpm build` seguido de
 `pnpm start` sobre Node.js — não há dependência de nenhum provedor
@@ -118,11 +118,17 @@ ser passadas como `--build-arg` na hora do `docker build`, não só no
 
 ## 4. Pós-deploy
 
-- Confirme que o primeiro usuário existe no projeto Supabase de destino: o
-  formulário de login nunca cria conta nova (`shouldCreateUser: false`, veja
-  `lib/actions/auth.ts`) — o Muvuca é pensado para deploy single-user, então
-  a conta precisa existir antes do primeiro acesso (convite via painel do
-  Supabase, ou `supabase/seed.sql` como referência para um ambiente próprio).
+- Confirme que o primeiro usuário existe no projeto Supabase de destino, com
+  senha: o Muvuca não tem tela de cadastro — é pensado para deploy
+  single-user, então a conta precisa existir antes do primeiro acesso
+  (**Authentication → Users → Add user** com email e senha, ou
+  `supabase/seed.sql` como referência para um ambiente próprio). Uma conta
+  que ainda não tem senha (criada na época do magic link) define a sua por
+  **Esqueci a senha** na tela de login.
+- Em **Authentication → Sign In / Providers**, deixe o cadastro de novos
+  usuários desligado e o tamanho mínimo de senha em 12, igual ao
+  `minimum_password_length` de `supabase/config.toml` e ao `passwordSchema`
+  de `lib/validation/auth.ts`.
 - Configure a allow-list de redirect de Auth do seu projeto Supabase
   (`additional_redirect_urls` no equivalente hospedado de
   `supabase/config.toml`) para incluir `NEXT_PUBLIC_APP_URL` +

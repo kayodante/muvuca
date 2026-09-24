@@ -42,7 +42,8 @@ legais pelo projeto.
   parametrização em qualquer RPC.
 - **Cross-Site Scripting (XSS)** — execução de script via dado salvo
   (título, prompt, bookmark importado).
-- **Falhas de autenticação/sessão** — bypass no fluxo de Magic Link + PKCE,
+- **Falhas de autenticação/sessão** — bypass do login por senha ou do fluxo
+  de redefinição de senha (PKCE), enumeração de conta pela resposta de login,
   manipulação de cookie sem verificação de claims, ou desvio de
   `requireUser()`.
 - **Open redirect** — manipulação do parâmetro de retorno pós-login para
@@ -73,8 +74,12 @@ legais pelo projeto.
    no nível relacional, não só via RLS.
 4. **CSP com nonce criptográfico por request**: gerado em `proxy.ts`, com
    `strict-dynamic` e sem script inline nem `unsafe-eval` em produção.
-5. **Magic Link + PKCE com `getClaims()`**: validação criptográfica local do
+5. **Email + senha com `getClaims()`**: validação criptográfica local do
    JWT contra o JWKS do projeto, nunca dependendo só do cookie de sessão.
+   Login responde com um erro genérico único; o pedido de redefinição sempre
+   responde sucesso; a troca de senha só aceita sessão nascida do link de
+   recuperação nos últimos 15 minutos (`amr` `recovery`) e encerra as demais
+   sessões.
 6. **Zero chave privilegiada no runtime**: nenhuma `service_role` ou
    `sb_secret_*` é usada pelo servidor Next.js ou exposta ao cliente.
 7. **Supply-chain**: dependências com quarentena de release

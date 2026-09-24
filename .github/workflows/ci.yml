@@ -218,9 +218,9 @@ jobs:
         env:
           PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT: "120000"
         run: pnpm exec playwright install --with-deps chromium
-      # Magic-link E2E needs auth + Mailpit (127.0.0.1:54324), so the full
-      # local stack is started here. The same stack then serves the pgTAP
-      # suite.
+      # Auth E2E needs GoTrue + Mailpit (127.0.0.1:54324, password-reset
+      # email), so the full local stack is started here. The same stack then
+      # serves the pgTAP suite.
       - name: Start Supabase local stack
         run: pnpm exec supabase start
       # `supabase status -o env` also prints the service-role/secret key, so it

@@ -38,7 +38,7 @@ Supabase Storage (bucket privado de previews de link)
 | Framework | Next.js (App Router), Server Components + Server Actions |
 | UI | React, Tailwind CSS, Base UI / shadcn |
 | Linguagem | TypeScript (strict) |
-| Banco | Supabase Postgres, Row Level Security, Auth Magic Link |
+| Banco | Supabase Postgres, Row Level Security, Auth email + senha |
 | Validação | Zod, nas fronteiras de servidor |
 | Testes | Vitest (unitário/integração), pgTAP (banco), Playwright (E2E) |
 
@@ -49,7 +49,9 @@ Versões exatas ficam fixadas em `package.json`.
 ```
 app/                  Rotas do Next.js App Router
   (app)/              Rotas autenticadas (biblioteca, tags, configurações)
-  (auth)/login/       Tela de login (magic link)
+  (auth)/login/       Tela de login (email + senha)
+  (auth)/forgot-password/  Pedido do link de redefinição de senha
+  (auth)/reset-password/   Nova senha (só com sessão de recuperação)
   auth/confirm/       Route Handler que troca o token/code por sessão
   api/previews/       Proxy same-origin para imagens de preview e a rota
                       que drena a fila de enriquecimento
@@ -124,10 +126,17 @@ aplicadas em ordem.
 
 ## Autenticação
 
-Magic Link + PKCE via Supabase Auth. O Muvuca é pensado para deploy
-single-user: o formulário de login nunca cria uma conta nova
-(`shouldCreateUser: false`); o único usuário é provisionado por quem faz o
-deploy (via convite/signup direto no Supabase, ou pelo seed local).
+Email + senha via Supabase Auth (`signInWithPassword`). O Muvuca é pensado
+para deploy single-user: não existe tela de cadastro; o único usuário é
+provisionado por quem faz o deploy (pelo painel do Supabase, ou pelo seed
+local). Falha de login devolve sempre o mesmo erro genérico, para a resposta
+não revelar se o email tem conta.
+
+"Esqueci a senha" envia um link de recuperação (PKCE) que volta por
+`auth/confirm/`; o pedido responde sucesso mesmo para email sem conta. A
+página de nova senha e a action só aceitam sessão cujo `amr` tem uma entrada
+`recovery` dos últimos 15 minutos — uma sessão de login comum, mesmo roubada, não troca a senha — e,
+depois da troca, as demais sessões são encerradas.
 
 Identidade é sempre verificada com `getClaims()` (validação criptográfica
 local do JWT contra o JWKS do projeto), nunca lida de um objeto de sessão em
@@ -173,7 +182,7 @@ policies de RLS do chamador — não existe atalho de privilégio elevado.
 - **Banco** (pgTAP, `supabase test db`): RLS, triggers, constraints e RPCs
   exercitados diretamente no Postgres local, incluindo negativas cross-user.
 - **E2E** (Playwright): fluxos críticos completos contra o stack local
-  (Supabase + Mailpit para captura de magic link).
+  (Supabase + Mailpit para capturar o email de redefinição de senha).
 
 ## Decisões notáveis
 
