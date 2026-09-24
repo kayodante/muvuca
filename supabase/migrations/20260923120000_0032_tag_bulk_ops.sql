@@ -92,6 +92,13 @@ begin
     raise exception 'tag não encontrada';
   end if;
 
+  -- Every selected tag is about to be deleted; its name must not push a
+  -- promoted child into a " (n)" rename. The id is unique per user, so it
+  -- can't collide with anything at any level.
+  update public.tags
+  set name = id::text
+  where id = any(p_tag_ids);
+
   -- Deepest first. Every selected tag is deleted -- skipping a selected
   -- descendant would let it survive, promoted, the opposite of the request.
   -- Each deletion lifts its children one level, so an unselected tag under

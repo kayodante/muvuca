@@ -4,7 +4,7 @@
 
 begin;
 
-select plan(25);
+select plan(29);
 
 create temporary table fixture_ids (label text primary key, id uuid not null);
 grant select, insert, update, delete on fixture_ids to authenticated;
@@ -38,6 +38,11 @@ $$;
 create function pg_temp.parent_of(p_label text)
 returns uuid language sql stable as $$
   select parent_id from public.tags where id = pg_temp.fid(p_label);
+$$;
+
+create function pg_temp.name_of(p_label text)
+returns text language sql stable as $$
+  select name from public.tags where id = pg_temp.fid(p_label);
 $$;
 
 -- Alpha -> Mid -> Leaf ; Beta -> Mid(x) ; Dest ; D1 -> D2 -> D3 -> D4 -> D5
@@ -155,12 +160,31 @@ select throws_ok(
   'a delete batch containing a NULL id is rejected'
 );
 
+-- Bulk delete of sibling roots must not let a still-selected tag's name
+-- block a promoted child, in either processing order: Alpha2 has an
+-- unselected child named "Beta2"; Beta2 has an unselected child named
+-- "Alpha2". Without the fix, whichever root is processed first collides its
+-- child with the sibling root not yet deleted and gets " (1)" suffixed
+-- permanently -- order depends on UUID, so this fixture covers it both ways.
+select pg_temp.add_tag('alpha2', 'Alpha2', null);
+select pg_temp.add_tag('alpha2_child', 'Beta2', 'alpha2');
+select pg_temp.add_tag('beta2', 'Beta2', null);
+select pg_temp.add_tag('beta2_child', 'Alpha2', 'beta2');
+
+select public.delete_tags_reparent_children(array[pg_temp.fid('alpha2'), pg_temp.fid('beta2')]);
+
+-- 18-21.
+select is(pg_temp.parent_of('alpha2_child'), null::uuid, 'Alpha2''s child is promoted to root');
+select is(pg_temp.name_of('alpha2_child'), 'Beta2', 'the promoted child keeps its exact name, no " (n)" suffix');
+select is(pg_temp.parent_of('beta2_child'), null::uuid, 'Beta2''s child is promoted to root');
+select is(pg_temp.name_of('beta2_child'), 'Alpha2', 'the other promoted child also keeps its exact name');
+
 -- Cross-user: B owns BRoot -> BChild.
 select tests.authenticate_as((select id from fixture_ids where label = 'user_b'));
 select pg_temp.add_tag('b_root', 'B Root', null);
 select pg_temp.add_tag('b_child', 'B Child', 'b_root');
 
--- 18-22.
+-- 22-26.
 select throws_ok(
   format('select public.move_tags(array[%L]::uuid[])', pg_temp.fid('r1')),
   'tag não encontrada',
@@ -183,7 +207,7 @@ select throws_ok(
   'B cannot delete A''s tag'
 );
 
--- 23.
+-- 27.
 select tests.authenticate_as((select id from fixture_ids where label = 'user_a'));
 select is(
   (select count(*)::int from public.tags where id = pg_temp.fid('r1')),
@@ -191,7 +215,7 @@ select is(
   'A''s tag survives B''s delete attempt'
 );
 
--- 24-25. anon has no EXECUTE at all.
+-- 28-29. anon has no EXECUTE at all.
 select ok(
   not has_function_privilege('anon', 'public.move_tags(uuid[], uuid)', 'EXECUTE'),
   'anon cannot execute move_tags'
