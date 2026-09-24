@@ -158,6 +158,8 @@ export const en: Dictionary = {
       treeRegionLabel: "Tag tree",
       noneFound: (query: string) => `No tags found for “${query}”.`,
       clearSearch: "Clear search",
+      select: "Select",
+      cancelSelection: "Cancel selection",
     },
     detail: {
       headingPrefix: "Your Muvuca in",
@@ -183,6 +185,36 @@ export const en: Dictionary = {
       discardDescription: "Unsaved changes to this tag will be lost.",
       discardConfirm: "Discard",
       keepEditing: "Keep editing",
+    },
+    bulk: {
+      panelLabel: "Bulk actions",
+      noneSelected: "Check the tags you want to move or delete.",
+      selectedCount: (n: number) =>
+        n === 1 ? "1 tag selected" : `${n} tags selected`,
+      move: "Move to…",
+      delete: "Delete",
+      moveTitle: (n: number) => (n === 1 ? "Move 1 tag" : `Move ${n} tags`),
+      moveDescription: "Each tag takes its own children along.",
+      destinationLabel: "Destination",
+      chooseDestination: "Choose a destination",
+      includedByParent: (n: number) =>
+        n === 1
+          ? "1 tag already goes along with its parent."
+          : `${n} tags already go along with their parents.`,
+      nameCollision: (names: string) =>
+        `A tag named ${names} already exists at that destination. Rename it before moving.`,
+      moveConfirm: "Move",
+      moving: "Moving...",
+      moved: (n: number) => (n === 1 ? "1 tag moved." : `${n} tags moved.`),
+      deleteTitle: (n: number) =>
+        n === 1 ? "Delete 1 tag?" : `Delete ${n} tags?`,
+      deleteDescription:
+        "Unselected child tags move under the nearest ancestor that still exists. Associated items are not deleted.",
+      andMore: (n: number) => `and ${n} more`,
+      deleteConfirm: "Delete tags",
+      deleting: "Deleting...",
+      deleted: (n: number) =>
+        n === 1 ? "1 tag deleted." : `${n} tags deleted.`,
     },
   },
   bookmarks: {

@@ -181,6 +181,8 @@ export const ptBR = {
       treeRegionLabel: "Árvore de tags",
       noneFound: (query: string) => `Nenhuma tag encontrada para “${query}”.`,
       clearSearch: "Limpar busca",
+      select: "Selecionar",
+      cancelSelection: "Cancelar seleção",
     },
     detail: {
       headingPrefix: "Sua Muvuca em",
@@ -206,6 +208,36 @@ export const ptBR = {
       discardDescription: "As alterações não salvas nesta tag serão perdidas.",
       discardConfirm: "Descartar",
       keepEditing: "Continuar editando",
+    },
+    bulk: {
+      panelLabel: "Ações em lote",
+      noneSelected: "Marque as tags que quer mover ou excluir.",
+      selectedCount: (n: number) =>
+        n === 1 ? "1 tag selecionada" : `${n} tags selecionadas`,
+      move: "Mover para…",
+      delete: "Excluir",
+      moveTitle: (n: number) => (n === 1 ? "Mover 1 tag" : `Mover ${n} tags`),
+      moveDescription: "Cada tag leva junto as próprias filhas.",
+      destinationLabel: "Destino",
+      chooseDestination: "Escolha o destino",
+      includedByParent: (n: number) =>
+        n === 1
+          ? "1 tag já vai junto com a tag mãe."
+          : `${n} tags já vão junto com as tags mães.`,
+      nameCollision: (names: string) =>
+        `Já existe uma tag com o nome de ${names} nesse destino. Renomeie antes de mover.`,
+      moveConfirm: "Mover",
+      moving: "Movendo...",
+      moved: (n: number) => (n === 1 ? "1 tag movida." : `${n} tags movidas.`),
+      deleteTitle: (n: number) =>
+        n === 1 ? "Excluir 1 tag?" : `Excluir ${n} tags?`,
+      deleteDescription:
+        "As tags filhas que não estiverem selecionadas passam a ficar sob o ancestral mais próximo que continuar existindo. Os itens associados não são excluídos.",
+      andMore: (n: number) => `e mais ${n}`,
+      deleteConfirm: "Excluir tags",
+      deleting: "Excluindo...",
+      deleted: (n: number) =>
+        n === 1 ? "1 tag excluída." : `${n} tags excluídas.`,
     },
   },
   bookmarks: {

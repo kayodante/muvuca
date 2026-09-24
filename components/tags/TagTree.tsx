@@ -15,6 +15,9 @@ type TagTreeProps = {
   filtering: boolean;
   selectedId: string | null;
   onSelect: (node: TagNode) => void;
+  /** Present only in selection mode: rows become checkboxes. */
+  checked?: ReadonlySet<string>;
+  onToggleChecked?: (node: TagNode) => void;
 };
 
 /**
@@ -22,7 +25,8 @@ type TagTreeProps = {
  * going to a tag's items lives in the sidebar and in the inspector's
  * "Abrir itens". Short consistent indentation, chevron only on nodes with
  * children, swatch + name. No drag-and-drop: moving uses the inspector's
- * parent picker.
+ * parent picker. In selection mode (`checked` present) each row is a
+ * native checkbox instead.
  */
 export function TagTree({ nodes, ...rowProps }: TagTreeProps) {
   if (nodes.length === 0) {
@@ -44,6 +48,8 @@ function TagTreeRow({
   filtering,
   selectedId,
   onSelect,
+  checked,
+  onToggleChecked,
 }: Omit<TagTreeProps, "nodes"> & { node: TagNode; depth: number }) {
   const t = useDictionary();
   const [expanded, setExpanded] = useState(true);
@@ -86,36 +92,57 @@ function TagTreeRow({
           <span className="size-6 shrink-0" aria-hidden="true" />
         )}
 
-        <button
-          type="button"
-          data-tag-row={node.id}
-          aria-pressed={isSelected}
-          onClick={() => onSelect(node)}
-          className={cn(
-            "group/tagitem text-label-md flex min-w-0 flex-1 items-center gap-2 rounded px-1.5 py-1 text-left transition-[transform,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.98] motion-reduce:active:scale-100",
-            isSelected
-              ? "font-medium text-foreground"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          <span
-            aria-hidden="true"
-            className={cn(
-              "size-2 shrink-0 rounded-full transition-transform duration-(--motion-fast) ease-out-muvuca group-hover/tagitem:scale-125 motion-reduce:transition-none motion-reduce:group-hover/tagitem:scale-100",
-              swatchClassFor(node.colorToken),
-            )}
-          />
-          <span dir="auto" className="truncate">
-            {node.name}
-          </span>
-          {/* Selection is weight + background + this marker, never hue alone. */}
-          {isSelected && (
+        {checked ? (
+          <label className="text-label-md flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-foreground">
+            <input
+              type="checkbox"
+              checked={checked.has(node.id)}
+              onChange={() => onToggleChecked?.(node)}
+              className="size-4 shrink-0 accent-primary"
+            />
             <span
               aria-hidden="true"
-              className="ml-auto h-4 w-1 shrink-0 rounded-full bg-primary"
+              className={cn(
+                "size-2 shrink-0 rounded-full",
+                swatchClassFor(node.colorToken),
+              )}
             />
-          )}
-        </button>
+            <span dir="auto" className="truncate">
+              {node.name}
+            </span>
+          </label>
+        ) : (
+          <button
+            type="button"
+            data-tag-row={node.id}
+            aria-pressed={isSelected}
+            onClick={() => onSelect(node)}
+            className={cn(
+              "group/tagitem text-label-md flex min-w-0 flex-1 items-center gap-2 rounded px-1.5 py-1 text-left transition-[transform,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.98] motion-reduce:active:scale-100",
+              isSelected
+                ? "font-medium text-foreground"
+                : "text-muted-foreground hover:text-foreground",
+            )}
+          >
+            <span
+              aria-hidden="true"
+              className={cn(
+                "size-2 shrink-0 rounded-full transition-transform duration-(--motion-fast) ease-out-muvuca group-hover/tagitem:scale-125 motion-reduce:transition-none motion-reduce:group-hover/tagitem:scale-100",
+                swatchClassFor(node.colorToken),
+              )}
+            />
+            <span dir="auto" className="truncate">
+              {node.name}
+            </span>
+            {/* Selection is weight + background + this marker, never hue alone. */}
+            {isSelected && (
+              <span
+                aria-hidden="true"
+                className="ml-auto h-4 w-1 shrink-0 rounded-full bg-primary"
+              />
+            )}
+          </button>
+        )}
       </div>
 
       {hasChildren && (
@@ -131,6 +158,8 @@ function TagTreeRow({
                 filtering={filtering}
                 selectedId={selectedId}
                 onSelect={onSelect}
+                checked={checked}
+                onToggleChecked={onToggleChecked}
               />
             ))}
           </ul>

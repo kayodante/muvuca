@@ -11,12 +11,14 @@ import { PlusIcon, TagIcon } from "lucide-react";
 
 import { buildTagTree, filterTagTree, type FlatTag } from "@/lib/tags/tree";
 import { useDictionary } from "@/lib/i18n/client";
+import { cn } from "@/lib/utils";
 import { TagTree } from "./TagTree";
 import {
   TagInspector,
   TAG_INSPECTOR_HEADING_ID,
   type InspectorTarget,
 } from "./TagInspector";
+import { TagBulkPanel } from "./TagBulkPanel";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,7 +104,8 @@ function initialTarget(
  * tag id -- a rename or move changes the slug path, never the id -- and is
  * mirrored into `?tag=` / `?new=&parent=` with `history.replaceState`, so a
  * reload or a link from `/t/...` lands on the same tag without a server
- * round-trip per click.
+ * round-trip per click. `Selecionar` switches to selection mode: checkboxes
+ * in the tree and `TagBulkPanel` where the inspector was.
  */
 export function TagsPage({
   flatTags,
@@ -119,6 +122,8 @@ export function TagsPage({
   const [dirty, setDirty] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [search, setSearch] = useState("");
+  const [selecting, setSelecting] = useState(false);
+  const [checked, setChecked] = useState<ReadonlySet<string>>(() => new Set());
   const headingRef = useRef<HTMLHeadingElement>(null);
   const focusInspector = useRef(false);
 
@@ -173,6 +178,37 @@ export function TagsPage({
     guard(() => apply(next));
   };
 
+  const stopSelecting = () => {
+    setSelecting(false);
+    setChecked(new Set());
+  };
+
+  const startSelecting = () =>
+    guard(() => {
+      apply({ kind: "none" });
+      setSelecting(true);
+    });
+
+  const toggleChecked = (id: string) =>
+    setChecked((previous) => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  // Tags deleted meanwhile drop out of the selection.
+  const checkedIds = [...checked].filter((id) => byId.has(id));
+
+  const bulkPanel = (
+    <TagBulkPanel
+      selectedIds={checkedIds}
+      flatTags={flatTags}
+      onDone={stopSelecting}
+      onCancel={stopSelecting}
+    />
+  );
+
   const focusRow = (id: string) =>
     document.querySelector<HTMLElement>(`[data-tag-row="${id}"]`)?.focus();
 
@@ -194,13 +230,29 @@ export function TagsPage({
   const visibleNodes = filterTagTree(buildTagTree(flatTags), search);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className={cn("flex flex-col gap-6", selecting && "pb-32 lg:pb-0")}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-headline-md">{t.tags.page.heading}</h1>
-        <Button onClick={() => select({ kind: "create", parentId: null })}>
-          <PlusIcon aria-hidden="true" data-icon="inline-start" />
-          {t.tags.page.createTag}
-        </Button>
+        <div className="flex gap-2">
+          {flatTags.length > 0 && (
+            <Button
+              variant="outline"
+              aria-pressed={selecting}
+              onClick={selecting ? stopSelecting : startSelecting}
+            >
+              {selecting ? t.tags.page.cancelSelection : t.tags.page.select}
+            </Button>
+          )}
+          <Button
+            onClick={() => {
+              stopSelecting();
+              select({ kind: "create", parentId: null });
+            }}
+          >
+            <PlusIcon aria-hidden="true" data-icon="inline-start" />
+            {t.tags.page.createTag}
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-start">
@@ -235,6 +287,8 @@ export function TagsPage({
                     filtering={search.trim().length > 0}
                     selectedId={current.kind === "edit" ? current.id : null}
                     onSelect={(node) => select({ kind: "edit", id: node.id })}
+                    checked={selecting ? checked : undefined}
+                    onToggleChecked={(node) => toggleChecked(node.id)}
                   />
                 </div>
               ) : (
@@ -260,14 +314,14 @@ export function TagsPage({
 
         {isDesktop && (
           <aside className="hidden rounded-2xl border border-border bg-card p-5 lg:sticky lg:top-6 lg:block">
-            {inspector}
+            {selecting ? bulkPanel : inspector}
           </aside>
         )}
       </div>
 
       {!isDesktop && (
         <Sheet
-          open={current.kind !== "none"}
+          open={!selecting && current.kind !== "none"}
           onOpenChange={(open) => {
             if (!open) select({ kind: "none" });
           }}
@@ -280,6 +334,11 @@ export function TagsPage({
             {inspector}
           </SheetContent>
         </Sheet>
+      )}
+      {!isDesktop && selecting && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background p-4">
+          {bulkPanel}
+        </div>
       )}
 
       <AlertDialog

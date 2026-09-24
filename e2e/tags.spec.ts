@@ -409,3 +409,67 @@ test("no celular excluir uma tag fecha o painel e mostra o toast", async ({
   await expect(page.getByText("Tag excluída.")).toBeVisible();
   await expect(sheet).toBeHidden();
 });
+
+test("move várias tags de uma vez levando as filhas junto", async ({
+  page,
+}) => {
+  await signIn(page, `e2e-tags-bulk-move-${Date.now()}@muvuca.test`);
+  await createRootTag(page, "Destino");
+  await createRootTag(page, "Origem");
+  await createChildTag(page, "Origem", "Neta");
+  await createRootTag(page, "Solta");
+
+  await page.goto("/tags");
+  await page.getByRole("button", { name: "Selecionar" }).click();
+  const tree = page.getByRole("region", { name: "Árvore de tags" });
+  await tree.getByRole("checkbox", { name: "Origem" }).check();
+  await tree.getByRole("checkbox", { name: "Neta" }).check();
+  await tree.getByRole("checkbox", { name: "Solta" }).check();
+  await expect(page.getByText("3 tags selecionadas")).toBeVisible();
+
+  await page.getByRole("button", { name: "Mover para…" }).click();
+  const dialog = page.getByRole("dialog", { name: "Mover 3 tags" });
+  await expect(
+    dialog.getByText("1 tag já vai junto com a tag mãe."),
+  ).toBeVisible();
+  await dialog.getByRole("combobox", { name: "Destino" }).click();
+  await page.getByRole("option", { name: "Destino" }).click();
+  await dialog.getByRole("button", { name: "Mover", exact: true }).click();
+
+  await expect(page.getByText("3 tags movidas.")).toBeVisible();
+  // Destino > Origem > Neta, Destino > Solta: /t paths prove the shape.
+  await page.goto("/t/destino/origem/neta");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Neta" }),
+  ).toBeVisible();
+  await page.goto("/t/destino/solta");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Solta" }),
+  ).toBeVisible();
+});
+
+test("exclui várias tags e a neta sobe para o ancestral que sobrou", async ({
+  page,
+}) => {
+  await signIn(page, `e2e-tags-bulk-delete-${Date.now()}@muvuca.test`);
+  await createRootTag(page, "Raiz");
+  await createChildTag(page, "Raiz", "Meio");
+  await createChildTag(page, "Meio", "Baixo");
+  await createChildTag(page, "Baixo", "Fundo");
+
+  await page.goto("/tags");
+  await page.getByRole("button", { name: "Selecionar" }).click();
+  const tree = page.getByRole("region", { name: "Árvore de tags" });
+  await tree.getByRole("checkbox", { name: "Meio" }).check();
+  await tree.getByRole("checkbox", { name: "Baixo" }).check();
+
+  await page.getByRole("button", { name: "Excluir", exact: true }).click();
+  const alert = page.getByRole("alertdialog", { name: "Excluir 2 tags?" });
+  await alert.getByRole("button", { name: "Excluir tags" }).click();
+
+  await expect(page.getByText("2 tags excluídas.")).toBeVisible();
+  await page.goto("/t/raiz/fundo");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Fundo" }),
+  ).toBeVisible();
+});

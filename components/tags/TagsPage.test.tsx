@@ -165,4 +165,25 @@ describe("TagsPage", () => {
     expect(params.get("new")).toBe("1");
     expect(params.get("parent")).toBe("design");
   });
+
+  it("selection mode swaps the inspector for the bulk panel", async () => {
+    await render(TAGS, { ...NONE, tagPath: "dev" });
+
+    const selectButton = [...document.querySelectorAll("button")].find(
+      (b) => b.textContent === "Selecionar",
+    );
+    await act(async () => selectButton?.click());
+
+    expect(document.getElementById("tag-inspector-heading")).toBeNull();
+    expect(document.body.textContent).toContain(
+      "Marque as tags que quer mover ou excluir.",
+    );
+    expect(new URLSearchParams(window.location.search).get("tag")).toBeNull();
+
+    const box = [
+      ...document.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'),
+    ].find((input) => input.closest("label")?.textContent === "Design");
+    await act(async () => box?.click());
+    expect(document.body.textContent).toContain("1 tag selecionada");
+  });
 });

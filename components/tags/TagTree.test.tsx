@@ -159,4 +159,36 @@ describe("TagTree", () => {
       dom.querySelector('[data-tag-row="dev"]')?.getAttribute("aria-pressed"),
     ).toBe("false");
   });
+
+  it("no modo seleção cada linha vira um checkbox rotulado pelo nome", async () => {
+    const onToggleChecked = vi.fn();
+    container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () => {
+      root?.render(
+        <TagTree
+          nodes={nodes}
+          filtering={false}
+          selectedId={null}
+          onSelect={onSelect}
+          checked={new Set(["frontend"])}
+          onToggleChecked={onToggleChecked}
+        />,
+      );
+    });
+
+    const boxes = container.querySelectorAll<HTMLInputElement>(
+      'input[type="checkbox"]',
+    );
+    expect(boxes).toHaveLength(2);
+    expect(boxes[1]?.closest("label")?.textContent).toBe("Frontend");
+    expect(boxes[1]?.checked).toBe(true);
+    expect(container.querySelector("[data-tag-row]")).toBeNull();
+
+    await act(async () => boxes[0]?.click());
+    expect(onToggleChecked).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "dev" }),
+    );
+  });
 });
