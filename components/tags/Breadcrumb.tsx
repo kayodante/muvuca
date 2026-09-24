@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ChevronRightIcon } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import type { TagAncestor } from "@/lib/database/queries/tags";
 import { getTagHref } from "@/lib/tags/routes";
 import { ptBR, type Dictionary } from "@/lib/i18n/dictionaries/pt-BR";
@@ -39,7 +38,7 @@ export function Breadcrumb({
 
   return (
     <nav aria-label={t.tags.breadcrumb.ariaLabel} className="min-w-0">
-      <ol className="flex min-w-0 flex-wrap items-center gap-1 text-xs text-muted-foreground">
+      <ol className="flex min-w-0 flex-wrap items-center gap-1 text-xs leading-5 text-foreground">
         {collapsed && (
           <li className="flex min-w-0 items-center gap-1">
             <span aria-hidden="true">…</span>
@@ -57,7 +56,7 @@ export function Breadcrumb({
               href={getTagHref(ancestor)}
               title={ancestor.name}
               dir="auto"
-              className="inline-flex h-5 max-w-[12rem] items-center truncate rounded px-0.5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:max-w-xs"
+              className="inline-flex h-5 max-w-[12rem] items-center truncate rounded px-0.5 underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none sm:max-w-xs"
             >
               {ancestor.name}
             </Link>
@@ -68,9 +67,7 @@ export function Breadcrumb({
           <span
             dir="auto"
             aria-current="page"
-            className={cn(
-              "max-w-[12rem] truncate font-medium text-foreground sm:max-w-xs",
-            )}
+            className="max-w-[12rem] truncate sm:max-w-xs"
           >
             {currentName}
           </span>
@@ -84,7 +81,7 @@ function Separator() {
   return (
     <ChevronRightIcon
       aria-hidden="true"
-      className="size-3.5 shrink-0 text-primary"
+      className="size-[15px] shrink-0 text-primary"
     />
   );
 }
