@@ -538,10 +538,18 @@ export function ItemCard({
   );
 
   return (
+    // Figma 52:3269 puts the light edge on the card, over its content. An
+    // inset box-shadow paints with the article's own background, *under*
+    // its children, so the opaque thumbnail hid it and only the text area
+    // showed it. The article keeps the outer ring; the inset light lives on
+    // an ::after above everything (pointer-events-none, so clicks pass).
+    // Under that light it adds a 1px ring in the card's own color: the edge
+    // is 6% white, which vanishes over a white thumbnail and made the image
+    // look 1px wider than the card. Over the text area it changes nothing.
     <article
       aria-busy={isPending || undefined}
       className={cn(
-        "group relative flex min-h-56 flex-col overflow-hidden rounded-2xl bg-card shadow-light transition-[background-color,box-shadow,transform,opacity] duration-(--motion-fast) ease-out-muvuca hover:bg-secondary/40 hover:ring-1 hover:ring-foreground/10 motion-safe:hover:-translate-y-0.5 motion-reduce:transition-none",
+        "group relative flex min-h-56 flex-col overflow-hidden rounded-2xl bg-card shadow-[0_0_0_1px_var(--color-shadow-1)] transition-[background-color,box-shadow,transform,opacity] duration-(--motion-fast) ease-out-muvuca after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-[inherit] after:shadow-[var(--shadow-light),inset_0_0_0_1px_var(--card)] after:content-[''] hover:bg-secondary/40 hover:ring-1 hover:ring-foreground/10 motion-safe:hover:-translate-y-0.5 motion-reduce:transition-none",
         morphing && MORPH_CLASS,
         isPending && "pointer-events-none opacity-75",
       )}
@@ -564,15 +572,17 @@ export function ItemCard({
                 on whatever the thumbnail happens to show there, and without
                 it their contrast is whatever the remote page decided -- a
                 light thumbnail erased the icons entirely (AAA-180).
-                Spec: Figma "OG:IMAGE" (163:928) -- a full-height gradient
-                from the surface token (`--card` === `--surface`) at the top
-                to transparent at the bottom, visible in the Hover state
-                only, 300ms ease-out. Here the state gate is the same media
-                query as ACTION_CLASS: hidden at rest only for fine-pointer
-                devices (which fade it in on group-hover/focus-within with
-                --motion-slow ≈ the Figma 300ms), while touch keeps it
-                always on -- its actions never hide, so its scrim never
-                hides either.
+                Spec: Figma "OG:IMAGE" (163:928) -- a gradient from the
+                surface token (`--card` === `--surface`) at the top to
+                transparent: at 50% of the height in Default, at 100% in
+                Hover, 300ms ease-out. One full-height gradient scaled from
+                the top reproduces both stops exactly and animates as a
+                transform. The state gate is the same media query as
+                ACTION_CLASS: half-height at rest only for fine-pointer
+                devices (growing on group-hover/focus-within with
+                --motion-slow ≈ the Figma 300ms), while touch keeps the
+                Hover state -- its actions never hide, so its scrim stays
+                full.
                 `z-[3]` is load-bearing, not tidying: LinkPreviewMedia paints
                 the thumbnail in `.t-skel-content` at z-index 2, and a
                 positioned element at `z-index: auto` is painted *before* any
@@ -583,7 +593,7 @@ export function ItemCard({
                 below the header's `z-10` so badge and actions keep winning. */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 z-[3] bg-gradient-to-b from-card to-transparent opacity-100 transition-opacity duration-(--motion-slow) ease-out-muvuca motion-reduce:transition-none [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100"
+                className="pointer-events-none absolute inset-0 z-[3] origin-top bg-gradient-to-b from-card to-transparent transition-transform duration-(--motion-slow) ease-out-muvuca motion-reduce:transition-none [@media(hover:hover)_and_(pointer:fine)]:scale-y-50 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:scale-y-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:scale-y-100"
               />
             </div>
             <div className="flex flex-1 flex-col gap-4 p-4">

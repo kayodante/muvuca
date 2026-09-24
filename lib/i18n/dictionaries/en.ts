@@ -119,7 +119,6 @@ export const en: Dictionary = {
     } satisfies Record<TagColorToken, string>,
     breadcrumb: {
       ariaLabel: "Tag path",
-      root: "Tags",
       hiddenAncestors: (names: string) => `Intermediate tags: ${names}`,
     },
     editor: {
