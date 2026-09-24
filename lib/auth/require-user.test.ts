@@ -20,6 +20,7 @@ import {
   requireUser,
   getOptionalUser,
   hasFreshRecoveryEntry,
+  hasRecoverySession,
 } from "./require-user";
 
 describe("hasFreshRecoveryEntry", () => {
@@ -159,6 +160,49 @@ describe("require-user", () => {
         email: "anon@example.com",
         name: null,
       });
+    });
+  });
+
+  describe("hasRecoverySession", () => {
+    it("retorna false quando getClaims devolve erro", async () => {
+      getClaimsMock.mockResolvedValue({
+        data: null,
+        error: new Error("Invalid JWT"),
+      });
+
+      await expect(hasRecoverySession()).resolves.toBe(false);
+    });
+
+    it("retorna true para sessão aberta agora pelo link de recuperação", async () => {
+      getClaimsMock.mockResolvedValue({
+        data: {
+          claims: {
+            sub: "usr-1",
+            amr: [
+              { method: "recovery", timestamp: Math.floor(Date.now() / 1000) },
+            ],
+          },
+        },
+        error: null,
+      });
+
+      await expect(hasRecoverySession()).resolves.toBe(true);
+    });
+
+    it("retorna false para sessão de login por senha", async () => {
+      getClaimsMock.mockResolvedValue({
+        data: {
+          claims: {
+            sub: "usr-1",
+            amr: [
+              { method: "password", timestamp: Math.floor(Date.now() / 1000) },
+            ],
+          },
+        },
+        error: null,
+      });
+
+      await expect(hasRecoverySession()).resolves.toBe(false);
     });
   });
 
