@@ -1329,6 +1329,16 @@ body {
   }
 }
 
+/* Troca de tema (ThemeTransitionGuard): cor, fundo e sombra mudam em quase
+   todo elemento de uma vez, e cada transição nessas propriedades disparava
+   junto -- o tema escorria em 280ms em vez de trocar. Atributo + regra aqui,
+   não um <style> injetado: em produção o CSP só aceita style com nonce. */
+:root[data-theme-switching] *,
+:root[data-theme-switching] *::before,
+:root[data-theme-switching] *::after {
+  transition: none !important;
+}
+
 /**
  * Typography scale. Geist Sans is the interface voice; Geist Mono is
  * functional-only (URLs, timestamps, counters); Geist Pixel is a small
