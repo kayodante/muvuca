@@ -21,12 +21,23 @@ import { useHighlightedLines } from "./useHighlightedLines";
  * O fade no pé é o sinal visual de "tem mais" (mesma linguagem do scrim que
  * AAA-180 colocou no card de link): só renderiza quando `contentPreview`
  * tem mais linhas do que o teto local. É máscara no texto, não gradiente
- * pintado por cima: um gradiente `from-secondary` precisa casar com o fundo
- * do painel, e no hover do card o painel clareia (`light-2` por cima) --
- * o gradiente virava uma faixa escura no pé. A truncagem do servidor (2000 chars)
- * continua dona do teto de payload — aqui é só a janela de 6 linhas.
+ * pintado por cima: um gradiente precisa casar com o fundo do painel, e no
+ * hover do card o painel troca de cor -- o gradiente virava uma faixa no pé.
+ * A truncagem do servidor (2000 chars) continua dona do teto de payload —
+ * aqui é só a janela de 6 linhas.
  */
 const MAX_LINES = 6;
+
+/**
+ * Moldura compartilhada com o PromptMarkdownPreview (Figma item-code/-prompt,
+ * "Preview"): `surface` com `shadow-1` por cima e stroke interno de 0.5px.
+ * O `shadow-1` é translúcido, então vai como background-image sobre o
+ * background-color -- assim o hover (ItemCard troca a base para
+ * `bg-secondary`) só anima a cor. Altura fixa para os dois painéis terem o
+ * mesmo tamanho: `h-42` (168px) é p-3 + as 6 linhas de `leading-6` daqui.
+ */
+export const PREVIEW_PANEL =
+  "h-42 overflow-hidden rounded-md bg-card bg-[linear-gradient(var(--shadow-1),var(--shadow-1))] p-3 inset-ring-[0.5px] inset-ring-border transition-colors duration-(--motion-slow) ease-out-muvuca motion-reduce:transition-none";
 
 export function CodeSnippetPreview({
   contentPreview,
@@ -43,12 +54,7 @@ export function CodeSnippetPreview({
   const lines = useHighlightedLines(visibleSource, language);
 
   return (
-    <div
-      className={cn(
-        "relative overflow-hidden rounded-md bg-secondary p-3 transition-shadow duration-(--motion-slow) ease-out-muvuca motion-reduce:transition-none",
-        className,
-      )}
-    >
+    <div className={cn("relative", PREVIEW_PANEL, className)}>
       {language && (
         <span
           aria-hidden="true"

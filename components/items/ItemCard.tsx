@@ -111,9 +111,10 @@ const MEDIA_PILL =
  * único alvo de clique, e o aria-label dele já dá o nome acessível.
  */
 /**
- * Figma hover (item-link/-code/-prompt, State=Hover): the preview panel and
- * the tag chips (Tag, State=Hover) gain `light-2` as a second fill; the card
- * itself gets the fainter `light-4`. An
+ * Figma hover (item-link/-code/-prompt, State=Hover): the tag chips (Tag,
+ * State=Hover) gain `light-2` as a second fill; the card itself gets the
+ * fainter `light-4`. (The preview panel swaps its base color instead -- see
+ * PREVIEW_HOVER.) An
  * inset shadow is how CSS stacks a translucent fill over a background and
  * under the content -- and, unlike a background-image, it transitions. At
  * rest it is the same shadow in `transparent`, so the two interpolate
@@ -122,6 +123,12 @@ const MEDIA_PILL =
  */
 const HOVER_LIGHT =
   "inset-shadow-[0_0_0_999px] inset-shadow-transparent group-hover:inset-shadow-light-2";
+
+/**
+ * Figma 251:1944/251:1990 hover: the preview's base goes `surface` ->
+ * `surface-subtle` under the same `shadow-1` layer (PREVIEW_PANEL).
+ */
+const PREVIEW_HOVER = "group-hover:bg-secondary";
 
 function CopyStateIcon({
   copied,
@@ -509,25 +516,23 @@ export function ItemCard({
   // snippet's first 6 lines, with a fade when there's more) and
   // PromptMarkdownPreview (the prompt as prose, tokenized as markdown).
   //
-  // The panels hug their content instead of stretching (`flex-1` removed):
-  // the height cap already comes from the clamp on the lines +
-  // overflow-hidden, so `flex-1` had no job left except soaking up the
-  // grid row's `align-items: stretch` leftover as blank padding -- measured
-  // at 161.8px of panel for a single ~20px line of text. Whatever leftover
-  // the row still has now falls through to `tagsBlock`'s `mt-auto`, which
+  // Both panels have the same fixed height (PREVIEW_PANEL, as in Figma),
+  // so a prompt card and a code card line up regardless of content length.
+  // No `flex-1`: stretching into the grid row's leftover would break that
+  // parity. The leftover falls through to `tagsBlock`'s `mt-auto`, which
   // anchors tags to the card's bottom edge; with no tags it just sits at
   // the card's own bottom, same as the link layout.
   const previewPanel =
     item.type === "prompt" ? (
       <PromptMarkdownPreview
         contentPreview={item.contentPreview}
-        className={HOVER_LIGHT}
+        className={PREVIEW_HOVER}
       />
     ) : item.type === "code_component" ? (
       <CodeSnippetPreview
         contentPreview={item.contentPreview}
         language={item.language}
-        className={HOVER_LIGHT}
+        className={PREVIEW_HOVER}
       />
     ) : null;
 
