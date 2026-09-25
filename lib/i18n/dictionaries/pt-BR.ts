@@ -192,6 +192,8 @@ export const ptBR = {
         "Itens associados a esta tag e às tags filhas aparecem aqui.",
       editTag: "Editar tag",
     },
+    exportJson: "Exportar JSON da tag",
+    exportSuccess: "JSON da tag exportado com sucesso.",
     inspector: {
       emptyTitle: "Nenhuma tag selecionada",
       emptyDescription:

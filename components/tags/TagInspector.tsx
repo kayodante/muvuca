@@ -12,6 +12,7 @@ import { useDictionary } from "@/lib/i18n/client";
 import { TagForm } from "./TagForm";
 import { TagChip } from "./TagChip";
 import { DeleteTagAlertDialog } from "./DeleteTagAlertDialog";
+import { useTagExport } from "./TagExportActions";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -78,6 +79,10 @@ export function TagInspector({
     target.kind === "edit"
       ? (flatTags.find((candidate) => candidate.id === target.id) ?? null)
       : null;
+  const { pending: exportPending, exportJson } = useTagExport(
+    tag?.id ?? "",
+    tag?.path ?? "",
+  );
 
   const heading = (content: React.ReactNode) => (
     <h2
@@ -139,7 +144,12 @@ export function TagInspector({
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
-                  <Button variant="ghost" size="icon-sm" className="shrink-0" />
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="shrink-0"
+                    aria-busy={exportPending}
+                  />
                 }
               >
                 <MoreHorizontalIcon aria-hidden="true" />
@@ -148,6 +158,9 @@ export function TagInspector({
                 </span>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={exportJson} disabled={exportPending}>
+                  {exportPending ? t.export.exporting : t.tags.exportJson}
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   variant="destructive"
                   onClick={() =>

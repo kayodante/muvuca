@@ -1,11 +1,16 @@
 "use server";
 
 import { requireUser } from "@/lib/auth/require-user";
+import { z } from "zod";
 import { getDictionary } from "@/lib/i18n/server";
 import { logEvent } from "@/lib/security/logging";
 import { createClient } from "@/lib/supabase/server";
 import { fail, ok, type ActionResult } from "@/lib/utils/result";
-import { BACKUP_FORMAT_VERSION, type ExportData } from "@/lib/export/formatter";
+import {
+  BACKUP_FORMAT_VERSION,
+  filterExportByTag,
+  type ExportData,
+} from "@/lib/export/formatter";
 
 const EXPORT_PAGE_SIZE = 1000;
 
@@ -23,6 +28,21 @@ async function readAll<T>(
     rows.push(...page);
     if (page.length < EXPORT_PAGE_SIZE) return { data: rows, error: null };
   }
+}
+
+export async function exportTagLibrary(
+  tagId: string,
+): Promise<ActionResult<ExportData>> {
+  const t = await getDictionary();
+  if (!z.uuid().safeParse(tagId).success) {
+    return fail("VALIDATION_FAILED", t.errors.invalidTag);
+  }
+
+  const result = await exportUserLibrary();
+  if (!result.ok) return result;
+
+  const filtered = filterExportByTag(result.data, tagId);
+  return filtered ? ok(filtered) : fail("NOT_FOUND", t.errors.tagNotFound);
 }
 
 export async function exportUserLibrary(): Promise<ActionResult<ExportData>> {

@@ -1,11 +1,9 @@
-import { PencilLineIcon } from "lucide-react";
-import Link from "next/link";
-
 import type { Tag, TagAncestor } from "@/lib/database/queries/tags";
 import type { LibraryItemSummary } from "@/lib/database/queries/items";
 import { ptBR, type Dictionary } from "@/lib/i18n/dictionaries/pt-BR";
 import { Breadcrumb } from "./Breadcrumb";
 import { TagDot } from "./TagDot";
+import { TagDetailActions } from "./TagExportActions";
 
 import { ItemsPage } from "@/components/items/ItemsPage";
 
@@ -66,14 +64,11 @@ export function TagDetailView({
                 <TagDot colorToken={tag.colorToken} className="size-3" />
                 <span className="truncate font-semibold">{tag.name}</span>
               </span>
-              <Link
-                href={`/tags?${new URLSearchParams({ tag: tag.path })}`}
-                aria-label={t.tags.detail.editTag}
-                title={t.tags.detail.editTag}
-                className="relative shrink-0 rounded text-muted-foreground after:absolute after:-inset-2 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-              >
-                <PencilLineIcon aria-hidden="true" className="size-4" />
-              </Link>
+              <TagDetailActions
+                tagId={tag.id}
+                tagPath={tag.path}
+                tagName={tag.name}
+              />
             </span>
           </h1>
         </div>

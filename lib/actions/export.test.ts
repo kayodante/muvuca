@@ -24,7 +24,7 @@ vi.mock("@/lib/security/logging", () => ({
 
 vi.mock("@/lib/i18n/server", () => ({ getDictionary: getDictionaryMock }));
 
-import { exportUserLibrary } from "./export";
+import { exportTagLibrary, exportUserLibrary } from "./export";
 
 function mockRows(
   data: unknown[] | null,
@@ -301,5 +301,38 @@ describe("exportUserLibrary", () => {
 
     const result = await exportUserLibrary();
     expect(result.ok && result.data.tags).toHaveLength(1001);
+  });
+});
+
+describe("exportTagLibrary", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    requireUserMock.mockResolvedValue({ id: "user-123" });
+    getDictionaryMock.mockResolvedValue(ptBR);
+  });
+
+  it("rejects an invalid id before querying", async () => {
+    expect(await exportTagLibrary("invalid")).toEqual({
+      ok: false,
+      code: "VALIDATION_FAILED",
+      message: ptBR.errors.invalidTag,
+    });
+    expect(createClientMock).not.toHaveBeenCalled();
+  });
+
+  it("does not export a tag hidden by RLS", async () => {
+    createClientMock.mockResolvedValue({
+      from: vi.fn(() => ({
+        select: vi.fn(() => mockRows([])),
+      })),
+    });
+
+    expect(
+      await exportTagLibrary("11111111-1111-4111-8111-111111111111"),
+    ).toEqual({
+      ok: false,
+      code: "NOT_FOUND",
+      message: ptBR.errors.tagNotFound,
+    });
   });
 });

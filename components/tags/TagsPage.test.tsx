@@ -13,6 +13,9 @@ vi.mock("@/lib/actions/tags", () => ({
   moveTags: vi.fn(),
   deleteTags: vi.fn(),
 }));
+vi.mock("@/lib/actions/export", () => ({
+  exportTagLibrary: vi.fn(),
+}));
 vi.mock("sonner", () => ({ toast: { success: vi.fn() } }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
@@ -214,6 +217,12 @@ describe("TagsPage", () => {
       b.textContent?.includes("Mais ações para Dev"),
     ) as HTMLButtonElement;
     await act(async () => menuButton.click());
+
+    expect(
+      [...document.body.querySelectorAll('[role="menuitem"]')].some(
+        (item) => item.textContent === "Exportar JSON da tag",
+      ),
+    ).toBe(true);
 
     const deleteItem = [
       ...document.body.querySelectorAll('[role="menuitem"]'),

@@ -169,6 +169,8 @@ export const en: Dictionary = {
         "Items linked to this tag and its child tags show up here.",
       editTag: "Edit tag",
     },
+    exportJson: "Export tag JSON",
+    exportSuccess: "Tag JSON exported successfully.",
     inspector: {
       emptyTitle: "No tag selected",
       emptyDescription:

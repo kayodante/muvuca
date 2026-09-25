@@ -20,7 +20,12 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/lib/actions/previews", () => ({
   refreshItemPreview: vi.fn(),
 }));
+vi.mock("@/lib/actions/export", () => ({
+  exportTagLibrary: vi.fn(),
+}));
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
+import { exportTagLibrary } from "@/lib/actions/export";
 import { TagDetailView } from "./TagDetailView";
 
 let root: Root | null = null;
@@ -53,6 +58,7 @@ afterEach(async () => {
   root = null;
   container = null;
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   vi.clearAllMocks();
   searchParamsState.current = new URLSearchParams();
 });
@@ -149,7 +155,7 @@ describe("TagDetailView", () => {
     expect(container?.textContent).toContain("Nenhum item nesta tag");
   });
 
-  it("linka de volta para o inspetor de /tags pelo caminho da tag", async () => {
+  it("shows edit and JSON export in the tag actions menu", async () => {
     await act(async () => {
       root?.render(
         <TagDetailView
@@ -165,11 +171,67 @@ describe("TagDetailView", () => {
       );
     });
 
-    const edit = [...container!.querySelectorAll("a")].find(
-      (a) => a.getAttribute("aria-label") === "Editar tag",
+    const trigger = [...container!.querySelectorAll("button")].find((button) =>
+      button.textContent?.includes("Mais ações para Design Systems"),
+    );
+    await act(async () => trigger?.click());
+
+    const edit = [...document.querySelectorAll('[role="menuitem"]')].find(
+      (item) => item.textContent === "Editar tag",
     );
     expect(edit?.getAttribute("href")).toBe(
       `/tags?tag=${encodeURIComponent(currentTag.path)}`,
     );
+    expect(
+      [...document.querySelectorAll('[role="menuitem"]')].some(
+        (item) => item.textContent === "Exportar JSON da tag",
+      ),
+    ).toBe(true);
+  });
+
+  it("downloads the selected tag's JSON", async () => {
+    vi.mocked(exportTagLibrary).mockResolvedValue({
+      ok: true,
+      data: {
+        version: "1.3",
+        exportedAt: "2026-09-25T00:00:00Z",
+        tags: [],
+        items: [],
+      },
+    });
+    URL.createObjectURL = vi.fn().mockReturnValue("blob:tag-export");
+    URL.revokeObjectURL = vi.fn();
+    let downloadedName = "";
+    vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      downloadedName = this.download;
+    });
+
+    await act(async () => {
+      root?.render(
+        <TagDetailView
+          tag={currentTag}
+          childCount={0}
+          tags={[currentTag]}
+          ancestors={[]}
+          items={[]}
+          itemsCount={0}
+          nextCursor={null}
+        />,
+      );
+    });
+    const trigger = [...container!.querySelectorAll("button")].find((button) =>
+      button.textContent?.includes("Mais ações para Design Systems"),
+    );
+    await act(async () => trigger?.click());
+    const exportItem = [
+      ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+    ].find((item) => item.textContent === "Exportar JSON da tag");
+    await act(async () => exportItem?.click());
+
+    expect(exportTagLibrary).toHaveBeenCalledWith(currentTag.id);
+    expect(downloadedName).toMatch(/^muvuca-tag-.*\.json$/);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:tag-export");
   });
 });

@@ -62,6 +62,37 @@ export interface ExportData {
   items: ExportItem[];
 }
 
+/** Keep the selected tag's rollup and make the result self-contained. */
+export function filterExportByTag(
+  data: ExportData,
+  tagId: string,
+): ExportData | null {
+  if (!data.tags.some((tag) => tag.id === tagId)) return null;
+
+  const included = new Set([tagId]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const tag of data.tags) {
+      if (tag.parentId && included.has(tag.parentId) && !included.has(tag.id)) {
+        included.add(tag.id);
+        changed = true;
+      }
+    }
+  }
+
+  return {
+    ...data,
+    tags: data.tags
+      .filter((tag) => included.has(tag.id))
+      .map((tag) => (tag.id === tagId ? { ...tag, parentId: null } : tag)),
+    items: data.items.flatMap((item) => {
+      const tagIds = item.tagIds.filter((id) => included.has(id));
+      return tagIds.length ? [{ ...item, tagIds }] : [];
+    }),
+  };
+}
+
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")
