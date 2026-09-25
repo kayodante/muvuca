@@ -2,6 +2,8 @@
 
 import { Fragment } from "react";
 
+import { cn } from "@/lib/utils";
+import { PREVIEW_PANEL } from "./CodeSnippetPreview";
 import { useHighlightedLines } from "./useHighlightedLines";
 
 /**
@@ -11,9 +13,11 @@ import { useHighlightedLines } from "./useHighlightedLines";
  * token vira um nó de texto React).
  *
  * Moldura de prosa, não de código: os tokens saem inline dentro de um único
- * `<p>`, com `\n` entre as linhas, porque `line-clamp-6` conta linhas
+ * `<p>`, com `\n` entre as linhas, porque `line-clamp-7` conta linhas
  * visuais de um bloco inline — uma div por linha (como no
- * CodeSnippetPreview) desligaria o clamp.
+ * CodeSnippetPreview) desligaria o clamp. Sete, não seis: o painel tem a
+ * mesma altura do de código (PREVIEW_PANEL), e 7 linhas de `text-body-sm`
+ * (~132px) são o que cabe nos 144px internos.
  *
  * O que de fato ganha cor é `` `código` `` e link. Heading e negrito o tema
  * de CSS variables do Shiki expressa como `fontStyle: bold`, campo que
@@ -36,18 +40,20 @@ import { useHighlightedLines } from "./useHighlightedLines";
 
 /**
  * Teto de linhas mandadas ao highlighter. O clamp visível é o
- * `line-clamp-6` do CSS; este corte existe só para limitar o trabalho de
+ * `line-clamp-7` do CSS; este corte existe só para limitar o trabalho de
  * tokenização por card (são até 48 por página, cada um com até 2.000 chars
  * de `contentPreview` vindos truncados do servidor). Dobro do clamp: uma
- * linha de origem nunca ocupa menos de uma linha visual, então 12 linhas de
- * origem sempre cobrem as 6 visuais que o CSS pode mostrar.
+ * linha de origem nunca ocupa menos de uma linha visual, então 14 linhas de
+ * origem sempre cobrem as 7 visuais que o CSS pode mostrar.
  */
-const MAX_SOURCE_LINES = 12;
+const MAX_SOURCE_LINES = 14;
 
 export function PromptMarkdownPreview({
   contentPreview,
+  className,
 }: {
   contentPreview: string;
+  className?: string;
 }) {
   const source = contentPreview
     .replace(/\n$/, "")
@@ -57,10 +63,10 @@ export function PromptMarkdownPreview({
   const lines = useHighlightedLines(source, "markdown");
 
   return (
-    <div className="overflow-hidden rounded-md bg-secondary p-3">
+    <div className={cn(PREVIEW_PANEL, className)}>
       <p
         dir="auto"
-        className="text-body-sm line-clamp-6 [overflow-wrap:anywhere] whitespace-pre-line"
+        className="text-body-sm line-clamp-7 [overflow-wrap:anywhere] whitespace-pre-line"
         style={{ color: "var(--code-foreground)" }}
       >
         {lines.map((line, index) => (

@@ -47,8 +47,11 @@
   /* Lighting & elevation tokens (Figma) */
   --color-light-1: var(--light-1);
   --color-light-2: var(--light-2);
+  --color-light-3: var(--light-3);
+  --color-light-4: var(--light-4);
   --color-shadow-1: var(--shadow-1);
   --color-shadow-2: var(--shadow-2);
+  --color-shadow-3: var(--shadow-3);
 
   /* Surface & ink tokens for high-contrast active states (Figma) */
   --color-ink: var(--ink);
@@ -102,10 +105,17 @@
   --shadow-overlay:
     0 8px 24px -4px rgb(0 0 0 / 0.14), 0 2px 8px -2px rgb(0 0 0 / 0.08);
 
-  /* Lighting & elevation tokens (Figma effect "Light") */
+  /* Lighting & elevation tokens (Figma effect styles "Light" and
+     "Light-2"). Light-2 is the hover state of the same edge: a full 1px
+     inner rim and a soft top highlight instead of the hard 1px line. Same
+     shadow count and inset order in both, so one transitions into the
+     other. */
   --shadow-light:
-    0 0 0 1px var(--color-shadow-1), inset 0 0 0 1px var(--color-light-2),
+    0 0 0 1px var(--color-shadow-1), inset 0 0 0 0.5px var(--color-light-2),
     inset 0 1px 0 0 var(--color-light-1);
+  --shadow-light-2:
+    0 0 0 1px var(--color-shadow-1), inset 0 0 0 1px var(--color-light-2),
+    inset 0 1px 4px 0 var(--color-light-3);
 
   /* Tactile 3D create button (Figma node 193:5152) */
   --shadow-create-button:
@@ -176,19 +186,21 @@ body {
   color-scheme: light;
 
   /* Light theme colors. */
-  --primary: #a3e635;
-  --primary-strong: #84cc16;
+  --primary: #35e64d;
+  --primary-strong: #16cc2e;
   /* Lime legível como *texto pequeno*: em surface clara o lime da marca
      reprova o contraste mínimo AA para texto pequeno, então o tema claro
      usa lime-700. */
-  --brand-accent: #4d7c0f;
+  --brand-accent: #0f7c1e;
   --ink: #100f11;
   --ink-muted: #656467;
   --canvas: #f4f3f7;
   --surface: #f7f7f7;
   --surface-subtle: #edebf1;
-  --border: #dbd9e0;
-  --focus: #65a30d;
+  /* Translúcida (Figma): 8% de ink, lida igual sobre canvas, surface e
+     thumbnail, em vez de um cinza opaco calibrado para uma superfície só. */
+  --border: #14141514;
+  --focus: #0da321;
   --success: #15803d;
   --warning: #b45309;
   --error: #b91c1c;
@@ -206,8 +218,11 @@ body {
   /* Lighting and elevation tokens (Figma). */
   --light-1: #ffffff;
   --light-2: #ffffff80;
+  --light-3: #ffffff;
+  --light-4: #ffffff4d;
   --shadow-1: #0707081a;
   --shadow-2: #07070833;
+  --shadow-3: #07070847;
 
   /* Syntax highlight de snippets: paleta GitHub alinhada ao DESIGN. Estes
      tokens são consumidos pelo tema `muvuca-code` do Shiki
@@ -297,7 +312,7 @@ body {
     --canvas: #080708;
     --surface: #121113;
     --surface-subtle: #171618;
-    --border: #28262b;
+    --border: #fafafa14;
     --ink: #f1eff5;
     --ink-muted: #a2a0a6;
     --error: #f87171;
@@ -309,8 +324,11 @@ body {
     /* Lighting and elevation tokens (Figma). */
     --light-1: #ffffff1a;
     --light-2: #ffffff0f;
+    --light-3: #ffffff2e;
+    --light-4: #ffffff08;
     --shadow-1: #07070880;
     --shadow-2: #070708;
+    --shadow-3: #070708;
 
     --code-foreground: #e6edf3;
     --code-background: transparent;
@@ -338,7 +356,7 @@ body {
   --canvas: #080708;
   --surface: #121113;
   --surface-subtle: #171618;
-  --border: #28262b;
+  --border: #fafafa14;
   --ink: #f1eff5;
   --ink-muted: #a2a0a6;
   --error: #f87171;
@@ -350,8 +368,11 @@ body {
   /* Lighting and elevation tokens (Figma). */
   --light-1: #ffffff1a;
   --light-2: #ffffff0f;
+  --light-3: #ffffff2e;
+  --light-4: #ffffff08;
   --shadow-1: #07070880;
   --shadow-2: #070708;
+  --shadow-3: #070708;
 
   --code-foreground: #e6edf3;
   --code-background: transparent;
@@ -420,8 +441,11 @@ body {
   --color-type-code: var(--type-code);
   --color-light-1: var(--light-1);
   --color-light-2: var(--light-2);
+  --color-light-3: var(--light-3);
+  --color-light-4: var(--light-4);
   --color-shadow-1: var(--shadow-1);
   --color-shadow-2: var(--shadow-2);
+  --color-shadow-3: var(--shadow-3);
   --color-ink: var(--ink);
   --color-ink-muted: var(--ink-muted);
   --color-canvas: var(--canvas);

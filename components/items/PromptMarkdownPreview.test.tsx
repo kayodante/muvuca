@@ -91,7 +91,7 @@ describe("PromptMarkdownPreview", () => {
     await flushHighlight(el);
 
     // O clamp é visual (CSS), então o texto renderizado precisa manter os
-    // `\n` — sem eles as linhas colariam numa só e o line-clamp-6 contaria
+    // `\n` — sem eles as linhas colariam numa só e o line-clamp-7 contaria
     // errado.
     expect(el.textContent).toBe("linha 1\nlinha 2\nlinha 3");
   }, 15000);
@@ -102,23 +102,24 @@ describe("PromptMarkdownPreview", () => {
     expect(el.textContent).toBe("a\nb");
   });
 
-  it("limita o que vai ao highlighter a 12 linhas de origem", async () => {
+  it("limita o que vai ao highlighter a 14 linhas de origem", async () => {
     const source = Array.from({ length: 20 }, (_, i) => `linha ${i + 1}`).join(
       "\n",
     );
     const el = await renderPreview(source);
 
     // O corte é de custo, não de layout: o clamp visível continua sendo o
-    // line-clamp-6 do CSS, que jsdom não aplica.
-    expect(el.textContent).toContain("linha 12");
-    expect(el.textContent).not.toContain("linha 13");
+    // line-clamp-7 do CSS, que jsdom não aplica.
+    expect(el.textContent).toContain("linha 14");
+    expect(el.textContent).not.toContain("linha 15");
   });
 
-  it("mantém a moldura preenchida e o clamp do card", async () => {
+  it("usa a mesma moldura do preview de código e o clamp do card", async () => {
     const el = await renderPreview("um prompt qualquer");
 
     const panel = el.querySelector("div");
-    expect(panel?.className).toContain("bg-secondary");
-    expect(el.querySelector("p")?.className).toContain("line-clamp-6");
+    expect(panel?.className).toContain("h-42");
+    expect(panel?.className).toContain("bg-card");
+    expect(el.querySelector("p")?.className).toContain("line-clamp-7");
   });
 });

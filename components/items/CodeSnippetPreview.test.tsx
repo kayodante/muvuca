@@ -47,8 +47,8 @@ async function flushHighlight(el: HTMLElement) {
   }
 }
 
-// O fade é o gradiente absoluto no pé do painel — só existe sob truncamento.
-const FADE_SELECTOR = ".bg-gradient-to-t";
+// O fade é a máscara no pé das linhas — só existe sob truncamento.
+const FADE_SELECTOR = "[data-fade]";
 
 describe("CodeSnippetPreview", () => {
   it("trunca em 6 linhas e mostra o fade quando o conteúdo tem mais", async () => {

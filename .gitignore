@@ -7,6 +7,9 @@ node_modules/
 out/
 tsconfig.tsbuildinfo
 *.tsbuildinfo
+# Gerado pelo Next: `next dev` aponta para .next/dev/types, build/typegen
+# para .next/types. O typecheck roda `next typegen` antes do tsc.
+next-env.d.ts
 
 # Env files — .env.example is the one exception, it's meant to be versioned.
 .env*
@@ -34,6 +37,3 @@ test-results/
 
 # Local Git worktrees
 .worktrees/
-
-# repowise API keys (local)
-.repowise/.env
