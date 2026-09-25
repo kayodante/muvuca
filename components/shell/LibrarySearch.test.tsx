@@ -45,6 +45,7 @@ afterEach(async () => {
   root = null;
   container = null;
   vi.clearAllMocks();
+  vi.useRealTimers();
   searchParamsState.current = new URLSearchParams();
   document.documentElement.classList.remove("dark");
   vi.restoreAllMocks();
@@ -58,6 +59,14 @@ async function renderLibrarySearch() {
     root?.render(<LibrarySearch />);
   });
   return container;
+}
+
+function setInputValue(input: HTMLInputElement, value: string) {
+  Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    "value",
+  )?.set?.call(input, value);
+  input.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
 describe("LibrarySearch", () => {
@@ -164,5 +173,68 @@ describe("LibrarySearch", () => {
     );
     expect(requestFrame).not.toHaveBeenCalled();
     expect(replaceMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("interrompe a animação de limpar ao digitar", async () => {
+    const cancel = vi.fn();
+    vi.spyOn(Element.prototype, "animate").mockReturnValue({
+      cancel,
+      onfinish: null,
+    } as unknown as Animation);
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      font: "",
+      measureText: (text: string) => ({ width: text.length * 8 }),
+    } as CanvasRenderingContext2D);
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: () => ({ matches: false }),
+    });
+    searchParamsState.current = new URLSearchParams("q=react");
+    const dom = await renderLibrarySearch();
+    const input = dom.querySelector('input[type="search"]') as HTMLInputElement;
+
+    await act(async () => {
+      (
+        dom.querySelector(
+          'button[aria-label="Limpar busca"]',
+        ) as HTMLButtonElement
+      ).click();
+      setInputValue(input, "b");
+    });
+
+    const clear = input.closest(".t-clear");
+    expect(clear?.classList.contains("is-clearing")).toBe(false);
+    expect(clear?.querySelector(".t-clear-mirror")?.textContent).toBe("");
+    expect(cancel).toHaveBeenCalledTimes(3);
+  });
+
+  it("removes q after clearing, typing, and emptying the search", async () => {
+    vi.useFakeTimers();
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: () => ({ matches: true }),
+    });
+    searchParamsState.current = new URLSearchParams("q=react");
+    const dom = await renderLibrarySearch();
+    const input = dom.querySelector('input[type="search"]') as HTMLInputElement;
+
+    await act(async () => {
+      (
+        dom.querySelector(
+          'button[aria-label="Limpar busca"]',
+        ) as HTMLButtonElement
+      ).click();
+      setInputValue(input, "abc");
+      vi.advanceTimersByTime(250);
+    });
+    expect(replaceMock).toHaveBeenLastCalledWith("/items?q=abc", {
+      scroll: false,
+    });
+
+    await act(async () => {
+      setInputValue(input, "");
+      vi.advanceTimersByTime(250);
+    });
+    expect(replaceMock).toHaveBeenLastCalledWith("/items", { scroll: false });
   });
 });

@@ -716,13 +716,13 @@ body {
   --icon-swap-blur: 2px;
   --icon-swap-start-scale: 0.8;
   --icon-swap-ease: var(--ease-out-muvuca);
-  --clear-dur: 1000ms;
-  --clear-out-dur: 400ms;
-  --clear-in-dur: 400ms;
+  --clear-dur: var(--motion-slow);
+  --clear-out-dur: var(--motion-base);
+  --clear-in-dur: var(--motion-base);
   --clear-out-fly: 12px;
   --clear-in-fly: 12px;
-  --clear-out-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --clear-in-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --clear-out-ease: var(--ease-out-muvuca);
+  --clear-in-ease: var(--ease-out-muvuca);
   --clear-blur: 2px;
   --glow-delay: 50ms;
   --glow-peak-at: 0.15;
