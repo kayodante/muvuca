@@ -82,6 +82,7 @@ async function renderCard(
   onRefreshPreview = vi.fn(),
   onCopyContent: () => Promise<string> = () =>
     Promise.resolve(FULL_STORED_BODY),
+  isPending = false,
 ) {
   container = document.createElement("div");
   document.body.append(container);
@@ -93,6 +94,7 @@ async function renderCard(
         item={item}
         tags={tags}
         morphing={morphing}
+        isPending={isPending}
         onEdit={onEdit}
         onDelete={onDelete}
         onView={onView}
@@ -119,6 +121,41 @@ async function flushHighlight(el: HTMLElement) {
 }
 
 describe("ItemCard", () => {
+  it.each([false, true])(
+    "mantém o estado pendente acessível e atrasa só sua apresentação (%s)",
+    async (isPending) => {
+      const dom = await renderCard(
+        mockPrompt,
+        mockTags,
+        false,
+        vi.fn(),
+        vi.fn(),
+        vi.fn(),
+        vi.fn(),
+        () => Promise.resolve(FULL_STORED_BODY),
+        isPending,
+      );
+      const article = dom.querySelector("article");
+      const loader = dom.querySelector('[aria-label="Carregando item"]');
+
+      expect(article?.getAttribute("aria-busy")).toBe(
+        isPending ? "true" : null,
+      );
+      expect(article?.classList.contains("[transition-delay:150ms]")).toBe(
+        isPending,
+      );
+      expect(article?.classList.contains("pointer-events-none")).toBe(
+        isPending,
+      );
+      expect(loader?.classList.contains("starting:opacity-0") ?? false).toBe(
+        isPending,
+      );
+      expect(
+        loader?.classList.contains("motion-reduce:duration-0") ?? false,
+      ).toBe(isPending);
+    },
+  );
+
   it.each([
     [mockLink, "Um conteúdo salvo da web para acessar depois."],
     [mockPrompt, "Um prompt salvo para usar novamente com IA."],

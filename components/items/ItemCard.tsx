@@ -271,7 +271,7 @@ export function ItemCard({
         <MatrixLoader
           variant="pulse"
           rounded
-          className="size-3"
+          className="size-3 transition-opacity [transition-delay:150ms] duration-(--motion-base) ease-out-muvuca motion-reduce:duration-0 starting:opacity-0"
           aria-label={t.items.card.loadingItem}
         />
       )}
@@ -590,9 +590,10 @@ export function ItemCard({
     <article
       aria-busy={isPending || undefined}
       className={cn(
-        "group relative flex min-h-56 flex-col overflow-hidden rounded-2xl bg-card shadow-[0_0_0_1px_var(--color-shadow-1)] inset-shadow-[0_0_0_999px] inset-shadow-transparent transition-[box-shadow,opacity] duration-(--motion-slow) ease-out-muvuca after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-[inherit] after:shadow-[var(--shadow-light),inset_0_0_0_1px_var(--card)] after:transition-shadow after:duration-(--motion-slow) after:ease-out-muvuca after:content-[''] hover:inset-shadow-light-4 hover:after:shadow-[var(--shadow-light-2),inset_0_0_0_1px_var(--card)] motion-reduce:transition-none motion-reduce:after:transition-none",
+        "group relative flex min-h-56 flex-col overflow-hidden rounded-2xl bg-card shadow-[0_0_0_1px_var(--color-shadow-1)] inset-shadow-[0_0_0_999px] inset-shadow-transparent transition-[box-shadow,opacity] duration-(--motion-slow) ease-out-muvuca after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-[inherit] after:shadow-[var(--shadow-light),inset_0_0_0_1px_var(--card)] after:transition-shadow after:duration-(--motion-slow) after:ease-out-muvuca after:content-[''] hover:inset-shadow-light-4 hover:after:shadow-[var(--shadow-light-2),inset_0_0_0_1px_var(--card)] motion-reduce:duration-0 motion-reduce:after:transition-none",
         morphing && MORPH_CLASS,
-        isPending && "pointer-events-none opacity-75",
+        // Brief reads should reach the morph before any pending visual appears.
+        isPending && "pointer-events-none opacity-75 [transition-delay:150ms]",
       )}
     >
       {clickableMedia && domain && safeHref ? (
