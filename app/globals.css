@@ -709,10 +709,12 @@ body {
   --modal-scale: 0.96;
   --modal-scale-close: 0.96;
   --modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --icon-swap-dur: 250ms;
+  /* Escala do Muvuca, não a do transitions.dev: DESIGN.md fixa 0.8 como piso
+     de entrada ("nada aparece do nada") e não admite duração fora de token. */
+  --icon-swap-dur: var(--motion-base);
   --icon-swap-blur: 2px;
-  --icon-swap-start-scale: 0.25;
-  --icon-swap-ease: ease-in-out;
+  --icon-swap-start-scale: 0.8;
+  --icon-swap-ease: var(--ease-out-muvuca);
   --clear-dur: 1000ms;
   --clear-out-dur: 400ms;
   --clear-in-dur: 400ms;
@@ -904,7 +906,6 @@ body {
     opacity var(--icon-swap-dur) var(--icon-swap-ease),
     filter var(--icon-swap-dur) var(--icon-swap-ease),
     transform var(--icon-swap-dur) var(--icon-swap-ease);
-  will-change: opacity, filter, transform;
 }
 .t-icon-swap[data-state="a"] .t-icon[data-icon="a"],
 .t-icon-swap[data-state="b"] .t-icon[data-icon="b"] {

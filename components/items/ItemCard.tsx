@@ -91,7 +91,7 @@ function typeMetaFor(t: Dictionary) {
  * a lista inteira.
  */
 const ACTION_CLASS =
-  "opacity-100 transition-[opacity,background-color,color,transform] [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100";
+  "opacity-100 transition-[opacity,background-color,color,scale] [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100";
 
 /**
  * Glass pill behind the header over a link thumbnail (see its use). Hairline
@@ -102,14 +102,6 @@ const ACTION_CLASS =
 const MEDIA_PILL =
   "flex h-8 items-center rounded-full bg-card/70 inset-ring-[0.5px] inset-ring-border backdrop-blur-md backdrop-saturate-150";
 
-/**
- * Crossfade entre o ícone de "copiar" e o Check de confirmação: os dois
- * ficam empilhados na mesma célula (não teleporta, e o botão não muda de
- * largura) e só opacidade/escala trocam. Nunca anima a partir de scale(0)
- * -- nada no mundo real aparece do nada, 0.8 é o piso. O ícone que está
- * saindo leva pointer-events-none: o Button (não o svg) continua sendo o
- * único alvo de clique, e o aria-label dele já dá o nome acessível.
- */
 /**
  * Figma hover (item-link/-code/-prompt, State=Hover): the tag chips (Tag,
  * State=Hover) gain `light-2` as a second fill; the card itself gets the
@@ -130,6 +122,15 @@ const HOVER_LIGHT =
  */
 const PREVIEW_HOVER = "group-hover:bg-secondary";
 
+/**
+ * Crossfade entre o ícone de "copiar" e o Check de confirmação: os dois
+ * ficam empilhados na mesma célula (não teleporta, e o botão não muda de
+ * largura) e só opacidade/blur/escala trocam. Nunca anima a partir de
+ * scale(0) -- nada no mundo real aparece do nada, 0.8 é o piso
+ * (`--icon-swap-start-scale`). O ícone que está saindo leva
+ * pointer-events-none: o Button (não o svg) continua sendo o único alvo de
+ * clique, e o aria-label dele já dá o nome acessível.
+ */
 function CopyStateIcon({
   copied,
   Icon,
@@ -288,7 +289,7 @@ export function ItemCard({
               // linha do badge não muda. O anel de foco fica no botão em si
               // (10x10), não no pseudo-elemento -- o anel acompanha o ícone,
               // a área de toque invisível é só clicável.
-              className="pointer-events-auto relative rounded-full text-muted-foreground transition-[color,transform] duration-(--motion-fast) ease-out-muvuca outline-none after:absolute after:-inset-[7px] after:content-[''] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-90 motion-reduce:transition-none motion-reduce:active:scale-100"
+              className="pointer-events-auto relative rounded-full text-muted-foreground transition-[color,scale] duration-(--motion-fast) ease-out-muvuca outline-none after:absolute after:-inset-[7px] after:content-[''] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
             />
           }
         >

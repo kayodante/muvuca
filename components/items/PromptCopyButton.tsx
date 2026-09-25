@@ -104,7 +104,6 @@ export function PromptCopyButton({
       pendingLabel={pendingLabel}
       onClick={copyContent}
       className={cn(
-        "relative transition-[border-color,background-color,color,transform] duration-(--motion-fast) ease-out-muvuca active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100",
         copied &&
           "border-brand-accent/40 bg-brand-accent/10 text-brand-accent hover:bg-brand-accent/15 dark:border-brand-accent/30 dark:bg-brand-accent/15",
         className,

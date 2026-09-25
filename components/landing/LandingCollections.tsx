@@ -93,7 +93,7 @@ export function LandingCollections() {
 
                 <div
                   className={cn(
-                    "relative z-10 flex min-h-48 flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-xs transition-[border-color,box-shadow,transform] duration-(--motion-fast) ease-out-muvuca",
+                    "relative z-10 flex min-h-48 flex-col justify-between rounded-xl border border-border bg-card p-6 shadow-xs transition-[border-color,box-shadow,translate] duration-(--motion-fast) ease-out-muvuca",
                     isHovered
                       ? "-translate-y-0.5 border-foreground/25 shadow-sm"
                       : "hover:border-foreground/20",

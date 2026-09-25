@@ -37,7 +37,7 @@ const MAX_LINES = 6;
  * mesmo tamanho: `h-42` (168px) é p-3 + as 6 linhas de `leading-6` daqui.
  */
 export const PREVIEW_PANEL =
-  "h-42 overflow-hidden rounded-md bg-card bg-[linear-gradient(var(--shadow-1),var(--shadow-1))] p-3 inset-ring-[0.5px] inset-ring-border transition-colors duration-(--motion-slow) ease-out-muvuca motion-reduce:transition-none";
+  "h-42 overflow-hidden rounded-md bg-card bg-[linear-gradient(var(--shadow-1),var(--shadow-1))] p-3 inset-ring-[0.5px] inset-ring-border transition-[background-color] duration-(--motion-slow) ease-out-muvuca motion-reduce:transition-none";
 
 export function CodeSnippetPreview({
   contentPreview,

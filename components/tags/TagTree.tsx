@@ -118,7 +118,7 @@ function TagTreeRow({
             aria-pressed={isSelected}
             onClick={() => onSelect(node)}
             className={cn(
-              "group/tagitem text-label-md flex min-w-0 flex-1 items-center gap-2 rounded px-1.5 py-1 text-left transition-[transform,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.98] motion-reduce:active:scale-100",
+              "group/tagitem text-label-md flex min-w-0 flex-1 items-center gap-2 rounded px-1.5 py-1 text-left transition-[scale,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.97] motion-reduce:active:scale-100",
               isSelected
                 ? "font-medium text-foreground"
                 : "text-muted-foreground hover:text-foreground",

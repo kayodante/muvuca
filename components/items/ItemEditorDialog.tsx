@@ -199,7 +199,7 @@ export function ItemEditorDialog({
                   <label
                     key={itemType}
                     className={cn(
-                      "group relative flex cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-[background-color,border-color,transform,box-shadow] duration-(--motion-fast) ease-out-muvuca select-none active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
+                      "group relative flex cursor-pointer items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-[background-color,border-color,scale,box-shadow] duration-(--motion-fast) ease-out-muvuca select-none active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
                       isChecked
                         ? "border-foreground/30 bg-secondary text-foreground shadow-xs"
                         : "border-border bg-card text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
