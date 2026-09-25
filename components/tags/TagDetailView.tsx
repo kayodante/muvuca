@@ -1,12 +1,11 @@
 import { PencilLineIcon } from "lucide-react";
 import Link from "next/link";
 
-import { swatchClassFor } from "@/lib/tags/colors";
-import { cn } from "@/lib/utils";
 import type { Tag, TagAncestor } from "@/lib/database/queries/tags";
 import type { LibraryItemSummary } from "@/lib/database/queries/items";
 import { ptBR, type Dictionary } from "@/lib/i18n/dictionaries/pt-BR";
 import { Breadcrumb } from "./Breadcrumb";
+import { TagDot } from "./TagDot";
 
 import { ItemsPage } from "@/components/items/ItemsPage";
 
@@ -64,13 +63,7 @@ export function TagDetailView({
             {t.tags.detail.headingPrefix}
             <span className="inline-flex min-w-0 items-center gap-3 rounded-full bg-secondary py-2 pr-4 pl-3 leading-6 shadow-light inset-shadow-[0_0_0_999px] inset-shadow-light-4">
               <span className="inline-flex min-w-0 items-center gap-2">
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "size-3 shrink-0 rounded-full",
-                    swatchClassFor(tag.colorToken),
-                  )}
-                />
+                <TagDot colorToken={tag.colorToken} className="size-3" />
                 <span className="truncate font-semibold">{tag.name}</span>
               </span>
               <Link

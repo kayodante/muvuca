@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { cn } from "@/lib/utils";
-import { swatchClassFor } from "@/lib/tags/colors";
+import { TagDot } from "./TagDot";
 
 /**
  * Low-intensity chip, color shown only as a small swatch dot (never a
@@ -34,12 +34,9 @@ export function TagChip({
 }) {
   const content = (
     <>
-      <span
-        aria-hidden="true"
-        className={cn(
-          "size-1.5 shrink-0 rounded-full transition-[scale] duration-(--motion-fast) ease-out-muvuca group-hover/chip:scale-125 motion-reduce:transition-none motion-reduce:group-hover/chip:scale-100",
-          swatchClassFor(colorToken),
-        )}
+      <TagDot
+        colorToken={colorToken}
+        className="size-1.5 transition-[scale] duration-(--motion-fast) ease-out-muvuca group-hover/chip:scale-125 motion-reduce:transition-none motion-reduce:group-hover/chip:scale-100"
       />
       <span className="truncate">{name}</span>
     </>

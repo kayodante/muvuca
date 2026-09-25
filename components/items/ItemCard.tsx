@@ -591,7 +591,7 @@ export function ItemCard({
     <article
       aria-busy={isPending || undefined}
       className={cn(
-        "group relative flex min-h-56 flex-col overflow-hidden rounded-2xl bg-card shadow-[0_0_0_1px_var(--color-shadow-1)] inset-shadow-[0_0_0_999px] inset-shadow-transparent transition-[box-shadow,opacity] duration-(--motion-base) ease-out-muvuca after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-[inherit] after:shadow-[var(--shadow-light),inset_0_0_0_1px_var(--card)] after:transition-shadow after:duration-(--motion-base) after:ease-out-muvuca after:content-[''] hover:duration-(--motion-slow) hover:inset-shadow-light-4 hover:after:duration-(--motion-slow) hover:after:shadow-[var(--shadow-light-2),inset_0_0_0_1px_var(--card)] motion-reduce:transition-none motion-reduce:after:transition-none",
+        "group relative flex min-h-56 flex-col overflow-hidden rounded-2xl bg-card shadow-[0_0_0_1px_var(--color-shadow-1)] inset-shadow-[0_0_0_999px] inset-shadow-transparent transition-[box-shadow,opacity] duration-(--motion-base) ease-out-muvuca after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-[inherit] after:shadow-[var(--shadow-light),inset_0_0_0_1px_var(--card)] after:transition-shadow after:duration-(--motion-base) after:ease-out-muvuca after:content-[''] hover:inset-shadow-light-4 hover:duration-(--motion-slow) hover:after:shadow-[var(--shadow-light-2),inset_0_0_0_1px_var(--card)] hover:after:duration-(--motion-slow) motion-reduce:transition-none motion-reduce:after:transition-none",
         morphing && MORPH_CLASS,
         // Brief reads should reach the morph before any pending visual appears.
         isPending && "pointer-events-none opacity-75 [transition-delay:150ms]",
