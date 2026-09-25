@@ -558,6 +558,7 @@ body {
 :root[data-view-transition] [data-slot="dialog-content"],
 :root[data-view-transition] [data-slot="dialog-overlay"] {
   animation: none;
+  transition: none;
 }
 
 /**
@@ -695,20 +696,20 @@ body {
 /* transitions.dev — shared hooks installed for the interactive surfaces used
    by Muvuca. Component-specific colours and layout remain owned by Tailwind. */
 :root {
-  --text-swap-dur: 150ms;
+  --text-swap-dur: var(--motion-fast);
   --text-swap-translate-y: 4px;
   --text-swap-blur: 2px;
-  --text-swap-ease: ease-in-out;
-  --dropdown-open-dur: 250ms;
-  --dropdown-close-dur: 150ms;
+  --text-swap-ease: var(--ease-out-muvuca);
+  --dropdown-open-dur: var(--motion-base);
+  --dropdown-close-dur: var(--motion-fast);
   --dropdown-pre-scale: 0.97;
   --dropdown-closing-scale: 0.99;
-  --dropdown-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --modal-open-dur: 250ms;
-  --modal-close-dur: 150ms;
+  --dropdown-ease: var(--ease-out-muvuca);
+  --modal-open-dur: var(--motion-base);
+  --modal-close-dur: var(--motion-fast);
   --modal-scale: 0.96;
   --modal-scale-close: 0.96;
-  --modal-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --modal-ease: var(--ease-out-muvuca);
   /* Escala do Muvuca, não a do transitions.dev: DESIGN.md fixa 0.8 como piso
      de entrada ("nada aparece do nada") e não admite duração fora de token. */
   --icon-swap-dur: var(--motion-base);
@@ -730,25 +731,26 @@ body {
   --pulse-dur: 1000ms;
   --pulse-count: 1;
   --pulse-min: 0.5;
-  --reveal-dur: 400ms;
+  --reveal-dur: var(--motion-slow);
   --reveal-blur: 2px;
-  --reveal-ease: ease-in-out;
+  --reveal-ease: var(--ease-out-muvuca);
   --tabs-text-muted: var(--ink-muted);
   --tabs-text-active: var(--canvas);
   --tabs-bar-bg: var(--surface);
   --tabs-pill-bg: var(--ink);
-  --tt-in-dur: 150ms;
+  --tt-in-dur: var(--motion-fast);
+  /* Dismissal must beat entry; the scale starts at 120ms. */
   --tt-out-dur: 50ms;
   --tt-scale: 0.98;
   --tt-delay: 80ms;
-  --tt-in-ease: ease-out;
-  --tt-out-ease: ease-out;
+  --tt-in-ease: var(--ease-out-muvuca);
+  --tt-out-ease: var(--ease-out-muvuca);
   --tt-bg: #ffffff;
   --tt-fg: #2f2f2f;
-  --acc-expand: 250ms;
-  --acc-collapse: 250ms;
-  --acc-chevron: 250ms;
-  --acc-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --acc-expand: var(--motion-base);
+  --acc-collapse: var(--motion-base);
+  --acc-chevron: var(--motion-base);
+  --acc-ease: var(--ease-out-muvuca);
   --toast-open: 350ms;
   --toast-close: 250ms;
   --toast-distance: 16px;

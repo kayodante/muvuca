@@ -195,7 +195,7 @@ describe("LibraryToolbar", () => {
 
   it("troca o texto de status somente após a fase de saída", async () => {
     vi.useFakeTimers();
-    document.documentElement.style.setProperty("--text-swap-dur", "150ms");
+    document.documentElement.style.setProperty("--text-swap-dur", "0.12s");
     const props = {
       type: null,
       sort: "newest" as const,
@@ -215,13 +215,34 @@ describe("LibraryToolbar", () => {
     expect(label?.textContent).toBe("Atualizar pré-visualizações");
     expect(label?.classList.contains("is-exit")).toBe(true);
 
-    await act(async () => vi.advanceTimersByTime(149));
+    await act(async () => vi.advanceTimersByTime(119));
     expect(label?.textContent).toBe("Atualizar pré-visualizações");
 
     await act(async () => vi.advanceTimersByTime(1));
     expect(label?.textContent).toBe("Atualizando");
     expect(label?.classList.contains("is-exit")).toBe(false);
     expect(label?.classList.contains("is-enter-start")).toBe(false);
+  });
+
+  it("usa 120ms quando o token de troca de texto não está disponível", async () => {
+    vi.useFakeTimers();
+    const props = {
+      type: null,
+      sort: "newest" as const,
+      isPending: false,
+      isUpdatingResults: false,
+      canRefreshPreviews: true,
+      onRefreshPreviews: vi.fn(),
+      onFilterChange: vi.fn(),
+    };
+    const dom = await renderToolbar({ ...props, isRefreshingPreviews: false });
+
+    await act(async () => {
+      root?.render(<LibraryToolbar {...props} isRefreshingPreviews />);
+    });
+    await act(async () => vi.advanceTimersByTime(120));
+
+    expect(dom.querySelector(".t-text-swap")?.textContent).toBe("Atualizando");
   });
 
   it("volta ao rótulo padrão sem confirmar sucesso só porque a drenagem terminou", async () => {

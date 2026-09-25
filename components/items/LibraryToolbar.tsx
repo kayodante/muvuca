@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CheckIcon, ChevronDownIcon, RefreshCwIcon } from "lucide-react";
 import type { ItemType } from "@/lib/validation/item";
 import { SEARCH_SORTS, type SearchSort } from "@/lib/validation/search";
+import { cssDurationToMs } from "@/lib/motion/duration";
 import { useDictionary } from "@/lib/i18n/client";
 import type { Dictionary } from "@/lib/i18n/dictionaries/pt-BR";
 import { cn } from "@/lib/utils";
@@ -62,20 +63,18 @@ function TextSwap({ text }: { text: string }) {
       return;
     }
     element.classList.add("is-exit");
-    const value = Number.parseFloat(
+    const duration = cssDurationToMs(
       getComputedStyle(document.documentElement).getPropertyValue(
         "--text-swap-dur",
       ),
+      120,
     );
-    timerRef.current = window.setTimeout(
-      () => {
-        element.classList.remove("is-exit");
-        element.classList.add("is-enter-start");
-        enteringRef.current = true;
-        setDisplayText(text);
-      },
-      Number.isFinite(value) ? value : 150,
-    );
+    timerRef.current = window.setTimeout(() => {
+      element.classList.remove("is-exit");
+      element.classList.add("is-enter-start");
+      enteringRef.current = true;
+      setDisplayText(text);
+    }, duration);
     return () => {
       if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     };

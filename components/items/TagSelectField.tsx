@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { CheckIcon, ChevronDownIcon, SearchIcon, XIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { cssDurationToMs } from "@/lib/motion/duration";
 import { swatchClassFor } from "@/lib/tags/colors";
 import { indentClassFor } from "@/lib/tags/indent";
 import {
@@ -130,14 +131,15 @@ export function TagSelectField({
     setIsOpen(false);
     setIsClosing(true);
     setSearchQuery("");
-    const duration = Number.parseFloat(
+    const duration = cssDurationToMs(
       getComputedStyle(document.documentElement).getPropertyValue(
         "--dropdown-close-dur",
       ),
+      120,
     );
     closeTimerRef.current = window.setTimeout(
       () => setIsClosing(false),
-      Number.isFinite(duration) ? duration : 150,
+      duration,
     );
   };
 
@@ -295,7 +297,7 @@ export function TagSelectField({
           aria-hidden={isClosing || undefined}
           inert={isClosing}
           className={cn(
-            "t-dropdown [--transform-origin:top_left] z-50 mt-1 flex max-h-64 w-full flex-col overflow-hidden rounded-lg border border-border bg-popover text-sm text-popover-foreground shadow-overlay",
+            "t-dropdown z-50 mt-1 flex max-h-64 w-full flex-col overflow-hidden rounded-lg border border-border bg-popover text-sm text-popover-foreground shadow-overlay [--transform-origin:top_left]",
             isOpen ? "is-open" : "is-closing",
           )}
         >

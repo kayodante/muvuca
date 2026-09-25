@@ -17,6 +17,7 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
 import { toastSuccess } from "@/components/states/Toast";
 import { useDictionary } from "@/lib/i18n/client";
+import { cssDurationToMs } from "@/lib/motion/duration";
 
 interface LandingCommandPaletteProps {
   open: boolean;
@@ -67,12 +68,12 @@ export function LandingCommandPalette({
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
-    const closeDuration = Number.parseFloat(
+    const closeDelay = cssDurationToMs(
       getComputedStyle(document.documentElement).getPropertyValue(
         "--modal-close-dur",
       ),
+      120,
     );
-    const closeDelay = Number.isFinite(closeDuration) ? closeDuration : 150;
     const timer = window.setTimeout(
       () => setMounted(false),
       reducedMotion ? 0 : closeDelay,
