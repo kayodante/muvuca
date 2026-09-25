@@ -37,6 +37,7 @@ import { Button } from "@/components/ui/button";
 import { toastError, toastSuccess } from "@/components/states/Toast";
 
 import { DeleteItemAlertDialog } from "./DeleteItemAlertDialog";
+import { fullItemFromSummary } from "./fullItemFromSummary";
 import { ItemCard } from "./ItemCard";
 import { ItemEditorDialog, type EditorTarget } from "./ItemEditorDialog";
 import { LibraryToolbar } from "./LibraryToolbar";
@@ -173,12 +174,12 @@ export function ItemsPage({
   /** Failures surface as a toast, not inline: the clicked card may sit below
    * the fold, and a banner at the top of the list would be born off screen.
    * To retry, the person clicks the card again once it leaves pending. */
-  function loadItem(item: LibraryItemSummary, target: "view" | "edit") {
+  function loadItem(itemId: string, target: "view" | "edit") {
     const requestId = ++latestDetailRequest.current;
-    setLoadingItemId(item.id);
+    setLoadingItemId(itemId);
     startDetailTransition(async () => {
       try {
-        const result = await getItemDetails(item.id);
+        const result = await getItemDetails(itemId);
         if (requestId !== latestDetailRequest.current) return;
         if (!result.ok) {
           toastError(result.message);
@@ -187,7 +188,7 @@ export function ItemsPage({
         if (target === "view") {
           const detail = result.data;
           morph(
-            () => setMorphingId(item.id),
+            () => setMorphingId(itemId),
             () => {
               setViewingItem(detail);
               setMorphingId(null);
@@ -209,6 +210,23 @@ export function ItemsPage({
         }
       }
     });
+  }
+
+  function viewItem(item: LibraryItemSummary) {
+    const full = fullItemFromSummary(item);
+    if (!full) {
+      loadItem(item.id, "view");
+      return;
+    }
+    ++latestDetailRequest.current;
+    setLoadingItemId(null);
+    morph(
+      () => setMorphingId(item.id),
+      () => {
+        setViewingItem(full);
+        setMorphingId(null);
+      },
+    );
   }
 
   /**
@@ -339,9 +357,9 @@ export function ItemsPage({
                     tags={tags}
                     morphing={morphingId === item.id}
                     isPending={isDetailPending && loadingItemId === item.id}
-                    onEdit={() => loadItem(item, "edit")}
+                    onEdit={() => loadItem(item.id, "edit")}
                     onDelete={() => setDeletingItem(item)}
-                    onView={() => loadItem(item, "view")}
+                    onView={() => viewItem(item)}
                     onCopyContent={() => loadItemContent(item.id)}
                     onRefreshPreview={() => handleRefreshPreview(item.id)}
                   />
@@ -421,7 +439,7 @@ export function ItemsPage({
         onEdit={(item) => {
           setViewingItem(null);
           setMorphingId(null);
-          setEditorTarget({ mode: "edit", item });
+          loadItem(item.id, "edit");
         }}
       />
       <DeleteItemAlertDialog
