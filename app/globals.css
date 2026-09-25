@@ -821,7 +821,7 @@ body {
 }
 
 .t-dropdown {
-  transform-origin: top left;
+  transform-origin: var(--transform-origin, top left);
   transform: scale(var(--dropdown-pre-scale));
   opacity: 0;
   pointer-events: none;
@@ -829,21 +829,6 @@ body {
     transform var(--dropdown-open-dur) var(--dropdown-ease),
     opacity var(--dropdown-open-dur) var(--dropdown-ease);
   will-change: transform, opacity;
-}
-.t-dropdown[data-origin="top-right"] {
-  transform-origin: top right;
-}
-.t-dropdown[data-origin="top-center"] {
-  transform-origin: top center;
-}
-.t-dropdown[data-origin="bottom-left"] {
-  transform-origin: bottom left;
-}
-.t-dropdown[data-origin="bottom-center"] {
-  transform-origin: bottom center;
-}
-.t-dropdown[data-origin="bottom-right"] {
-  transform-origin: bottom right;
 }
 .t-dropdown.is-open,
 .t-dropdown[data-open] {

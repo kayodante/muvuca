@@ -127,7 +127,10 @@ describe("TagSelectField", () => {
 
     expect(trigger.getAttribute("aria-expanded")).toBe("true");
     const dropdown = document.querySelector(".t-dropdown");
-    expect(dropdown?.getAttribute("data-origin")).toBe("top-left");
+    expect(dropdown?.getAttribute("data-origin")).toBeNull();
+    expect(dropdown?.classList.contains("[--transform-origin:top_left]")).toBe(
+      true,
+    );
     expect(dropdown?.classList.contains("is-open")).toBe(true);
     const listbox = document.querySelector('[role="listbox"]');
     expect(listbox).not.toBeNull();

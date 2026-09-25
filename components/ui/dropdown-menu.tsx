@@ -41,7 +41,6 @@ function DropdownMenuContent({
       >
         <MenuPrimitive.Popup
           data-slot="dropdown-menu-content"
-          data-origin={`${side === "top" ? "bottom" : "top"}-${align === "end" ? "right" : align === "center" ? "center" : "left"}`}
           className={cn(
             "t-dropdown z-50 max-h-(--available-height) w-(--anchor-width) min-w-32 overflow-x-hidden overflow-y-auto rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none data-closed:overflow-hidden",
             className,

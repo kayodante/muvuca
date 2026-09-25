@@ -292,11 +292,10 @@ export function TagSelectField({
       {/* Dropdown Popover */}
       {(isOpen || isClosing) && !isDisabled && (
         <div
-          data-origin="top-left"
           aria-hidden={isClosing || undefined}
           inert={isClosing}
           className={cn(
-            "t-dropdown z-50 mt-1 flex max-h-64 w-full flex-col overflow-hidden rounded-lg border border-border bg-popover text-sm text-popover-foreground shadow-overlay",
+            "t-dropdown [--transform-origin:top_left] z-50 mt-1 flex max-h-64 w-full flex-col overflow-hidden rounded-lg border border-border bg-popover text-sm text-popover-foreground shadow-overlay",
             isOpen ? "is-open" : "is-closing",
           )}
         >
