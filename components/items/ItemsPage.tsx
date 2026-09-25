@@ -36,11 +36,6 @@ import { LibraryToolbar } from "./LibraryToolbar";
 import { PromptDetailDialog } from "./PromptDetailDialog";
 import { usePreviewDrain } from "./usePreviewDrain";
 
-type DetailRequest = {
-  item: LibraryItemSummary;
-  target: "view" | "edit";
-};
-
 export function ItemsPage({
   items,
   tags,
@@ -75,9 +70,6 @@ export function ItemsPage({
   const [deletingItem, setDeletingItem] = useState<LibraryItemSummary | null>(
     null,
   );
-  const [detailError, setDetailError] = useState<
-    (DetailRequest & { message: string }) | null
-  >(null);
   const [importOpen, setImportOpen] = useState(false);
   const [isDetailPending, startDetailTransition] = useTransition();
   const latestDetailRequest = useRef(0);
@@ -152,16 +144,18 @@ export function ItemsPage({
     });
   }
 
+  /** Failures surface as a toast, not inline: the clicked card may sit below
+   * the fold, and a banner at the top of the list would be born off screen.
+   * To retry, the person clicks the card again once it leaves pending. */
   function loadItem(item: LibraryItemSummary, target: "view" | "edit") {
     const requestId = ++latestDetailRequest.current;
-    setDetailError(null);
     setLoadingItemId(item.id);
     startDetailTransition(async () => {
       try {
         const result = await getItemDetails(item.id);
         if (requestId !== latestDetailRequest.current) return;
         if (!result.ok) {
-          setDetailError({ item, target, message: result.message });
+          toastError(result.message);
           return;
         }
         if (target === "view") {
@@ -175,6 +169,13 @@ export function ItemsPage({
           );
         } else {
           setEditorTarget({ mode: "edit", item: result.data });
+        }
+      } catch {
+        // A rejected action (network drop, stale action id after a deploy)
+        // would otherwise be rethrown by the transition into
+        // library/error.tsx and take the whole list down with it.
+        if (requestId === latestDetailRequest.current) {
+          toastError(t.errors.unknown);
         }
       } finally {
         if (requestId === latestDetailRequest.current) {
@@ -249,24 +250,6 @@ export function ItemsPage({
             onFilterChange={updateParams}
           />
         </div>
-
-        {detailError && (
-          <div
-            role="alert"
-            className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2"
-          >
-            <p className="text-sm text-destructive">{detailError.message}</p>
-            <Button
-              variant="outline"
-              size="sm"
-              pending={isDetailPending}
-              pendingLabel={t.common.loading}
-              onClick={() => loadItem(detailError.item, detailError.target)}
-            >
-              {t.common.tryAgain}
-            </Button>
-          </div>
-        )}
 
         {items.length === 0 ? (
           <EmptyState

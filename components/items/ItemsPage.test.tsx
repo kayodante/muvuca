@@ -339,6 +339,56 @@ describe("ItemsPage code_component view detail", () => {
   });
 });
 
+// `toast.error` is what `toastError` forwards to; sonner is mocked above.
+describe("ItemsPage falha ao abrir item", () => {
+  const promptItem: LibraryItemSummary = {
+    id: "44444444-4444-4444-8444-444444444444",
+    type: "prompt",
+    title: "Prompt que falha",
+    description: null,
+    url: null,
+    contentPreview: "Escreva um resumo.",
+    tagIds: [],
+  };
+
+  async function clickView() {
+    const viewButton = container?.querySelector(
+      'button[aria-label="Ver conteúdo completo"]',
+    ) as HTMLButtonElement | null;
+    expect(viewButton).not.toBeNull();
+    await act(async () => {
+      viewButton?.click();
+    });
+  }
+
+  it("avisa por toast, sem banner no topo, e o card sai do pending", async () => {
+    getItemDetailsMock.mockResolvedValueOnce({
+      ok: false,
+      code: "NOT_FOUND",
+      message: "Item não encontrado.",
+    });
+    await renderItemsPage({ items: [promptItem] });
+
+    await clickView();
+
+    expect(toast.error).toHaveBeenCalledWith("Item não encontrado.");
+    expect(container?.querySelector('[role="alert"]')).toBeNull();
+    expect(container?.querySelector("[aria-busy]")).toBeNull();
+  });
+
+  it("uma rejeição do action vira toast genérico e a página continua de pé", async () => {
+    getItemDetailsMock.mockRejectedValueOnce(new Error("network"));
+    await renderItemsPage({ items: [promptItem] });
+
+    await clickView();
+
+    expect(toast.error).toHaveBeenCalledWith(
+      "Algo deu errado. Tente novamente.",
+    );
+    expect(container?.textContent).toContain("Prompt que falha");
+  });
+});
+
 describe("ItemsPage preview drain escopado", () => {
   const promptItem: LibraryItemSummary = {
     id: "33333333-3333-4333-8333-333333333333",
