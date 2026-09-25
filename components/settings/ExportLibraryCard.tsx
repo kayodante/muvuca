@@ -10,7 +10,8 @@ import { toastError, toastSuccess } from "@/components/states/Toast";
 
 export function ExportLibraryCard() {
   const t = useDictionary();
-  const [isPending, startTransition] = useTransition();
+  const [isJsonPending, startJsonTransition] = useTransition();
+  const [isHtmlPending, startHtmlTransition] = useTransition();
 
   function triggerDownload(
     content: string,
@@ -29,6 +30,8 @@ export function ExportLibraryCard() {
   }
 
   function handleExport(format: "json" | "html") {
+    const startTransition =
+      format === "json" ? startJsonTransition : startHtmlTransition;
     startTransition(async () => {
       const result = await exportUserLibrary();
       if (!result.ok) {
@@ -69,7 +72,7 @@ export function ExportLibraryCard() {
         <Button
           variant="outline"
           size="sm"
-          pending={isPending}
+          pending={isJsonPending}
           pendingLabel={t.export.exporting}
           onClick={() => handleExport("json")}
         >
@@ -79,7 +82,7 @@ export function ExportLibraryCard() {
         <Button
           variant="outline"
           size="sm"
-          pending={isPending}
+          pending={isHtmlPending}
           pendingLabel={t.export.exporting}
           onClick={() => handleExport("html")}
         >
