@@ -497,6 +497,7 @@ export const en: Dictionary = {
       refreshing: "Refreshing",
       refreshPreviews: "Refresh previews",
       loadingItem: "Loading item…",
+      updatingResults: "Updating results…",
     },
     page: {
       defaultTitle: "Your items",

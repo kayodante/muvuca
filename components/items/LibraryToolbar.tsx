@@ -15,7 +15,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MatrixLoader } from "@/components/ui/matrix-loader";
-import { ShimmerText } from "@/components/ui/shimmer-text";
 
 function MatrixIcon() {
   return <MatrixLoader variant="orbit" rounded aria-hidden="true" />;
@@ -114,6 +113,7 @@ interface LibraryToolbarProps {
   type: ItemType | null;
   sort: SearchSort;
   isPending: boolean;
+  isUpdatingResults: boolean;
   /** This page renders at least one link item -- the only thing whose
    * preview can be refreshed. No server-side pending count gates the
    * button: "nothing was pending" is feedback the action itself gives. */
@@ -132,6 +132,7 @@ export function LibraryToolbar({
   type,
   sort,
   isPending,
+  isUpdatingResults,
   canRefreshPreviews,
   isRefreshingPreviews,
   onRefreshPreviews,
@@ -255,20 +256,13 @@ export function LibraryToolbar({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {isPending && (
-        <span
-          className="text-body-sm flex items-center gap-1.5 text-muted-foreground"
-          aria-live="polite"
-        >
-          <MatrixLoader
-            variant="scan"
-            rounded
-            className="size-3.5"
-            aria-hidden="true"
-          />
-          <ShimmerText text={t.items.toolbar.loadingItem} />
-        </span>
-      )}
+      <span role="status" className="sr-only">
+        {isPending
+          ? t.items.toolbar.loadingItem
+          : isUpdatingResults
+            ? t.items.toolbar.updatingResults
+            : ""}
+      </span>
     </section>
   );
 }

@@ -27,6 +27,7 @@ async function renderToolbar(
     type: null,
     sort: "newest" as const,
     isPending: false,
+    isUpdatingResults: false,
     canRefreshPreviews: false,
     isRefreshingPreviews: false,
     onRefreshPreviews: vi.fn(),
@@ -103,9 +104,49 @@ describe("LibraryToolbar", () => {
     expect(sortTrigger?.textContent).toContain("Título A–Z");
   });
 
-  it("exibe indicador de carregamento quando isPending for true", async () => {
-    const dom = await renderToolbar({ isPending: true });
-    expect(dom.textContent).toContain("Carregando item…");
+  it("mantém o status montado e anuncia só no leitor de tela", async () => {
+    const dom = await renderToolbar();
+    const status = dom.querySelector('[role="status"]');
+    const visibleText = () =>
+      Array.from(dom.querySelectorAll("section > :not(.sr-only)"))
+        .map((element) => element.textContent)
+        .join("");
+    expect(status?.classList.contains("sr-only")).toBe(true);
+    expect(status?.textContent).toBe("");
+
+    await act(async () => {
+      root?.render(
+        <LibraryToolbar
+          type={null}
+          sort="newest"
+          isPending
+          isUpdatingResults={false}
+          canRefreshPreviews={false}
+          isRefreshingPreviews={false}
+          onRefreshPreviews={vi.fn()}
+          onFilterChange={vi.fn()}
+        />,
+      );
+    });
+    expect(status?.textContent).toBe("Carregando item…");
+    expect(visibleText()).not.toContain("Carregando item…");
+
+    await act(async () => {
+      root?.render(
+        <LibraryToolbar
+          type={null}
+          sort="newest"
+          isPending={false}
+          isUpdatingResults
+          canRefreshPreviews={false}
+          isRefreshingPreviews={false}
+          onRefreshPreviews={vi.fn()}
+          onFilterChange={vi.fn()}
+        />,
+      );
+    });
+    expect(status?.textContent).toBe("Atualizando resultados…");
+    expect(visibleText()).not.toContain("Atualizando resultados…");
   });
 
   it("oculta 'Atualizar pré-visualizações' quando a página não tem item de link", async () => {
@@ -159,6 +200,7 @@ describe("LibraryToolbar", () => {
       type: null,
       sort: "newest" as const,
       isPending: false,
+      isUpdatingResults: false,
       canRefreshPreviews: true,
       onRefreshPreviews: vi.fn(),
       onFilterChange: vi.fn(),
@@ -189,6 +231,7 @@ describe("LibraryToolbar", () => {
         type: null,
         sort: "newest" as const,
         isPending: false,
+        isUpdatingResults: false,
         canRefreshPreviews: true,
         onRefreshPreviews: vi.fn(),
         onFilterChange: vi.fn(),

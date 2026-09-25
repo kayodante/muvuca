@@ -525,6 +525,7 @@ export const ptBR = {
       refreshing: "Atualizando",
       refreshPreviews: "Atualizar pré-visualizações",
       loadingItem: "Carregando item…",
+      updatingResults: "Atualizando resultados…",
     },
     page: {
       defaultTitle: "Seus itens",

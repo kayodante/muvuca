@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  useEffect,
+  useMemo,
+  useOptimistic,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -94,6 +101,14 @@ export function ItemsPage({
   const type = params.get("type") as ItemType | null;
   const tag = params.get("tag");
   const sort = (params.get("sort") as SearchSort | null) ?? "newest";
+  const [isFilterPending, startFilterTransition] = useTransition();
+  const [filters, setOptimisticFilters] = useOptimistic(
+    { type, sort },
+    (current, patch: Partial<{ type: ItemType | null; sort: SearchSort }>) => ({
+      ...current,
+      ...patch,
+    }),
+  );
   const hasSearchFilters = Boolean(query || type || tag || sort !== "newest");
   const prevPageParams = new URLSearchParams(params.toString());
   if (prevCursor) prevPageParams.set("cursor", prevCursor);
@@ -127,11 +142,13 @@ export function ItemsPage({
     const clear: Record<string, null> = {};
     if (params.get("create") === "1") clear.create = null;
     if (params.get("import") === "1") clear.import = null;
-    if (Object.keys(clear).length > 0) updateParams(clear);
+    if (Object.keys(clear).length > 0) {
+      router.replace(hrefWith(clear), { scroll: false });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
 
-  function updateParams(values: Record<string, string | null>) {
+  function hrefWith(values: Record<string, string | null>) {
     const next = new URLSearchParams(params.toString());
     for (const [key, value] of Object.entries(values)) {
       if (value) next.set(key, value);
@@ -139,8 +156,17 @@ export function ItemsPage({
     }
     next.delete("cursor");
     const search = next.toString();
-    router.replace(search ? `${pathname}?${search}` : pathname, {
-      scroll: false,
+    return search ? `${pathname}?${search}` : pathname;
+  }
+
+  function changeFilters(values: Record<string, string | null>) {
+    startFilterTransition(() => {
+      const patch: Partial<{ type: ItemType | null; sort: SearchSort }> = {};
+      if ("type" in values) patch.type = values.type as ItemType | null;
+      if ("sort" in values)
+        patch.sort = (values.sort as SearchSort | null) ?? "newest";
+      setOptimisticFilters(patch);
+      router.replace(hrefWith(values), { scroll: false });
     });
   }
 
@@ -241,127 +267,139 @@ export function ItemsPage({
           </Heading>
 
           <LibraryToolbar
-            type={type}
-            sort={sort}
+            type={filters.type}
+            sort={filters.sort}
             isPending={isDetailPending}
+            isUpdatingResults={isFilterPending}
             canRefreshPreviews={linkItemIds.length > 0}
             isRefreshingPreviews={isDraining}
             onRefreshPreviews={refreshVisible}
-            onFilterChange={updateParams}
+            onFilterChange={changeFilters}
           />
         </div>
 
-        {items.length === 0 ? (
-          <EmptyState
-            icon={FileTextIcon}
-            title={
-              hasSearchFilters
-                ? t.items.page.noResultsTitle
-                : resolvedEmptyTitle
-            }
-            description={
-              hasSearchFilters
-                ? t.items.page.noResultsDescription
-                : resolvedEmptyDescription
-            }
-            action={
-              hasSearchFilters ? (
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    updateParams({ q: null, type: null, tag: null, sort: null })
-                  }
-                >
-                  <FilterXIcon aria-hidden="true" data-icon="inline-start" />
-                  {t.items.page.clearFilters}
-                </Button>
-              ) : (
-                <Button onClick={() => setEditorTarget({ mode: "create" })}>
-                  <PlusIcon aria-hidden="true" data-icon="inline-start" />
-                  {t.items.editor.createItem}
-                </Button>
-              )
-            }
-            secondaryAction={
-              hasSearchFilters ? undefined : (
-                <Button variant="outline" onClick={() => setImportOpen(true)}>
-                  {t.items.page.importBookmarks}
-                </Button>
-              )
-            }
-          />
-        ) : (
-          <>
-            {/* `auto-fill`, not `auto-fit`: with two items auto-fit collapses
+        <div
+          data-testid="library-results"
+          aria-busy={isFilterPending || undefined}
+          className={`flex flex-col gap-4 transition-opacity duration-(--motion-base) ease-out-muvuca ${isFilterPending ? "opacity-60 [transition-delay:150ms]" : ""}`}
+        >
+          {items.length === 0 ? (
+            <EmptyState
+              icon={FileTextIcon}
+              title={
+                hasSearchFilters
+                  ? t.items.page.noResultsTitle
+                  : resolvedEmptyTitle
+              }
+              description={
+                hasSearchFilters
+                  ? t.items.page.noResultsDescription
+                  : resolvedEmptyDescription
+              }
+              action={
+                hasSearchFilters ? (
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      changeFilters({
+                        q: null,
+                        type: null,
+                        tag: null,
+                        sort: null,
+                      })
+                    }
+                  >
+                    <FilterXIcon aria-hidden="true" data-icon="inline-start" />
+                    {t.items.page.clearFilters}
+                  </Button>
+                ) : (
+                  <Button onClick={() => setEditorTarget({ mode: "create" })}>
+                    <PlusIcon aria-hidden="true" data-icon="inline-start" />
+                    {t.items.editor.createItem}
+                  </Button>
+                )
+              }
+              secondaryAction={
+                hasSearchFilters ? undefined : (
+                  <Button variant="outline" onClick={() => setImportOpen(true)}>
+                    {t.items.page.importBookmarks}
+                  </Button>
+                )
+              }
+            />
+          ) : (
+            <>
+              {/* `auto-fill`, not `auto-fit`: with two items auto-fit collapses
               the empty tracks and stretches each card past 500px, technical rhythm. */}
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-4">
-              {items.map((item) => (
-                <ItemCard
-                  key={item.id}
-                  item={item}
-                  tags={tags}
-                  morphing={morphingId === item.id}
-                  isPending={isDetailPending && loadingItemId === item.id}
-                  onEdit={() => loadItem(item, "edit")}
-                  onDelete={() => setDeletingItem(item)}
-                  onView={() => loadItem(item, "view")}
-                  onCopyContent={() => loadItemContent(item.id)}
-                  onRefreshPreview={() => handleRefreshPreview(item.id)}
-                />
-              ))}
-            </div>
-            {(prevPageHref || nextPageHref) && (
-              <nav
-                aria-label={t.items.page.paginationLabel}
-                className="mt-4 flex items-center justify-center gap-3"
-              >
-                {prevPageHref ? (
-                  <Button
-                    variant="outline"
-                    nativeButton={false}
-                    render={<Link href={prevPageHref} />}
-                  >
-                    <ChevronLeftIcon
-                      aria-hidden="true"
-                      data-icon="inline-start"
-                    />
-                    {t.items.page.previousPage}
-                  </Button>
-                ) : (
-                  <Button variant="outline" disabled>
-                    <ChevronLeftIcon
-                      aria-hidden="true"
-                      data-icon="inline-start"
-                    />
-                    {t.items.page.previousPage}
-                  </Button>
-                )}
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-4">
+                {items.map((item) => (
+                  <ItemCard
+                    key={item.id}
+                    item={item}
+                    tags={tags}
+                    morphing={morphingId === item.id}
+                    isPending={isDetailPending && loadingItemId === item.id}
+                    onEdit={() => loadItem(item, "edit")}
+                    onDelete={() => setDeletingItem(item)}
+                    onView={() => loadItem(item, "view")}
+                    onCopyContent={() => loadItemContent(item.id)}
+                    onRefreshPreview={() => handleRefreshPreview(item.id)}
+                  />
+                ))}
+              </div>
+              {(prevPageHref || nextPageHref) && (
+                <nav
+                  aria-label={t.items.page.paginationLabel}
+                  className="mt-4 flex items-center justify-center gap-3"
+                >
+                  {prevPageHref ? (
+                    <Button
+                      variant="outline"
+                      nativeButton={false}
+                      render={<Link href={prevPageHref} />}
+                    >
+                      <ChevronLeftIcon
+                        aria-hidden="true"
+                        data-icon="inline-start"
+                      />
+                      {t.items.page.previousPage}
+                    </Button>
+                  ) : (
+                    <Button variant="outline" disabled>
+                      <ChevronLeftIcon
+                        aria-hidden="true"
+                        data-icon="inline-start"
+                      />
+                      {t.items.page.previousPage}
+                    </Button>
+                  )}
 
-                {nextPageHref ? (
-                  <Button
-                    variant="outline"
-                    nativeButton={false}
-                    render={<Link href={nextPageHref} />}
-                  >
-                    {t.items.page.nextPage}
-                    <ChevronRightIcon
-                      aria-hidden="true"
-                      data-icon="inline-end"
-                    />
-                  </Button>
-                ) : (
-                  <Button variant="outline" disabled>
-                    {t.items.page.nextPage}
-                    <ChevronRightIcon
-                      aria-hidden="true"
-                      data-icon="inline-end"
-                    />
-                  </Button>
-                )}
-              </nav>
-            )}
-          </>
-        )}
+                  {nextPageHref ? (
+                    <Button
+                      variant="outline"
+                      nativeButton={false}
+                      render={<Link href={nextPageHref} />}
+                    >
+                      {t.items.page.nextPage}
+                      <ChevronRightIcon
+                        aria-hidden="true"
+                        data-icon="inline-end"
+                      />
+                    </Button>
+                  ) : (
+                    <Button variant="outline" disabled>
+                      {t.items.page.nextPage}
+                      <ChevronRightIcon
+                        aria-hidden="true"
+                        data-icon="inline-end"
+                      />
+                    </Button>
+                  )}
+                </nav>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       {editorTarget && (
