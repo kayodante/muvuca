@@ -37,15 +37,12 @@ export default async function TagLoading() {
       </div>
 
       {/* Items Section */}
-      <section className="mt-4 flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-7 w-44" />
-          <Skeleton className="h-10 w-44 rounded-md" />
+      <section className="mt-4 flex flex-col gap-4">
+        <div className="flex flex-wrap items-center justify-end gap-3 px-4">
+          <Skeleton className="mr-auto h-6 w-44" />
+          <LibraryToolbarSkeleton />
         </div>
-        <LibraryToolbarSkeleton />
-        <div className="mt-2">
-          <LibraryGridSkeleton />
-        </div>
+        <LibraryGridSkeleton />
       </section>
     </div>
   );

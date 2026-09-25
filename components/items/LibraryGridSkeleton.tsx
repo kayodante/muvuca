@@ -1,11 +1,10 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-/** Mirrors the filters and sort toolbar geometry during route transitions. */
+/** Mirrors the always-visible type filter and sort control. */
 export function LibraryToolbarSkeleton() {
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <Skeleton className="h-8 w-48 rounded-md" />
       <Skeleton className="h-8 w-64 rounded-lg" />
       <Skeleton className="h-8 w-32 rounded-md" />
     </div>
@@ -16,14 +15,7 @@ export function LibraryToolbarSkeleton() {
 // custom property, mantendo os blocos de um mesmo card em fase entre si.
 const DELAYED = "[animation-delay:var(--skeleton-delay)]";
 
-/**
- * Mirrors the gallery's card geometry during route transitions -- the
- * `aspect-[365/172]` block up top keeps the skeleton's proportions matching
- * the loaded `ItemCard`'s media area, since real link
- * cards are now taller than a plain text card. The ratio has to stay in
- * sync with `LinkPreviewMedia`; a mismatch here is layout shift on every
- * load.
- */
+/** Keeps both link media and prompt/code panels in the loading gallery. */
 export function LibraryGridSkeleton() {
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-4">
@@ -40,15 +32,28 @@ export function LibraryGridSkeleton() {
           }
           className="min-h-56 overflow-hidden rounded-2xl bg-card shadow-light"
         >
-          <Skeleton
-            className={cn("aspect-[365/172] w-full rounded-none", DELAYED)}
-          />
+          {index % 3 === 0 && (
+            <Skeleton
+              className={cn("aspect-[365/172] w-full rounded-none", DELAYED)}
+            />
+          )}
           <div className="p-4">
-            <Skeleton className={cn("h-3 w-24", DELAYED)} />
-            <Skeleton className={cn("mt-6 h-6 w-4/5", DELAYED)} />
+            <div className="flex items-center justify-between gap-2">
+              <Skeleton className={cn("h-3 w-24", DELAYED)} />
+              {index % 3 !== 0 && (
+                <Skeleton className={cn("h-8 w-20 rounded-md", DELAYED)} />
+              )}
+            </div>
+            <Skeleton className={cn("mt-5 h-6 w-4/5", DELAYED)} />
             <Skeleton className={cn("mt-2 h-4 w-full", DELAYED)} />
-            <Skeleton className={cn("mt-1 h-4 w-3/4", DELAYED)} />
-            <div className="mt-10 flex gap-2">
+            {index % 3 === 0 ? (
+              <Skeleton className={cn("mt-1 h-4 w-3/4", DELAYED)} />
+            ) : (
+              <Skeleton
+                className={cn("mt-6 h-42 w-full rounded-md", DELAYED)}
+              />
+            )}
+            <div className="mt-6 flex gap-2">
               <Skeleton className={cn("h-7 w-16 rounded-full", DELAYED)} />
               <Skeleton className={cn("h-7 w-20 rounded-full", DELAYED)} />
             </div>
