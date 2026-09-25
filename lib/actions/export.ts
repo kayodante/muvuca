@@ -7,23 +7,58 @@ import { createClient } from "@/lib/supabase/server";
 import { fail, ok, type ActionResult } from "@/lib/utils/result";
 import { BACKUP_FORMAT_VERSION, type ExportData } from "@/lib/export/formatter";
 
+const EXPORT_PAGE_SIZE = 1000;
+
+async function readAll<T>(
+  readPage: (
+    from: number,
+    to: number,
+  ) => Promise<{ data: T[] | null; error: { code: string } | null }>,
+): Promise<{ data: T[] | null; error: { code: string } | null }> {
+  const rows: T[] = [];
+  for (let from = 0; ; from += EXPORT_PAGE_SIZE) {
+    const result = await readPage(from, from + EXPORT_PAGE_SIZE - 1);
+    if (result.error) return result;
+    const page = result.data ?? [];
+    rows.push(...page);
+    if (page.length < EXPORT_PAGE_SIZE) return { data: rows, error: null };
+  }
+}
+
 export async function exportUserLibrary(): Promise<ActionResult<ExportData>> {
   const t = await getDictionary();
   const user = await requireUser();
   const supabase = await createClient();
 
   const [tagsResult, itemsResult, itemTagsResult] = await Promise.all([
-    supabase
-      .from("tags")
-      .select("id, name, slug, color_token, parent_id, description, created_at")
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("library_items")
-      .select(
-        "id, type, title, url, description, content, language, created_at",
-      )
-      .order("created_at", { ascending: false }),
-    supabase.from("item_tags").select("item_id, tag_id"),
+    readAll(async (from, to) =>
+      supabase
+        .from("tags")
+        .select(
+          "id, name, slug, color_token, parent_id, description, created_at",
+        )
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
+    readAll(async (from, to) =>
+      supabase
+        .from("library_items")
+        .select(
+          "id, type, title, url, description, content, language, created_at",
+        )
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
+    readAll(async (from, to) =>
+      supabase
+        .from("item_tags")
+        .select("item_id, tag_id")
+        .order("item_id", { ascending: true })
+        .order("tag_id", { ascending: true })
+        .range(from, to),
+    ),
   ]);
 
   if (tagsResult.error || itemsResult.error || itemTagsResult.error) {
