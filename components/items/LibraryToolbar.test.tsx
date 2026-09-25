@@ -182,7 +182,7 @@ describe("LibraryToolbar", () => {
     expect(label?.classList.contains("is-enter-start")).toBe(false);
   });
 
-  it("mostra 'Atualizado' por 1500ms depois de um clique e então volta ao rótulo padrão", async () => {
+  it("volta ao rótulo padrão sem confirmar sucesso só porque a drenagem terminou", async () => {
     vi.useFakeTimers();
     try {
       const props = {
@@ -205,8 +205,7 @@ describe("LibraryToolbar", () => {
         refreshButton?.click();
       });
 
-      // Simula o pai propagando isDraining=true e depois false, como o
-      // usePreviewDrain faz ao concluir a rodada disparada pelo clique.
+      // A drenagem termina tanto após êxito quanto após erro ou fila vazia.
       await act(async () => {
         root?.render(<LibraryToolbar {...props} isRefreshingPreviews={true} />);
       });
@@ -217,38 +216,10 @@ describe("LibraryToolbar", () => {
       });
       await act(async () => vi.advanceTimersByTime(150));
 
-      expect(dom.textContent).toContain("Atualizado");
-      expect(dom.textContent).not.toContain("Atualizar pré-visualizações");
-
-      await act(async () => {
-        vi.advanceTimersByTime(1500);
-      });
-      await act(async () => vi.advanceTimersByTime(150));
-
       expect(dom.textContent).toContain("Atualizar pré-visualizações");
+      expect(dom.textContent).not.toContain("Atualizado");
     } finally {
       vi.useRealTimers();
     }
-  });
-
-  it("não mostra 'Atualizado' quando a drenagem automática termina sem clique no botão", async () => {
-    vi.useFakeTimers();
-    const props = {
-      type: null,
-      sort: "newest" as const,
-      isPending: false,
-      canRefreshPreviews: true,
-      onRefreshPreviews: vi.fn(),
-      onFilterChange: vi.fn(),
-    };
-    const dom = await renderToolbar({ ...props, isRefreshingPreviews: true });
-
-    await act(async () => {
-      root?.render(<LibraryToolbar {...props} isRefreshingPreviews={false} />);
-    });
-    await act(async () => vi.advanceTimersByTime(150));
-
-    expect(dom.textContent).not.toContain("Atualizado");
-    expect(dom.textContent).toContain("Atualizar pré-visualizações");
   });
 });

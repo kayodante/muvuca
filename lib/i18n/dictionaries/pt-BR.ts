@@ -523,7 +523,6 @@ export const ptBR = {
         code: "Code",
       },
       refreshing: "Atualizando",
-      refreshed: "Atualizado",
       refreshPreviews: "Atualizar pré-visualizações",
       loadingItem: "Carregando item…",
     },

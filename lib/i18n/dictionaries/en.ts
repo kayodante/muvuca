@@ -495,7 +495,6 @@ export const en: Dictionary = {
         code: "Code",
       },
       refreshing: "Refreshing",
-      refreshed: "Refreshed",
       refreshPreviews: "Refresh previews",
       loadingItem: "Loading item…",
     },

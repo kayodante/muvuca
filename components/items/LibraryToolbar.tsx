@@ -17,52 +17,17 @@ import {
 import { MatrixLoader } from "@/components/ui/matrix-loader";
 import { ShimmerText } from "@/components/ui/shimmer-text";
 
-/** How long the "Atualizado" confirmation holds before reverting to default
- * (Figma node 142:496). Only flashes after a click this hook was told about
- * via `markRequested` -- `isRefreshing` also goes true->false for the
- * automatic per-page drain (usePreviewDrain.ts) on mount/filter change,
- * which should keep the button silent, not claim credit for work the user
- * didn't ask this button to do. */
-const REFRESH_DONE_MS = 1500;
-
-function useRefreshDoneFlash(isRefreshing: boolean) {
-  const [done, setDone] = useState(false);
-  const wasRefreshing = useRef(isRefreshing);
-  const requested = useRef(false);
-
-  useEffect(() => {
-    if (wasRefreshing.current && !isRefreshing && requested.current) {
-      requested.current = false;
-      setDone(true);
-      const timer = window.setTimeout(() => setDone(false), REFRESH_DONE_MS);
-      wasRefreshing.current = isRefreshing;
-      return () => window.clearTimeout(timer);
-    }
-    wasRefreshing.current = isRefreshing;
-  }, [isRefreshing]);
-
-  return { done, markRequested: () => (requested.current = true) };
-}
-
 function MatrixIcon() {
   return <MatrixLoader variant="orbit" rounded aria-hidden="true" />;
 }
 
-function RefreshStateIcon({
-  state,
-}: {
-  state: "idle" | "refreshing" | "done";
-}) {
+function RefreshStateIcon({ state }: { state: "idle" | "refreshing" }) {
   const states = [
     {
       value: "idle",
       content: <RefreshCwIcon aria-hidden="true" data-icon="inline-start" />,
     },
     { value: "refreshing", content: <MatrixIcon /> },
-    {
-      value: "done",
-      content: <CheckIcon aria-hidden="true" data-icon="inline-start" />,
-    },
   ] as const;
   return (
     <span className="relative inline-block size-4">
@@ -173,13 +138,7 @@ export function LibraryToolbar({
   onFilterChange,
 }: LibraryToolbarProps) {
   const t = useDictionary();
-  const { done: isDone, markRequested } =
-    useRefreshDoneFlash(isRefreshingPreviews);
-  const refreshState = isRefreshingPreviews
-    ? "refreshing"
-    : isDone
-      ? "done"
-      : "idle";
+  const refreshState = isRefreshingPreviews ? "refreshing" : "idle";
   const tabsRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLSpanElement>(null);
 
@@ -223,15 +182,12 @@ export function LibraryToolbar({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => {
-            markRequested();
-            onRefreshPreviews();
-          }}
+          onClick={onRefreshPreviews}
           disabled={refreshState === "refreshing"}
           aria-busy={refreshState === "refreshing" || undefined}
           className={cn(
             "min-w-[13rem]",
-            refreshState !== "idle" &&
+            refreshState === "refreshing" &&
               "bg-card! text-brand-accent disabled:opacity-100!",
           )}
         >
@@ -240,9 +196,7 @@ export function LibraryToolbar({
             text={
               refreshState === "refreshing"
                 ? t.items.toolbar.refreshing
-                : refreshState === "done"
-                  ? t.items.toolbar.refreshed
-                  : t.items.toolbar.refreshPreviews
+                : t.items.toolbar.refreshPreviews
             }
           />
         </Button>
