@@ -21,6 +21,7 @@ afterEach(async () => {
   root = null;
   container = null;
   vi.clearAllMocks();
+  vi.useRealTimers();
 });
 
 const mockTags: Tag[] = [
@@ -277,6 +278,28 @@ describe("ItemCard", () => {
     expect(toast.success).toHaveBeenCalledWith(
       "Prompt copiado para a área de transferência.",
     );
+  });
+
+  it("mantém o check por 1,5s após a última cópia", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    });
+
+    const dom = await renderCard(mockPrompt);
+    const copyButton = dom.querySelector(
+      'button[aria-label="Copiar prompt"]',
+    ) as HTMLButtonElement;
+    const iconSwap = copyButton.querySelector(".t-icon-swap");
+    vi.useFakeTimers();
+
+    await act(async () => copyButton.click());
+    await act(async () => vi.advanceTimersByTime(1000));
+    await act(async () => copyButton.click());
+    await act(async () => vi.advanceTimersByTime(600));
+    expect(iconSwap?.getAttribute("data-state")).toBe("b");
+    await act(async () => vi.advanceTimersByTime(1000));
+    expect(iconSwap?.getAttribute("data-state")).toBe("a");
   });
 
   it("exibe toast de erro se falhar ao copiar o prompt", async () => {

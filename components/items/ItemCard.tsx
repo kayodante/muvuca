@@ -41,6 +41,7 @@ import { LinkPreviewMedia, previewImageSrc } from "./LinkPreviewMedia";
 import { CodeSnippetPreview } from "./CodeSnippetPreview";
 import { PromptMarkdownPreview } from "./PromptMarkdownPreview";
 import { SiteIdentity } from "./SiteIdentity";
+import { useTransientFlag } from "./useTransientFlag";
 
 /**
  * Type badge (Figma "Meta"): lowercase Geist Pixel label in the type's own
@@ -189,9 +190,9 @@ export function ItemCard({
   onRefreshPreview: () => void;
 }) {
   const t = useDictionary();
-  const [copiedContent, setCopiedContent] = useState(false);
+  const [copiedContent, triggerCopiedContent] = useTransientFlag(1500);
   const [copyingContent, setCopyingContent] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedLink, triggerCopiedLink] = useTransientFlag(1500);
   const associatedTags = item.tagIds.flatMap((tagId) => {
     const tag = tags.find((candidate) => candidate.id === tagId);
     return tag ? [tag] : [];
@@ -227,8 +228,7 @@ export function ItemCard({
     const success = await copyToClipboard(onCopyContent());
     setCopyingContent(false);
     if (success) {
-      setCopiedContent(true);
-      setTimeout(() => setCopiedContent(false), 1500);
+      triggerCopiedContent();
       toastSuccess(
         item.type === "prompt"
           ? t.items.card.promptCopied
@@ -247,8 +247,7 @@ export function ItemCard({
     if (!safeHref) return;
     const success = await copyToClipboard(safeHref);
     if (success) {
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 1500);
+      triggerCopiedLink();
       toastSuccess(t.items.card.linkCopied);
     } else {
       toastError(t.items.card.linkCopyFailed);
