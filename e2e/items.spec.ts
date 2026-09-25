@@ -299,8 +299,15 @@ test("cria, visualiza, edita e exclui um componente de código", async ({
   // não aria-label nem <label>).
   await detailDialog.getByLabel("Copiar código").click();
   await expect(
-    page.getByText("Código copiado para a área de transferência."),
-  ).toBeVisible();
+    page.getByRole("status").filter({
+      hasText: "Código copiado para a área de transferência.",
+    }),
+  ).toHaveCount(1);
+  await expect(
+    page.locator("[data-sonner-toast]").filter({
+      hasText: "Código copiado para a área de transferência.",
+    }),
+  ).toHaveCount(0);
 
   // Edita o componente a partir do modal de detalhes
   await detailDialog.getByRole("button", { name: "Editar componente" }).click();

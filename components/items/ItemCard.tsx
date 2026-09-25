@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { TagChip } from "@/components/tags/TagChip";
 import { Button } from "@/components/ui/button";
 import { MatrixLoader } from "@/components/ui/matrix-loader";
+import { announce } from "@/components/states/Announcer";
 import {
   Tooltip,
   TooltipContent,
@@ -36,7 +37,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toastError, toastSuccess } from "@/components/states/Toast";
+import { toastError } from "@/components/states/Toast";
 import { LinkPreviewMedia, previewImageSrc } from "./LinkPreviewMedia";
 import { CodeSnippetPreview } from "./CodeSnippetPreview";
 import { PromptMarkdownPreview } from "./PromptMarkdownPreview";
@@ -229,7 +230,7 @@ export function ItemCard({
     setCopyingContent(false);
     if (success) {
       triggerCopiedContent();
-      toastSuccess(
+      announce(
         item.type === "prompt"
           ? t.items.card.promptCopied
           : t.items.card.codeCopied,
@@ -248,7 +249,7 @@ export function ItemCard({
     const success = await copyToClipboard(safeHref);
     if (success) {
       triggerCopiedLink();
-      toastSuccess(t.items.card.linkCopied);
+      announce(t.items.card.linkCopied);
     } else {
       toastError(t.items.card.linkCopyFailed);
     }

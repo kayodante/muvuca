@@ -11,6 +11,7 @@ import { getTagHref } from "@/lib/tags/routes";
 import { TagChip } from "@/components/tags/TagChip";
 import { PromptContentPanel } from "@/components/items/PromptContentPanel";
 import { PromptCopyButton } from "@/components/items/PromptCopyButton";
+import { Announcer } from "@/components/states/Announcer";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -53,6 +54,7 @@ export function PromptDetailDialog({
           MORPH_CLASS,
         )}
       >
+        <Announcer />
         <DialogHeader>
           <DialogTitle
             dir="auto"

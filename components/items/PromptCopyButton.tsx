@@ -5,7 +5,8 @@ import { CheckIcon, CopyIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { toastError, toastSuccess } from "@/components/states/Toast";
+import { announce } from "@/components/states/Announcer";
+import { toastError } from "@/components/states/Toast";
 import { useTransientFlag } from "./useTransientFlag";
 
 function copyWithExecCommand(content: string) {
@@ -75,7 +76,7 @@ export function PromptCopyButton({
 
       triggerCopied();
 
-      toastSuccess(successMessage);
+      announce(successMessage);
     } catch {
       toastError(errorMessage);
     } finally {

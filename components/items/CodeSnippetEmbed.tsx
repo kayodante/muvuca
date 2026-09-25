@@ -6,7 +6,8 @@ import { CODE_LANGUAGE_LABELS, type CodeLanguage } from "@/lib/code/languages";
 import { copyToClipboard } from "@/lib/clipboard";
 import { useDictionary } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
-import { toastError, toastSuccess } from "@/components/states/Toast";
+import { announce } from "@/components/states/Announcer";
+import { toastError } from "@/components/states/Toast";
 
 import { useHighlightedLines } from "./useHighlightedLines";
 import { useTransientFlag } from "./useTransientFlag";
@@ -69,12 +70,12 @@ export function CodeSnippetEmbed({
   const charCount = [...content].length;
 
   // Mesmo fluxo de ItemCard.handleCopyCode: clipboard, feedback visual por
-  // 1,5s e toast com o texto padrão do app.
+  // 1,5s e anúncio acessível com o texto padrão do app.
   async function handleCopy() {
     const success = await copyToClipboard(content);
     if (success) {
       triggerCopied();
-      toastSuccess(t.items.codeSnippetEmbed.codeCopied);
+      announce(t.items.codeSnippetEmbed.codeCopied);
     } else {
       toastError(t.items.codeSnippetEmbed.codeCopyFailed);
     }
