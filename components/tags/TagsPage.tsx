@@ -8,7 +8,7 @@ import {
   type RefObject,
 } from "react";
 import { useRouter } from "next/navigation";
-import { PlusIcon, TagIcon } from "lucide-react";
+import { PlusIcon, SearchIcon, TagIcon } from "lucide-react";
 
 import { buildTagTree, filterTagTree, type FlatTag } from "@/lib/tags/tree";
 import { useDictionary } from "@/lib/i18n/client";
@@ -303,10 +303,14 @@ export function TagsPage({
             />
           ) : (
             <>
-              <div className="flex flex-col gap-1.5">
+              <div className="relative max-w-xs">
                 <label htmlFor="tag-search" className="sr-only">
                   {t.tags.page.filterLabel}
                 </label>
+                <SearchIcon
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+                />
                 <Input
                   id="tag-search"
                   type="search"
@@ -315,7 +319,7 @@ export function TagsPage({
                   placeholder={t.tags.page.filterLabel}
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  className="max-w-xs"
+                  className="pl-9"
                 />
               </div>
               {visibleNodes.length > 0 ? (
@@ -353,16 +357,17 @@ export function TagsPage({
         {isDesktop && (
           <aside
             className={cn(
-              "hidden rounded-2xl border border-border bg-card p-5 pb-32 lg:block",
+              "hidden rounded-2xl border border-border bg-card p-5 lg:block",
               // Offset below the sticky Topbar (--layout-topbar-min-height,
               // Topbar.tsx) instead of a bare `top-6`, which let the panel
               // stick 24px under the header with its lower half (Save,
               // children, "Abrir itens") off-screen. Bounded height + its
               // own scroll keeps a long tree from pushing the panel taller
-              // than the viewport; `pb-32` mirrors `main`'s own bottom
-              // padding (AppShell.tsx) so the decorative bottom fade never
-              // sits over the Save button once scrolled to the end.
-              "lg:sticky lg:top-[calc(var(--layout-topbar-min-height)+1.5rem)] lg:max-h-[calc(100dvh-var(--layout-topbar-min-height)-3rem)] lg:overflow-y-auto",
+              // than the viewport. The bound also subtracts the shell's 8rem
+              // bottom fade (AppShell.tsx), so the panel ends above it
+              // instead of padding every state -- empty and bulk included --
+              // with 8rem of dead space to scroll clear of it.
+              "lg:sticky lg:top-[calc(var(--layout-topbar-min-height)+1.5rem)] lg:max-h-[calc(100dvh-var(--layout-topbar-min-height)-1.5rem-8rem)] lg:overflow-y-auto",
             )}
           >
             {selecting ? bulkPanel : inspector}
