@@ -542,6 +542,7 @@ export const en: Dictionary = {
       removeTag: (name: string) => `Remove tag ${name}`,
       availableTagsLabel: "Available tags",
       searchPlaceholder: "Search tags...",
+      searchLabel: "Search tags",
       noTagsFound: "No tags found.",
       selectedCount: (count: number) =>
         `${count} tag${count > 1 ? "s" : ""} selected`,

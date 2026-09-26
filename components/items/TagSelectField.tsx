@@ -80,6 +80,8 @@ export function TagSelectField({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const listboxRef = useRef<HTMLDivElement>(null);
   const closeTimerRef = useRef<number | null>(null);
 
   // Map of tags by ID for instant O(1) lookup
@@ -125,6 +127,30 @@ export function TagSelectField({
 
   const removeTag = (tagId: string) => {
     updateSelection(selectedIds.filter((item) => item !== tagId));
+  };
+
+  // As opções ficam fora da ordem de Tab (tabIndex -1): o popup inteiro é uma
+  // parada só, e as setas andam entre as opções. ArrowDown no filtro entra na
+  // lista; ArrowUp na primeira opção volta para o filtro.
+  const optionElements = () =>
+    Array.from(
+      listboxRef.current?.querySelectorAll<HTMLElement>('[role="option"]') ??
+        [],
+    );
+
+  const moveOptionFocus = (event: React.KeyboardEvent<HTMLElement>) => {
+    const options = optionElements();
+    const index = options.indexOf(event.currentTarget);
+    const targets: Record<string, HTMLElement | null | undefined> = {
+      ArrowDown: options[index + 1],
+      ArrowUp: options[index - 1] ?? searchInputRef.current,
+      Home: options[0],
+      End: options.at(-1),
+    };
+    if (!(event.key in targets)) return;
+    // Na última opção, ArrowDown não tem destino, mas ainda não deve rolar a página.
+    event.preventDefault();
+    targets[event.key]?.focus();
   };
 
   const closeDropdown = () => {
@@ -226,7 +252,7 @@ export function TagSelectField({
                 disabled={disabled}
                 onClick={() => removeTag(tag.id)}
                 aria-label={t.items.tagSelect.removeTag(tag.name)}
-                className="inline-flex size-4 items-center justify-center rounded-full text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed motion-reduce:transition-none"
+                className="relative inline-flex size-4 items-center justify-center rounded-full text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca after:absolute after:-inset-1 after:content-[''] hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:outline-none disabled:cursor-not-allowed motion-reduce:transition-none"
               >
                 <XIcon className="size-3" />
               </button>
@@ -302,11 +328,22 @@ export function TagSelectField({
           )}
         >
           {/* Search filter input */}
-          <div className="flex items-center border-b border-border px-2.5 py-1.5">
+          {/* O input não tem anel próprio (ficaria cortado pelo
+              overflow-hidden do popup); o foco aparece como a borda de baixo
+              engrossando na cor de foco, sem deslocar o layout. */}
+          <div className="flex items-center border-b border-border px-2.5 py-1.5 has-[input:focus-visible]:border-ring has-[input:focus-visible]:shadow-[inset_0_-1px_0_var(--color-ring)]">
             <SearchIcon className="mr-2 size-3.5 shrink-0 text-muted-foreground" />
             <input
+              ref={searchInputRef}
               id={searchInputId}
               type="text"
+              aria-label={t.items.tagSelect.searchLabel}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  optionElements()[0]?.focus();
+                }
+              }}
               // Não é autofocus de carregamento de página (o caso que a regra
               // protege): este input só existe depois que o usuário abriu o
               // popup, e mover o foco para o filtro é o comportamento esperado
@@ -323,6 +360,7 @@ export function TagSelectField({
 
           {/* Options listbox */}
           <div
+            ref={listboxRef}
             id={listboxId}
             role="listbox"
             aria-multiselectable="true"
@@ -341,13 +379,15 @@ export function TagSelectField({
                     key={tag.id}
                     role="option"
                     aria-selected={isSelected}
-                    tabIndex={0}
+                    tabIndex={-1}
                     onClick={() => toggleTag(tag.id)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
                         toggleTag(tag.id);
+                        return;
                       }
+                      moveOptionFocus(e);
                     }}
                     className={cn(
                       "relative flex cursor-pointer items-center justify-between gap-2 rounded-md py-1.5 pr-2 text-sm transition-colors duration-(--motion-fast) ease-out-muvuca outline-none select-none hover:bg-accent/70 focus:bg-accent focus:text-accent-foreground motion-reduce:transition-none",

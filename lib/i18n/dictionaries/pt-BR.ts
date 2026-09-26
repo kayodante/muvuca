@@ -570,6 +570,7 @@ export const ptBR = {
       removeTag: (name: string) => `Remover tag ${name}`,
       availableTagsLabel: "Tags disponíveis",
       searchPlaceholder: "Buscar tags...",
+      searchLabel: "Buscar tags",
       noTagsFound: "Nenhuma tag encontrada.",
       selectedCount: (count: number) =>
         `${count} tag${count > 1 ? "s" : ""} selecionada${count > 1 ? "s" : ""}`,
