@@ -2,7 +2,20 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* Same two switches the color tokens use: an explicit `.dark` pick, or the OS
+   preference when no theme was picked (`app/layout.tsx` sets no class for
+   "system"). Matching only `.dark` left every `dark:` utility inert for
+   system-dark users while the tokens around it had already flipped. */
+@custom-variant dark {
+  &:is(.dark *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:not(.light *) {
+      @slot;
+    }
+  }
+}
 
 /**
  * Design tokens. Every color/radius/spacing value consumed by a component
