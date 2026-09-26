@@ -124,13 +124,20 @@ export async function createRootTag(page: Page, name: string) {
   await expect(page.getByRole("region", { name })).toBeVisible();
 }
 
-/** Seleciona uma tag na árvore de `/tags`, abrindo-a no inspetor. */
+/**
+ * Seleciona uma tag em `/tags`, abrindo-a no inspetor. Passa pelo filtro
+ * porque uma tag aninhada só aparece nas colunas depois de abrir o ramo; ao
+ * limpar o filtro, as colunas mostram o caminho até a tag selecionada.
+ */
 export async function selectTag(page: Page, name: string) {
+  const filter = page.getByRole("searchbox", { name: "Filtrar tags por nome" });
+  await filter.fill(name);
   await page
     .getByRole("region", { name: "Árvore de tags" })
     .getByRole("button", { name, exact: true })
     .click();
   await expect(page.getByRole("region", { name })).toBeVisible();
+  await filter.fill("");
 }
 
 /** Cria uma tag filha pelo "Nova tag filha" do inspetor do pai. */

@@ -10,10 +10,10 @@ import {
 import { useRouter } from "next/navigation";
 import { PlusIcon, SearchIcon, TagIcon } from "lucide-react";
 
-import { buildTagTree, filterTagTree, type FlatTag } from "@/lib/tags/tree";
+import type { FlatTag } from "@/lib/tags/tree";
 import { useDictionary } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
-import { TagTree } from "./TagTree";
+import { TagColumns, TagSearchResults } from "./TagColumns";
 import {
   TagInspector,
   TAG_INSPECTOR_HEADING_ID,
@@ -43,27 +43,65 @@ export type TagsPageInitial = {
   parentPath: string | null;
 };
 
-// Tailwind `lg`: from here the inspector sits beside the tree.
-const DESKTOP_QUERY = "(min-width: 64rem)";
+// Tailwind `xl`: from here the inspector sits beside the columns. Below it
+// the columns get the full width and the inspector is a Sheet.
+const DESKTOP_QUERY = "(min-width: 80rem)";
+// Below Tailwind `sm` only the deepest column fits.
+const PHONE_QUERY = "(max-width: 39.99rem)";
 
-function subscribeDesktop(onChange: () => void) {
-  if (typeof window.matchMedia !== "function") return () => {};
-  const query = window.matchMedia(DESKTOP_QUERY);
-  query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
+function subscribeTo(query: string) {
+  return (onChange: () => void) => {
+    if (typeof window.matchMedia !== "function") return () => {};
+    const list = window.matchMedia(query);
+    list.addEventListener("change", onChange);
+    return () => list.removeEventListener("change", onChange);
+  };
+}
+
+const subscribeDesktop = subscribeTo(DESKTOP_QUERY);
+const subscribePhone = subscribeTo(PHONE_QUERY);
+
+function matches(query: string, fallback: boolean): boolean {
+  return typeof window.matchMedia === "function"
+    ? window.matchMedia(query).matches
+    : fallback;
 }
 
 /**
- * The server snapshot assumes desktop: the aside is `hidden lg:block`, so a
+ * The server snapshot assumes desktop: the aside is `hidden xl:block`, so a
  * phone never paints it before hydration swaps in the Sheet.
  */
 function useIsDesktop(): boolean {
   return useSyncExternalStore(
     subscribeDesktop,
-    () =>
-      typeof window.matchMedia !== "function" ||
-      window.matchMedia(DESKTOP_QUERY).matches,
+    () => matches(DESKTOP_QUERY, true),
     () => true,
+  );
+}
+
+function useIsPhone(): boolean {
+  return useSyncExternalStore(
+    subscribePhone,
+    () => matches(PHONE_QUERY, false),
+    () => false,
+  );
+}
+
+/** The tag whose column a target opens: the edited tag, or the new tag's parent. */
+function browseIdFor(target: InspectorTarget): string | null {
+  if (target.kind === "edit") return target.id;
+  if (target.kind === "create") return target.parentId;
+  return null;
+}
+
+/** "/" jumps to the filter unless the keystroke is someone's text. */
+function isTypingTarget(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLElement &&
+    (target.isContentEditable ||
+      target.closest(
+        "input, textarea, select, [role='dialog'], [role='alertdialog'], [role='menu']",
+      ) !== null)
   );
 }
 
@@ -118,9 +156,16 @@ export function TagsPage({
   const t = useDictionary();
   const router = useRouter();
   const isDesktop = useIsDesktop();
+  const isPhone = useIsPhone();
   const [target, setTarget] = useState<InspectorTarget>(() =>
     initialTarget(initial, flatTags),
   );
+  // Which column path is open. Follows the inspector, but also moves on its
+  // own: selection mode and the phone's back/drill browse without selecting.
+  const [browseId, setBrowseId] = useState<string | null>(() =>
+    browseIdFor(initialTarget(initial, flatTags)),
+  );
+  const searchRef = useRef<HTMLInputElement>(null);
   const [dirty, setDirty] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [search, setSearch] = useState("");
@@ -176,10 +221,32 @@ export function TagsPage({
     (selectToggleRef.current ?? createButtonRef.current)?.focus();
   });
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.key !== "/" ||
+        event.defaultPrevented ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        isTypingTarget(event.target) ||
+        !searchRef.current
+      ) {
+        return;
+      }
+      event.preventDefault();
+      searchRef.current.focus();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   const apply = (next: InspectorTarget) => {
     focusInspector.current = next.kind !== "none";
     setDirty(false);
     setTarget(next);
+    const nextBrowseId = browseIdFor(next);
+    if (nextBrowseId) setBrowseId(nextBrowseId);
   };
 
   // Anything that would drop unsaved edits asks first.
@@ -264,10 +331,15 @@ export function TagsPage({
     />
   );
 
-  const visibleNodes = filterTagTree(buildTagTree(flatTags), search);
+  const rowProps = {
+    selectedId: current.kind === "edit" ? current.id : null,
+    onSelect: (tag: FlatTag) => select({ kind: "edit", id: tag.id }),
+    checked: selecting ? checked : undefined,
+    onToggleChecked: (tag: FlatTag) => toggleChecked(tag.id),
+  };
 
   return (
-    <div className={cn("flex flex-col gap-6", selecting && "pb-32 lg:pb-0")}>
+    <div className={cn("flex flex-col gap-6", selecting && "pb-32 xl:pb-0")}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-headline-md">{t.tags.page.heading}</h1>
         <div className="flex gap-2">
@@ -293,81 +365,99 @@ export function TagsPage({
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-start">
-        <div className="flex min-w-0 flex-col gap-4">
-          {flatTags.length === 0 ? (
-            <EmptyState
-              icon={TagIcon}
-              title={t.tags.page.emptyTitle}
-              description={t.tags.page.emptyDescription}
-            />
-          ) : (
-            <>
-              <div className="relative max-w-xs">
-                <label htmlFor="tag-search" className="sr-only">
-                  {t.tags.page.filterLabel}
-                </label>
-                <SearchIcon
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] xl:items-start">
+        {flatTags.length === 0 ? (
+          <EmptyState
+            icon={TagIcon}
+            title={t.tags.page.emptyTitle}
+            description={t.tags.page.emptyDescription}
+          />
+        ) : (
+          <div
+            className={cn(
+              "flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card",
+              // Same bound as the inspector aside below: the columns scroll
+              // inside the panel, never the page.
+              "sm:max-h-[calc(100dvh-var(--layout-topbar-min-height)-1.5rem-8rem)] xl:sticky xl:top-[calc(var(--layout-topbar-min-height)+1.5rem)]",
+            )}
+          >
+            <div className="relative shrink-0 border-b border-border p-2">
+              <label htmlFor="tag-search" className="sr-only">
+                {t.tags.page.filterLabel}
+              </label>
+              <SearchIcon
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-5 size-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                ref={searchRef}
+                id="tag-search"
+                type="search"
+                dir="auto"
+                maxLength={80}
+                placeholder={t.tags.page.filterLabel}
+                aria-keyshortcuts="/"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape" && search) {
+                    event.preventDefault();
+                    setSearch("");
+                  }
+                }}
+                className="border-transparent bg-secondary/60 pr-10 pl-9 shadow-none dark:bg-secondary/60"
+              />
+              {!search && (
+                <kbd
                   aria-hidden="true"
-                  className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-                />
-                <Input
-                  id="tag-search"
-                  type="search"
-                  dir="auto"
-                  maxLength={80}
-                  placeholder={t.tags.page.filterLabel}
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              {visibleNodes.length > 0 ? (
-                <div role="region" aria-label={t.tags.page.treeRegionLabel}>
-                  <TagTree
-                    nodes={visibleNodes}
-                    filtering={search.trim().length > 0}
-                    selectedId={current.kind === "edit" ? current.id : null}
-                    onSelect={(node) => select({ kind: "edit", id: node.id })}
-                    checked={selecting ? checked : undefined}
-                    onToggleChecked={(node) => toggleChecked(node.id)}
-                  />
-                </div>
-              ) : (
-                <div className="flex flex-col items-start gap-2 py-4">
-                  <p
-                    dir="auto"
-                    className="text-body-sm [overflow-wrap:anywhere] text-muted-foreground"
-                  >
-                    {t.tags.page.noneFound(search)}
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSearch("")}
-                  >
-                    {t.tags.page.clearSearch}
-                  </Button>
-                </div>
+                  className="text-metadata pointer-events-none absolute top-1/2 right-4 hidden -translate-y-1/2 rounded-md bg-card px-1.5 py-0.5 font-mono text-muted-foreground shadow-light sm:block"
+                >
+                  /
+                </kbd>
               )}
-            </>
-          )}
-        </div>
+            </div>
+            <div
+              role="region"
+              aria-label={t.tags.page.treeRegionLabel}
+              className="flex min-h-0 flex-1 flex-col"
+            >
+              {search.trim() ? (
+                <TagSearchResults
+                  flatTags={flatTags}
+                  query={search}
+                  onClear={() => {
+                    setSearch("");
+                    searchRef.current?.focus();
+                  }}
+                  {...rowProps}
+                />
+              ) : (
+                <TagColumns
+                  flatTags={flatTags}
+                  browseId={browseId}
+                  onBrowse={setBrowseId}
+                  compact={isPhone}
+                  {...rowProps}
+                />
+              )}
+            </div>
+          </div>
+        )}
 
         {isDesktop && (
           <aside
             className={cn(
-              "hidden rounded-2xl border border-border bg-card p-5 lg:block",
+              "hidden rounded-2xl border border-border bg-card p-5 xl:block",
               // Offset below the sticky Topbar (--layout-topbar-min-height,
               // Topbar.tsx) instead of a bare `top-6`, which let the panel
               // stick 24px under the header with its lower half (Save,
               // children, "Abrir itens") off-screen. Bounded height + its
-              // own scroll keeps a long tree from pushing the panel taller
-              // than the viewport. The bound also subtracts the shell's 8rem
-              // bottom fade (AppShell.tsx), so the panel ends above it
-              // instead of padding every state -- empty and bulk included --
-              // with 8rem of dead space to scroll clear of it.
-              "lg:sticky lg:top-[calc(var(--layout-topbar-min-height)+1.5rem)] lg:max-h-[calc(100dvh-var(--layout-topbar-min-height)-1.5rem-8rem)] lg:overflow-y-auto",
+              // own scroll keeps the panel from growing past the viewport.
+              // The bound also subtracts the shell's 8rem bottom fade
+              // (AppShell.tsx), so the panel ends above it instead of
+              // padding every state -- empty and bulk included -- with 8rem
+              // of dead space to scroll clear of it.
+              "xl:sticky xl:top-[calc(var(--layout-topbar-min-height)+1.5rem)] xl:max-h-[calc(100dvh-var(--layout-topbar-min-height)-1.5rem-8rem)] xl:overflow-y-auto",
             )}
           >
             {selecting ? bulkPanel : inspector}

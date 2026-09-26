@@ -6,7 +6,7 @@ import { ArrowRightIcon, MoreHorizontalIcon, PlusIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { swatchClassFor } from "@/lib/tags/colors";
-import type { FlatTag } from "@/lib/tags/tree";
+import { getNamePath, summarizeTags, type FlatTag } from "@/lib/tags/tree";
 import { getTagHref, TAG_MAX_DEPTH } from "@/lib/tags/routes";
 import { useDictionary } from "@/lib/i18n/client";
 import { TagForm } from "./TagForm";
@@ -209,20 +209,25 @@ export function TagInspector({
           </Link>
         </>
       ) : (
-        <div className="flex flex-col items-start gap-3">
-          {heading(t.tags.inspector.emptyTitle)}
-          <p className="text-body-sm text-muted-foreground">
-            {t.tags.inspector.emptyDescription}
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onSelect({ kind: "create", parentId: null })}
-          >
-            <PlusIcon aria-hidden="true" data-icon="inline-start" />
-            {t.tags.page.createTag}
-          </Button>
-        </div>
+        <>
+          <div className="flex flex-col items-start gap-3">
+            {heading(t.tags.inspector.emptyTitle)}
+            <p className="text-body-sm text-muted-foreground">
+              {t.tags.inspector.emptyDescription}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onSelect({ kind: "create", parentId: null })}
+            >
+              <PlusIcon aria-hidden="true" data-icon="inline-start" />
+              {t.tags.page.createTag}
+            </Button>
+          </div>
+          {flatTags.length > 0 && (
+            <TagCuration flatTags={flatTags} onSelect={onSelect} />
+          )}
+        </>
       )}
 
       <DeleteTagAlertDialog
@@ -237,6 +242,107 @@ export function TagInspector({
         }}
       />
     </section>
+  );
+}
+
+const WITHOUT_DESCRIPTION_PREVIEW = 12;
+
+/**
+ * The inspector while nothing is selected: the hierarchy's shape and the
+ * tags worth a curation pass -- the same name living in two branches
+ * (typical after a bookmark import) and tags nobody described yet. Every
+ * chip selects its tag, so a pass is click, fix, save, next.
+ */
+function TagCuration({
+  flatTags,
+  onSelect,
+}: {
+  flatTags: FlatTag[];
+  onSelect: (next: InspectorTarget) => void;
+}) {
+  const t = useDictionary();
+  const [showAll, setShowAll] = useState(false);
+  const summary = summarizeTags(flatTags);
+  const byId = new Map(flatTags.map((tag) => [tag.id, tag]));
+  const { withoutDescription, repeatedNames } = summary;
+  const shown = showAll
+    ? withoutDescription
+    : withoutDescription.slice(0, WITHOUT_DESCRIPTION_PREVIEW);
+
+  const chip = (tag: FlatTag, label: string) => (
+    <li key={tag.id}>
+      <button
+        type="button"
+        onClick={() => onSelect({ kind: "edit", id: tag.id })}
+        className="max-w-full rounded-full focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      >
+        <TagChip
+          name={label}
+          colorToken={tag.colorToken}
+          className="transition-[box-shadow] duration-(--motion-fast) ease-out-muvuca hover:inset-shadow-light-2 motion-reduce:transition-none"
+        />
+      </button>
+    </li>
+  );
+
+  return (
+    <div className="flex flex-col gap-5 border-t border-border pt-5">
+      <p className="text-metadata font-mono text-muted-foreground tabular-nums">
+        {t.tags.inspector.summary(summary.total, summary.roots, summary.levels)}
+      </p>
+
+      {repeatedNames.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h3 className="text-label-md flex items-baseline gap-2 text-foreground">
+            {t.tags.inspector.repeatedNames}
+            <span className="text-metadata font-mono text-muted-foreground tabular-nums">
+              {repeatedNames.length}
+            </span>
+          </h3>
+          <p className="text-body-sm text-muted-foreground">
+            {t.tags.inspector.repeatedNamesHint}
+          </p>
+          <ul className="flex flex-wrap gap-1.5">
+            {repeatedNames.flatMap((group) =>
+              group.map((tag) => chip(tag, getNamePath(tag, byId).join(" / "))),
+            )}
+          </ul>
+        </section>
+      )}
+
+      {withoutDescription.length > 0 && (
+        <section className="flex flex-col gap-2">
+          <h3 className="text-label-md flex items-baseline gap-2 text-foreground">
+            {t.tags.inspector.withoutDescription}
+            <span className="text-metadata font-mono text-muted-foreground tabular-nums">
+              {withoutDescription.length}
+            </span>
+          </h3>
+          <ul className="flex flex-wrap gap-1.5">
+            {shown.map((tag) => chip(tag, tag.name))}
+          </ul>
+          {withoutDescription.length > WITHOUT_DESCRIPTION_PREVIEW && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="self-start"
+              aria-expanded={showAll}
+              onClick={() => setShowAll((value) => !value)}
+            >
+              {showAll
+                ? t.tags.inspector.showLess
+                : t.tags.inspector.showAll(withoutDescription.length)}
+            </Button>
+          )}
+        </section>
+      )}
+
+      {repeatedNames.length === 0 && withoutDescription.length === 0 && (
+        <p className="text-body-sm text-muted-foreground">
+          {t.tags.inspector.allTidy}
+        </p>
+      )}
+    </div>
   );
 }
 

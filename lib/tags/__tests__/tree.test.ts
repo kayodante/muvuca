@@ -7,7 +7,10 @@ import {
   flattenTreeWithDepth,
   getDescendantIds,
   getInvalidMoveTargets,
+  getNamePath,
+  getTagColumns,
   normalizeMoveSelection,
+  summarizeTags,
   type FlatTag,
 } from "@/lib/tags/tree";
 
@@ -189,6 +192,75 @@ describe("getInvalidMoveTargets", () => {
     expect(invalid.has("c3")).toBe(false);
     expect(invalid.has("c4")).toBe(true);
     expect(invalid.has("c5")).toBe(true);
+  });
+});
+
+describe("getTagColumns", () => {
+  it("shows only the roots when nothing is browsed", () => {
+    const { columns, path } = getTagColumns(SKILLS_TREE, null);
+    expect(columns.map((c) => c.tags.map((t) => t.id))).toEqual([["skills"]]);
+    expect(path.size).toBe(0);
+  });
+
+  it("opens one column per tag on the path that has children", () => {
+    const { columns, path, childCounts } = getTagColumns(SKILLS_TREE, "figma");
+    expect(columns.map((c) => c.owner?.id ?? null)).toEqual([
+      null,
+      "skills",
+      "design",
+    ]);
+    expect(columns[2]!.tags.map((t) => t.id)).toEqual(["figma"]);
+    expect([...path]).toEqual(["skills", "design", "figma"]);
+    expect(childCounts.get("skills")).toBe(2);
+    expect(childCounts.has("figma")).toBe(false);
+  });
+
+  it("falls back to the roots when the browsed tag is gone", () => {
+    expect(getTagColumns(SKILLS_TREE, "missing").columns).toHaveLength(1);
+  });
+
+  it("puts an orphan with the roots", () => {
+    const { columns } = getTagColumns([tag("lost", "gone")], null);
+    expect(columns[0]!.tags.map((t) => t.id)).toEqual(["lost"]);
+  });
+});
+
+describe("getNamePath", () => {
+  it("lists display names from the root down", () => {
+    const byId = new Map(SKILLS_TREE.map((t) => [t.id, t]));
+    expect(getNamePath(byId.get("figma")!, byId)).toEqual([
+      "Skills",
+      "Design",
+      "Figma",
+    ]);
+  });
+});
+
+describe("summarizeTags", () => {
+  it("counts roots and levels and finds tags worth curating", () => {
+    const flat = [
+      ...SKILLS_TREE,
+      { ...tag("notes", null, "Notes"), description: "Leituras" },
+      tag("figma-2", "notes", " figma "),
+    ];
+    const summary = summarizeTags(flat);
+    expect(summary.total).toBe(6);
+    expect(summary.roots).toBe(2);
+    expect(summary.levels).toBe(3);
+    expect(summary.withoutDescription.map((t) => t.id)).not.toContain("notes");
+    expect(summary.repeatedNames.map((g) => g.map((t) => t.id))).toEqual([
+      ["figma", "figma-2"],
+    ]);
+  });
+
+  it("is empty for no tags", () => {
+    expect(summarizeTags([])).toEqual({
+      total: 0,
+      roots: 0,
+      levels: 0,
+      withoutDescription: [],
+      repeatedNames: [],
+    });
   });
 });
 

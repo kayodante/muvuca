@@ -147,6 +147,14 @@ export const en: Dictionary = {
       collapse: (name: string) => `Collapse ${name}`,
       expand: (name: string) => `Expand ${name}`,
     },
+    columns: {
+      roots: "Roots",
+      open: (name: string) => `Open ${name}`,
+      back: (name: string) => `Back to ${name}`,
+      edit: "Edit",
+      editTag: (name: string) => `Edit ${name}`,
+      childCount: (n: number) => (n === 1 ? "1 child tag" : `${n} child tags`),
+    },
     page: {
       heading: "Tags",
       createTag: "Create tag",
@@ -174,7 +182,19 @@ export const en: Dictionary = {
     inspector: {
       emptyTitle: "No tag selected",
       emptyDescription:
-        "Pick a tag in the tree to edit its name, color, parent and description.",
+        "Pick a tag in the columns to edit its name, color, parent and description.",
+      summary: (total: number, roots: number, levels: number) =>
+        [
+          total === 1 ? "1 tag" : `${total} tags`,
+          roots === 1 ? "1 root" : `${roots} roots`,
+          levels === 1 ? "1 level" : `${levels} levels`,
+        ].join(" · "),
+      repeatedNames: "Repeated names",
+      repeatedNamesHint: "The same name in more than one branch.",
+      withoutDescription: "No description",
+      showAll: (n: number) => `Show all (${n})`,
+      showLess: "Show less",
+      allTidy: "Every tag has a description and no name repeats.",
       pathLabel: "Path",
       children: "Child tags",
       noChildren: "No child tags.",

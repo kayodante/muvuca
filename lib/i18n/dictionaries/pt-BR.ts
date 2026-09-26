@@ -170,6 +170,14 @@ export const ptBR = {
       collapse: (name: string) => `Recolher ${name}`,
       expand: (name: string) => `Expandir ${name}`,
     },
+    columns: {
+      roots: "Raízes",
+      open: (name: string) => `Abrir ${name}`,
+      back: (name: string) => `Voltar para ${name}`,
+      edit: "Editar",
+      editTag: (name: string) => `Editar ${name}`,
+      childCount: (n: number) => (n === 1 ? "1 tag filha" : `${n} tags filhas`),
+    },
     page: {
       heading: "Tags",
       createTag: "Criar tag",
@@ -197,7 +205,19 @@ export const ptBR = {
     inspector: {
       emptyTitle: "Nenhuma tag selecionada",
       emptyDescription:
-        "Escolha uma tag na árvore para editar nome, cor, tag pai e descrição.",
+        "Escolha uma tag nas colunas para editar nome, cor, tag pai e descrição.",
+      summary: (total: number, roots: number, levels: number) =>
+        [
+          total === 1 ? "1 tag" : `${total} tags`,
+          roots === 1 ? "1 raiz" : `${roots} raízes`,
+          levels === 1 ? "1 nível" : `${levels} níveis`,
+        ].join(" · "),
+      repeatedNames: "Nomes repetidos",
+      repeatedNamesHint: "O mesmo nome em mais de um ramo da hierarquia.",
+      withoutDescription: "Sem descrição",
+      showAll: (n: number) => `Mostrar todas (${n})`,
+      showLess: "Mostrar menos",
+      allTidy: "Toda tag tem descrição e nenhum nome se repete.",
       pathLabel: "Caminho",
       children: "Tags filhas",
       noChildren: "Nenhuma tag filha.",
