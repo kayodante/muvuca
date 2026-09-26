@@ -4,12 +4,7 @@ import { useActionState, useEffect } from "react";
 import { CheckIcon } from "lucide-react";
 
 import { createTag, updateTag } from "@/lib/actions/tags";
-import {
-  buildTagTree,
-  flattenTreeWithDepth,
-  getDescendantIds,
-  type FlatTag,
-} from "@/lib/tags/tree";
+import { getDescendantIds, type FlatTag } from "@/lib/tags/tree";
 import { TAG_SWATCH_CLASS } from "@/lib/tags/colors";
 import { TAG_COLOR_TOKENS, type TagColorToken } from "@/lib/validation/tag";
 import { useDictionary } from "@/lib/i18n/client";
@@ -18,14 +13,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toastSuccess } from "@/components/states/Toast";
+import { TagParentPicker } from "./TagParentPicker";
 
 export type TagFormTarget =
   { mode: "create"; parentId: string | null } | { mode: "edit"; tag: FlatTag };
@@ -97,10 +86,6 @@ export function TagForm({
   const disabledParentIds = editingTag
     ? new Set([editingTag.id, ...getDescendantIds(editingTag.id, flatTags)])
     : new Set<string>();
-
-  const parentOptions = flattenTreeWithDepth(buildTagTree(flatTags)).filter(
-    (tag) => !disabledParentIds.has(tag.id),
-  );
 
   const defaultParentId =
     target.mode === "edit" ? target.tag.parentId : target.parentId;
@@ -210,31 +195,15 @@ export function TagForm({
         <span className="text-label-md" id="tag-parent-label">
           {t.tags.editor.parentLabel}
         </span>
-        <Select
+        <TagParentPicker
+          aria-labelledby="tag-parent-label"
           name="parentId"
+          flatTags={flatTags}
+          excludedIds={disabledParentIds}
           defaultValue={defaultParentId ?? ""}
           onValueChange={markDirty}
-        >
-          <SelectTrigger aria-labelledby="tag-parent-label" className="w-full">
-            <SelectValue placeholder={t.tags.editor.noParent}>
-              {(value: string) =>
-                value === ""
-                  ? t.tags.editor.noParent
-                  : (parentOptions.find((tag) => tag.id === value)?.name ??
-                    value)
-              }
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">{t.tags.editor.noParent}</SelectItem>
-            {parentOptions.map((tag) => (
-              <SelectItem key={tag.id} value={tag.id}>
-                {"　".repeat(tag.depth)}
-                {tag.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          placeholder={t.tags.editor.noParent}
+        />
       </div>
 
       {state?.ok === false && !state.fieldErrors && (

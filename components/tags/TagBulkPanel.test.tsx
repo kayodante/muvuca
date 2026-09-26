@@ -238,6 +238,60 @@ describe("TagBulkPanel", () => {
     ).toEqual(["a"]);
   });
 
+  it("lists the tags being moved with their ancestors, and excludes invalid destinations", async () => {
+    await act(async () =>
+      root?.render(
+        <TagBulkPanel
+          selectedIds={["a", "b"]}
+          flatTags={TAGS}
+          onDone={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      ),
+    );
+
+    await act(async () => button("Mover para…")?.click());
+    const dialog = document.querySelector('[role="dialog"]') as HTMLElement;
+
+    // "b" (Beta) rides along under its selected parent "a" -- only the tag
+    // actually being moved explicitly (Alfa) is listed; the ride-along
+    // count is what "1 tag já vai junto com a tag mãe." already covers.
+    expect(dialog.textContent).toContain("Alfa");
+
+    const destinationInput = dialog.querySelector(
+      'input[aria-labelledby="bulk-destination-label"]',
+    ) as HTMLInputElement;
+    const trigger = destinationInput.parentElement?.querySelector(
+      "button",
+    ) as HTMLButtonElement;
+    await act(async () => trigger.click());
+
+    const optionTexts = [...document.querySelectorAll('[role="option"]')].map(
+      (node) => node.textContent?.trim() ?? "",
+    );
+    // "a" (Alfa) and its child "b" (Beta) can't be their own destination.
+    expect(optionTexts.some((text) => text.includes("Alfa"))).toBe(false);
+    expect(optionTexts.some((text) => text.includes("Beta"))).toBe(false);
+    expect(optionTexts.some((text) => text.includes("Gama"))).toBe(true);
+    expect(optionTexts).toContain("Nenhuma (tag raiz)");
+
+    const gamaOption = [...document.querySelectorAll('[role="option"]')].find(
+      (node) => node.textContent?.includes("Gama"),
+    );
+    await act(async () =>
+      gamaOption?.dispatchEvent(new MouseEvent("click", { bubbles: true })),
+    );
+
+    expect(button("Mover")?.disabled).toBe(false);
+    expect(
+      (
+        dialog.querySelector(
+          'input[type="hidden"][name="parentId"]',
+        ) as HTMLInputElement
+      ).value,
+    ).toBe("c");
+  });
+
   it("disables both actions and shows the cap message above 500 selected", async () => {
     const manyTags: FlatTag[] = Array.from(
       { length: TAG_BULK_MAX + 1 },

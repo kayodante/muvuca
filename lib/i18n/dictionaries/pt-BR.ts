@@ -158,6 +158,10 @@ export const ptBR = {
       created: "Tag criada.",
       updated: "Tag atualizada.",
     },
+    parentPicker: {
+      noResults: "Nenhuma tag encontrada.",
+      toggleOptions: "Abrir opções",
+    },
     deleteDialog: {
       title: (name: string) => `Excluir “${name}”?`,
       description: (name: string) =>

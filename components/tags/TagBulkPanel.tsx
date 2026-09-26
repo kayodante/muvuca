@@ -4,10 +4,9 @@ import { useActionState, useEffect, useState } from "react";
 
 import { deleteTags, moveTags } from "@/lib/actions/tags";
 import {
-  buildTagTree,
   findMoveNameCollisions,
-  flattenTreeWithDepth,
   getInvalidMoveTargets,
+  getNamePath,
   normalizeMoveSelection,
   type FlatTag,
 } from "@/lib/tags/tree";
@@ -33,14 +32,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toastSuccess } from "@/components/states/Toast";
+import { TagParentPicker } from "./TagParentPicker";
 
 /** Select value for "move to root"; `parentId=""` is root for the action's Zod too. */
 const ROOT = "";
@@ -152,11 +145,13 @@ function MoveTagsDialog({
   // already read differently by the time render/the success effect run.
   const [ids] = useState(selectedIds);
 
+  const byId = new Map(flatTags.map((tag) => [tag.id, tag]));
   const moving = normalizeMoveSelection(ids, flatTags);
+  const movingTags = moving.flatMap((id) => {
+    const tag = byId.get(id);
+    return tag ? [tag] : [];
+  });
   const invalid = getInvalidMoveTargets(ids, flatTags);
-  const options = flattenTreeWithDepth(buildTagTree(flatTags)).filter(
-    (tag) => !invalid.has(tag.id),
-  );
   const collisions =
     destination === null
       ? []
@@ -195,39 +190,35 @@ function MoveTagsDialog({
             <DialogDescription>{t.tags.bulk.moveDescription}</DialogDescription>
           </DialogHeader>
 
+          <ul className="text-body-sm flex max-h-40 flex-col gap-1.5 overflow-y-auto">
+            {movingTags.map((tag) => (
+              <li
+                key={tag.id}
+                dir="auto"
+                className="flex flex-col [overflow-wrap:anywhere]"
+              >
+                <span>{tag.name}</span>
+                {tag.parentId && (
+                  <span className="text-body-sm text-muted-foreground">
+                    {getNamePath(tag, byId).slice(0, -1).join(" / ")}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+
           <div className="flex flex-col gap-1.5">
             <span id="bulk-destination-label" className="text-label-md">
               {t.tags.bulk.destinationLabel}
             </span>
-            <Select
+            <TagParentPicker
+              aria-labelledby="bulk-destination-label"
+              flatTags={flatTags}
+              excludedIds={invalid}
               value={destination}
               onValueChange={(value) => setDestination(value)}
-            >
-              <SelectTrigger
-                aria-labelledby="bulk-destination-label"
-                className="w-full"
-              >
-                <SelectValue placeholder={t.tags.bulk.chooseDestination}>
-                  {(value: string | null) =>
-                    value === null
-                      ? t.tags.bulk.chooseDestination
-                      : value === ROOT
-                        ? t.tags.editor.noParent
-                        : (options.find((tag) => tag.id === value)?.name ??
-                          value)
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ROOT}>{t.tags.editor.noParent}</SelectItem>
-                {options.map((tag) => (
-                  <SelectItem key={tag.id} value={tag.id}>
-                    {"　".repeat(tag.depth)}
-                    {tag.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder={t.tags.bulk.chooseDestination}
+            />
           </div>
 
           {carried > 0 && (
@@ -334,9 +325,11 @@ function DeleteTagsAlertDialog({
               className="flex flex-col [overflow-wrap:anywhere]"
             >
               <span>{tag.name}</span>
-              <span className="font-mono text-muted-foreground">
-                {tag.path.split("/").join(" / ")}
-              </span>
+              {tag.parentId && (
+                <span className="text-body-sm text-muted-foreground">
+                  {getNamePath(tag, byId).slice(0, -1).join(" / ")}
+                </span>
+              )}
             </li>
           ))}
         </ul>

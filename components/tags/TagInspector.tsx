@@ -75,6 +75,7 @@ export function TagInspector({
     id: string;
     name: string;
   } | null>(null);
+  const byId = new Map(flatTags.map((candidate) => [candidate.id, candidate]));
   const tag =
     target.kind === "edit"
       ? (flatTags.find((candidate) => candidate.id === target.id) ?? null)
@@ -136,9 +137,9 @@ export function TagInspector({
                   {tag.name}
                 </>,
               )}
-              <p className="text-body-sm font-mono [overflow-wrap:anywhere] text-muted-foreground">
+              <p className="text-body-sm [overflow-wrap:anywhere] text-muted-foreground">
                 <span className="sr-only">{t.tags.inspector.pathLabel}: </span>
-                {tag.path.split("/").join(" / ")}
+                {getNamePath(tag, byId).join(" / ")}
               </p>
             </div>
             <DropdownMenu>

@@ -60,6 +60,93 @@ function setValue(input: HTMLInputElement, value: string) {
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
+// The picker's combobox input treats a bare `Event("input")` (no
+// `inputType`) as autofill and deliberately skips auto-opening/filtering --
+// a real InputEvent with `inputType` is what a keystroke actually dispatches.
+function typeIntoPicker(input: HTMLInputElement, value: string) {
+  Object.getOwnPropertyDescriptor(
+    HTMLInputElement.prototype,
+    "value",
+  )?.set?.call(input, value);
+  input.dispatchEvent(
+    new InputEvent("input", { bubbles: true, inputType: "insertText" }),
+  );
+}
+
+// Repeated "Tipografia" in two branches (Design and Design/Inspiração),
+// an accented ancestor name, and a tag+descendant pair for the exclusion
+// test -- the flat fixtures above are too small to exercise the parent
+// picker itself.
+const PICKER_TAGS: FlatTag[] = [
+  {
+    id: "design",
+    parentId: null,
+    path: "design",
+    name: "Design",
+    colorToken: "lime",
+    description: null,
+  },
+  {
+    id: "design-tipografia",
+    parentId: "design",
+    path: "design/tipografia",
+    name: "Tipografia",
+    colorToken: "lime",
+    description: null,
+  },
+  {
+    id: "inspiracao",
+    parentId: "design",
+    path: "design/inspiracao",
+    name: "Inspiração",
+    colorToken: "lime",
+    description: null,
+  },
+  {
+    id: "inspiracao-tipografia",
+    parentId: "inspiracao",
+    path: "design/inspiracao/tipografia",
+    name: "Tipografia",
+    colorToken: "lime",
+    description: null,
+  },
+  {
+    id: "dev",
+    parentId: null,
+    path: "dev",
+    name: "Dev",
+    colorToken: "cyan",
+    description: null,
+  },
+  {
+    id: "dev-front",
+    parentId: "dev",
+    path: "dev/front",
+    name: "Front",
+    colorToken: "lime",
+    description: null,
+  },
+];
+
+function getPickerInput(): HTMLInputElement {
+  return container!.querySelector(
+    'input[aria-labelledby="tag-parent-label"]',
+  ) as HTMLInputElement;
+}
+
+function pickerOptionTexts(): string[] {
+  return [...document.querySelectorAll('[role="option"]')].map(
+    (node) => node.textContent?.trim() ?? "",
+  );
+}
+
+function clickPickerOption(matcher: (text: string) => boolean) {
+  const option = [...document.querySelectorAll('[role="option"]')].find(
+    (node) => matcher(node.textContent?.trim() ?? ""),
+  );
+  option?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+}
+
 describe("TagForm", () => {
   it("prefills an existing tag and carries its id", async () => {
     const onDirtyChange = vi.fn();
@@ -179,5 +266,183 @@ describe("TagForm", () => {
     ) as HTMLInputElement;
     expect(input.getAttribute("aria-invalid")).toBe("true");
     expect(input.getAttribute("aria-describedby")).toBe("tag-name-error");
+  });
+
+  describe("parent picker", () => {
+    it("shows repeated names with different, distinguishable paths", async () => {
+      await act(async () => {
+        root?.render(
+          <TagForm
+            target={{ mode: "create", parentId: null }}
+            flatTags={PICKER_TAGS}
+            onSaved={vi.fn()}
+          />,
+        );
+      });
+
+      await act(async () => typeIntoPicker(getPickerInput(), "Tipografia"));
+
+      const matches = pickerOptionTexts().filter((text) =>
+        text.includes("Tipografia"),
+      );
+      expect(matches).toHaveLength(2);
+      expect(new Set(matches).size).toBe(2);
+      expect(matches.some((text) => text.includes("Inspiração"))).toBe(true);
+    });
+
+    it("finds an accented tag from an unaccented query", async () => {
+      await act(async () => {
+        root?.render(
+          <TagForm
+            target={{ mode: "create", parentId: null }}
+            flatTags={PICKER_TAGS}
+            onSaved={vi.fn()}
+          />,
+        );
+      });
+
+      await act(async () => typeIntoPicker(getPickerInput(), "inspiracao"));
+
+      expect(
+        pickerOptionTexts().some((text) => text.includes("Inspiração")),
+      ).toBe(true);
+    });
+
+    it("excludes the tag itself and its descendants", async () => {
+      const designTag = PICKER_TAGS.find((tag) => tag.id === "design")!;
+      await act(async () => {
+        root?.render(
+          <TagForm
+            target={{ mode: "edit", tag: designTag }}
+            flatTags={PICKER_TAGS}
+            onSaved={vi.fn()}
+          />,
+        );
+      });
+
+      const input = getPickerInput();
+      const trigger = input.parentElement?.querySelector(
+        "button",
+      ) as HTMLButtonElement;
+      await act(async () => trigger.click());
+
+      const texts = pickerOptionTexts();
+      expect(texts).toHaveLength(3); // root + Dev + Front
+      expect(texts.some((text) => text.includes("Design"))).toBe(false);
+      expect(texts.some((text) => text.includes("Tipografia"))).toBe(false);
+      expect(texts).toContain("Nenhuma (tag raiz)");
+      expect(texts.some((text) => text.includes("Dev"))).toBe(true);
+      expect(texts.some((text) => text.includes("Front"))).toBe(true);
+    });
+
+    it("doesn't mark the form dirty while typing, only when a value is picked", async () => {
+      const onDirtyChange = vi.fn();
+      const frontTag = PICKER_TAGS.find((tag) => tag.id === "dev-front")!;
+      await act(async () => {
+        root?.render(
+          <TagForm
+            target={{ mode: "edit", tag: frontTag }}
+            flatTags={PICKER_TAGS}
+            onSaved={vi.fn()}
+            onDirtyChange={onDirtyChange}
+          />,
+        );
+      });
+
+      await act(async () => typeIntoPicker(getPickerInput(), "Design"));
+      expect(onDirtyChange).not.toHaveBeenCalled();
+
+      await act(async () => clickPickerOption((text) => text === "Design"));
+      expect(onDirtyChange).toHaveBeenCalledWith(true);
+    });
+
+    it('submits the chosen parentId, and "" for root', async () => {
+      createTagMock.mockResolvedValue({ ok: true, data: { id: "x" } });
+      await act(async () => {
+        root?.render(
+          <TagForm
+            target={{ mode: "create", parentId: null }}
+            flatTags={PICKER_TAGS}
+            onSaved={vi.fn()}
+          />,
+        );
+      });
+
+      await act(async () =>
+        setValue(
+          container!.querySelector('input[name="name"]') as HTMLInputElement,
+          "Nova",
+        ),
+      );
+      await act(async () => typeIntoPicker(getPickerInput(), "Front"));
+      await act(async () =>
+        clickPickerOption((text) => text.includes("Front")),
+      );
+      await act(async () => container!.querySelector("form")!.requestSubmit());
+
+      const sent = createTagMock.mock.calls[0]?.[1] as FormData;
+      expect(sent.get("parentId")).toBe("dev-front");
+    });
+
+    it('submits "" when root is explicitly chosen', async () => {
+      createTagMock.mockResolvedValue({ ok: true, data: { id: "x" } });
+      await act(async () => {
+        root?.render(
+          <TagForm
+            target={{ mode: "create", parentId: "dev" }}
+            flatTags={PICKER_TAGS}
+            onSaved={vi.fn()}
+          />,
+        );
+      });
+
+      await act(async () =>
+        setValue(
+          container!.querySelector('input[name="name"]') as HTMLInputElement,
+          "Nova raiz",
+        ),
+      );
+      const input = getPickerInput();
+      const trigger = input.parentElement?.querySelector(
+        "button",
+      ) as HTMLButtonElement;
+      await act(async () => trigger.click());
+      await act(async () =>
+        clickPickerOption((text) => text === "Nenhuma (tag raiz)"),
+      );
+      await act(async () => container!.querySelector("form")!.requestSubmit());
+
+      const sent = createTagMock.mock.calls[0]?.[1] as FormData;
+      expect(sent.get("parentId")).toBe("");
+    });
+
+    it("Enter inside the open picker selects the option, not the form", async () => {
+      await act(async () => {
+        root?.render(
+          <TagForm
+            target={{ mode: "create", parentId: null }}
+            flatTags={PICKER_TAGS}
+            onSaved={vi.fn()}
+          />,
+        );
+      });
+
+      const input = getPickerInput();
+      await act(async () => typeIntoPicker(input, "Front"));
+
+      let notCanceled = true;
+      await act(async () => {
+        notCanceled = input.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "Enter",
+            bubbles: true,
+            cancelable: true,
+          }),
+        );
+      });
+
+      expect(notCanceled).toBe(false);
+      expect(createTagMock).not.toHaveBeenCalled();
+    });
   });
 });

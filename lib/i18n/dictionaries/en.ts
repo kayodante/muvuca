@@ -135,6 +135,10 @@ export const en: Dictionary = {
       created: "Tag created.",
       updated: "Tag updated.",
     },
+    parentPicker: {
+      noResults: "No tags found.",
+      toggleOptions: "Open options",
+    },
     deleteDialog: {
       title: (name: string) => `Delete “${name}”?`,
       description: (name: string) =>
