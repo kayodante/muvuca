@@ -71,9 +71,11 @@ apontam para o ambiente local.
 pnpm dev
 ```
 
-Acesse [localhost:3000](http://localhost:3000), entre com
-`dev@muvuca.local` e abra o link recebido no
-[Mailpit local](http://127.0.0.1:54324). Nenhum email é enviado de verdade.
+Acesse [localhost:3000](http://localhost:3000) e entre com
+`dev@muvuca.local` e a senha `muvuca-dev-local`, a conta que
+`supabase/seed.sql` recria a cada `supabase db reset`. O email de
+recuperação de senha chega no [Mailpit local](http://127.0.0.1:54324);
+nenhum email é enviado de verdade.
 
 Para encerrar o ambiente local:
 
