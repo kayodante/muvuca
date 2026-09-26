@@ -54,7 +54,9 @@ export function TagNavigation({ tags }: { tags: FlatTag[] }) {
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t.shell.tagNav.searchPlaceholder}
             aria-label={t.shell.tagNav.searchAriaLabel}
-            className="border-0 bg-background pl-9 shadow-light dark:bg-background [&::-webkit-search-cancel-button]:hidden"
+            // Borderless, so Input's focus border never shows; the 50% halo
+            // alone reads 1.77:1. A solid ring keeps focus at 3:1.
+            className="border-0 bg-background pl-9 shadow-light focus-visible:ring-2 focus-visible:ring-ring dark:bg-background [&::-webkit-search-cancel-button]:hidden"
           />
         </div>
       </div>
@@ -105,12 +107,20 @@ function TagNavigationRow({
     <li className="t-acc" data-open={open}>
       <div
         className={cn(
-          "flex h-8 min-w-0 items-center rounded-md pr-1 transition-colors duration-(--motion-fast) ease-out-muvuca",
+          "relative flex h-8 min-w-0 items-center rounded-md pr-1 transition-colors duration-(--motion-fast) ease-out-muvuca",
           active
-            ? "bg-ink text-surface shadow-light"
-            : "text-muted-foreground focus-within:bg-secondary/60 hover:bg-secondary/60",
+            ? "bg-selected text-foreground"
+            : "text-muted-foreground focus-within:bg-hover hover:bg-hover",
         )}
       >
+        {/* Selection is fill + weight + this marker, as in NavLink and
+            TagColumns, never hue alone. */}
+        {active && (
+          <span
+            aria-hidden="true"
+            className="absolute top-1/2 left-0.5 h-4 w-1 -translate-y-1/2 rounded-full bg-primary"
+          />
+        )}
         {/* One 28px guide column per ancestor level, each with a 1px line
             centered on where that ancestor's chevron sits. The item's own
             chevron slot never gets a guide. Decorative and out of the tab
@@ -122,12 +132,7 @@ function TagNavigationRow({
             aria-hidden="true"
             className="flex w-7 shrink-0 justify-center self-stretch"
           >
-            <span
-              className={cn(
-                "w-px self-stretch",
-                active ? "bg-surface/20" : "bg-border",
-              )}
-            />
+            <span className="w-px self-stretch bg-border" />
           </span>
         ))}
         {hasChildren ? (
@@ -143,12 +148,7 @@ function TagNavigationRow({
                 : t.tags.tree.expand(node.name)
             }
             onClick={() => setExpanded((value) => !value)}
-            className={cn(
-              "flex size-7 shrink-0 items-center justify-center rounded-md transition-[scale,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.97] motion-reduce:active:scale-100",
-              active
-                ? "text-surface hover:text-surface/80"
-                : "text-muted-foreground hover:text-foreground",
-            )}
+            className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-[scale,color] duration-(--motion-fast) ease-out-muvuca hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.97] motion-reduce:active:scale-100"
           >
             <span className="t-acc-chevron">
               <ChevronDownIcon aria-hidden="true" className="size-3.5" />
@@ -166,7 +166,7 @@ function TagNavigationRow({
             // last row would be shaved by that clip.
             "group/taglink text-body-lg flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 transition-[scale,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.97] motion-reduce:active:scale-100",
             active
-              ? "font-medium text-surface"
+              ? "font-medium text-foreground"
               : "text-muted-foreground hover:text-foreground",
           )}
         >

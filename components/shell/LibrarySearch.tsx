@@ -197,9 +197,11 @@ export function LibrarySearch() {
     // The focus ring lives on the wrapper, not the input: `.t-clear` clips
     // its overflow so the clear animation's flying text stays inside the
     // field, and that clip would cut an input ring down to its corners.
+    // Solid, not `ring-ring/50`: the field is borderless, so this ring is the
+    // whole focus indicator, and at 50% it read 1.77:1 on the light topbar.
     <div
       ref={wrapperRef}
-      className={`t-clear w-full max-w-lg rounded-md transition-shadow duration-(--motion-fast) ease-out-muvuca has-[input:focus-visible]:ring-3 has-[input:focus-visible]:ring-ring/50 motion-reduce:transition-none ${query ? "has-value" : ""} ${isClearing ? "is-clearing" : ""}`}
+      className={`t-clear w-full max-w-lg rounded-md transition-shadow duration-(--motion-fast) ease-out-muvuca has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-ring motion-reduce:transition-none ${query ? "has-value" : ""} ${isClearing ? "is-clearing" : ""}`}
       aria-busy={isPending}
     >
       <SearchIcon

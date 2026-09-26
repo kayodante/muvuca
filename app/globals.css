@@ -42,6 +42,8 @@
   --color-focus: var(--focus);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
+  --color-hover: var(--hover);
+  --color-selected: var(--selected);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -213,6 +215,14 @@ body {
   /* Translúcida (Figma): 8% de ink, lida igual sobre canvas, surface e
      thumbnail, em vez de um cinza opaco calibrado para uma superfície só. */
   --border: #14141514;
+  /* Estados de interação de controles neutros. Tinta translúcida pelo mesmo
+     motivo da --border: o mesmo degrau lê igual sobre canvas, surface e
+     popover, em vez de um cinza opaco calibrado para uma superfície só.
+     Medido em OKLCH sobre surface: hover ΔL −0,035, selected ΔL −0,060 (no
+     escuro, +0,050 e +0,083). Onde o repouso já tem fundo, o hover entra
+     como camada (inset-shadow, igual ao TagChip), não como troca de fundo. */
+  --hover: #100f110d;
+  --selected: #100f1116;
   --focus: #0da321;
   --success: #15803d;
   --warning: #b45309;
@@ -269,7 +279,7 @@ body {
   --secondary-foreground: var(--ink);
   --muted: var(--surface-subtle);
   --muted-foreground: var(--ink-muted);
-  --accent: var(--surface-subtle);
+  --accent: var(--hover);
   --accent-foreground: var(--ink);
   --destructive: var(--error);
   --input: var(--border);
@@ -326,6 +336,8 @@ body {
     --surface: #121113;
     --surface-subtle: #171618;
     --border: #fafafa14;
+    --hover: #f1eff50d;
+    --selected: #f1eff516;
     --ink: #f1eff5;
     --ink-muted: #a2a0a6;
     --error: #f87171;
@@ -370,6 +382,8 @@ body {
   --surface: #121113;
   --surface-subtle: #171618;
   --border: #fafafa14;
+  --hover: #f1eff50d;
+  --selected: #f1eff516;
   --ink: #f1eff5;
   --ink-muted: #a2a0a6;
   --error: #f87171;
@@ -416,7 +430,7 @@ body {
   --secondary-foreground: var(--ink);
   --muted: var(--surface-subtle);
   --muted-foreground: var(--ink-muted);
-  --accent: var(--surface-subtle);
+  --accent: var(--hover);
   --accent-foreground: var(--ink);
   --destructive: var(--error);
   --input: var(--border);
@@ -444,6 +458,8 @@ body {
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-hover: var(--hover);
+  --color-selected: var(--selected);
   --color-destructive: var(--destructive);
   --color-input: var(--input);
   --color-ring: var(--ring);
