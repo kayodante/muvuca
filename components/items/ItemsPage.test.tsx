@@ -300,20 +300,6 @@ describe("ItemsPage code_component view detail", () => {
       tagIds: [],
     };
 
-    getItemDetailsMock.mockResolvedValueOnce({
-      ok: true,
-      data: {
-        id: "22222222-2222-4222-8222-222222222222",
-        type: "code_component",
-        title: "Hero Component",
-        description: "Hero with call to action",
-        url: "https://example.com/hero",
-        content: "export function Hero() { return <header>Hero</header>; }",
-        language: null,
-        tagIds: [],
-      },
-    });
-
     await renderItemsPage({ items: [codeItemSummary] });
 
     expect(container?.textContent).toContain("Hero Component");
@@ -328,14 +314,146 @@ describe("ItemsPage code_component view detail", () => {
       viewButton?.click();
     });
 
-    expect(getItemDetailsMock).toHaveBeenCalledWith(
-      "22222222-2222-4222-8222-222222222222",
-    );
+    expect(getItemDetailsMock).not.toHaveBeenCalled();
     expect(
       document.body.querySelector('[data-slot="dialog-content"]'),
     ).not.toBeNull();
     expect(document.body.textContent).toContain("export function Hero()");
     expect(document.body.textContent).toContain("Copiar código");
+  });
+
+  it("fetches a code component when the preview has exactly 2000 code points", async () => {
+    const codeItemSummary: LibraryItemSummary = {
+      id: "22222222-2222-4222-8222-222222222222",
+      type: "code_component",
+      title: "Long code",
+      description: null,
+      url: null,
+      contentPreview: "a".repeat(2000),
+      language: null,
+      tagIds: [],
+    };
+    getItemDetailsMock.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        id: codeItemSummary.id,
+        type: "code_component",
+        title: codeItemSummary.title,
+        description: null,
+        url: null,
+        content: "Full code",
+        language: null,
+        tagIds: [],
+      },
+    });
+    await renderItemsPage({ items: [codeItemSummary] });
+
+    await act(async () => {
+      container
+        ?.querySelector<HTMLButtonElement>(
+          'button[aria-label="Ver código completo"]',
+        )
+        ?.click();
+    });
+
+    expect(getItemDetailsMock).toHaveBeenCalledWith(codeItemSummary.id);
+    expect(document.body.textContent).toContain("Full code");
+  });
+
+  it("fetches current details before editing from the dialog", async () => {
+    const promptItem: LibraryItemSummary = {
+      id: "44444444-4444-4444-8444-444444444444",
+      type: "prompt",
+      title: "Old title",
+      description: null,
+      url: null,
+      contentPreview: "Short prompt",
+      tagIds: [],
+    };
+    getItemDetailsMock.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        id: promptItem.id,
+        type: "prompt",
+        title: "Current title",
+        description: null,
+        url: null,
+        content: "Current prompt",
+        tagIds: [],
+      },
+    });
+    await renderItemsPage({ items: [promptItem] });
+
+    await act(async () => {
+      container
+        ?.querySelector<HTMLButtonElement>(
+          'button[aria-label="Ver conteúdo completo"]',
+        )
+        ?.click();
+    });
+    expect(getItemDetailsMock).not.toHaveBeenCalled();
+
+    await act(async () => {
+      Array.from(document.body.querySelectorAll("button"))
+        .find((button) => button.textContent === "Editar prompt")
+        ?.click();
+    });
+
+    expect(getItemDetailsMock).toHaveBeenCalledWith(promptItem.id);
+    expect(
+      document.body.querySelector<HTMLInputElement>('input[name="title"]')
+        ?.value,
+    ).toBe("Current title");
+  });
+});
+
+// `toast.error` is what `toastError` forwards to; sonner is mocked above.
+describe("ItemsPage falha ao abrir item", () => {
+  const promptItem: LibraryItemSummary = {
+    id: "44444444-4444-4444-8444-444444444444",
+    type: "prompt",
+    title: "Prompt que falha",
+    description: null,
+    url: null,
+    contentPreview: "x".repeat(2000),
+    tagIds: [],
+  };
+
+  async function clickView() {
+    const viewButton = container?.querySelector(
+      'button[aria-label="Ver conteúdo completo"]',
+    ) as HTMLButtonElement | null;
+    expect(viewButton).not.toBeNull();
+    await act(async () => {
+      viewButton?.click();
+    });
+  }
+
+  it("avisa por toast, sem banner no topo, e o card sai do pending", async () => {
+    getItemDetailsMock.mockResolvedValueOnce({
+      ok: false,
+      code: "NOT_FOUND",
+      message: "Item não encontrado.",
+    });
+    await renderItemsPage({ items: [promptItem] });
+
+    await clickView();
+
+    expect(toast.error).toHaveBeenCalledWith("Item não encontrado.");
+    expect(container?.querySelector('[role="alert"]')).toBeNull();
+    expect(container?.querySelector("[aria-busy]")).toBeNull();
+  });
+
+  it("uma rejeição do action vira toast genérico e a página continua de pé", async () => {
+    getItemDetailsMock.mockRejectedValueOnce(new Error("network"));
+    await renderItemsPage({ items: [promptItem] });
+
+    await clickView();
+
+    expect(toast.error).toHaveBeenCalledWith(
+      "Algo deu errado. Tente novamente.",
+    );
+    expect(container?.textContent).toContain("Prompt que falha");
   });
 });
 

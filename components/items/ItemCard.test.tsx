@@ -9,8 +9,10 @@ import type { Tag } from "@/lib/database/queries/tags";
 const { toast } = vi.hoisted(() => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
+const { announce } = vi.hoisted(() => ({ announce: vi.fn() }));
 
 vi.mock("sonner", () => ({ toast }));
+vi.mock("@/components/states/Announcer", () => ({ announce }));
 
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
@@ -21,6 +23,7 @@ afterEach(async () => {
   root = null;
   container = null;
   vi.clearAllMocks();
+  vi.useRealTimers();
 });
 
 const mockTags: Tag[] = [
@@ -82,6 +85,7 @@ async function renderCard(
   onRefreshPreview = vi.fn(),
   onCopyContent: () => Promise<string> = () =>
     Promise.resolve(FULL_STORED_BODY),
+  isPending = false,
 ) {
   container = document.createElement("div");
   document.body.append(container);
@@ -93,6 +97,7 @@ async function renderCard(
         item={item}
         tags={tags}
         morphing={morphing}
+        isPending={isPending}
         onEdit={onEdit}
         onDelete={onDelete}
         onView={onView}
@@ -119,6 +124,41 @@ async function flushHighlight(el: HTMLElement) {
 }
 
 describe("ItemCard", () => {
+  it.each([false, true])(
+    "mantém o estado pendente acessível e atrasa só sua apresentação (%s)",
+    async (isPending) => {
+      const dom = await renderCard(
+        mockPrompt,
+        mockTags,
+        false,
+        vi.fn(),
+        vi.fn(),
+        vi.fn(),
+        vi.fn(),
+        () => Promise.resolve(FULL_STORED_BODY),
+        isPending,
+      );
+      const article = dom.querySelector("article");
+      const loader = dom.querySelector('[aria-label="Carregando item"]');
+
+      expect(article?.getAttribute("aria-busy")).toBe(
+        isPending ? "true" : null,
+      );
+      expect(article?.classList.contains("[transition-delay:150ms]")).toBe(
+        isPending,
+      );
+      expect(article?.classList.contains("pointer-events-none")).toBe(
+        isPending,
+      );
+      expect(loader?.classList.contains("starting:opacity-0") ?? false).toBe(
+        isPending,
+      );
+      expect(
+        loader?.classList.contains("motion-reduce:duration-0") ?? false,
+      ).toBe(isPending);
+    },
+  );
+
   it.each([
     [mockLink, "Um conteúdo salvo da web para acessar depois."],
     [mockPrompt, "Um prompt salvo para usar novamente com IA."],
@@ -217,7 +257,7 @@ describe("ItemCard", () => {
     },
   );
 
-  it("copia o prompt com toast de confirmação ao clicar na ação rápida", async () => {
+  it("copia o prompt com anúncio de confirmação ao clicar na ação rápida", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -237,9 +277,32 @@ describe("ItemCard", () => {
     expect(iconSwap?.getAttribute("data-state")).toBe("b");
     expect(writeText).toHaveBeenCalledWith(FULL_STORED_BODY);
     expect(writeText).not.toHaveBeenCalledWith(mockPrompt.contentPreview);
-    expect(toast.success).toHaveBeenCalledWith(
+    expect(announce).toHaveBeenCalledWith(
       "Prompt copiado para a área de transferência.",
     );
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it("mantém o check por 1,5s após a última cópia", async () => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+    });
+
+    const dom = await renderCard(mockPrompt);
+    const copyButton = dom.querySelector(
+      'button[aria-label="Copiar prompt"]',
+    ) as HTMLButtonElement;
+    const iconSwap = copyButton.querySelector(".t-icon-swap");
+    vi.useFakeTimers();
+
+    await act(async () => copyButton.click());
+    await act(async () => vi.advanceTimersByTime(1000));
+    await act(async () => copyButton.click());
+    await act(async () => vi.advanceTimersByTime(600));
+    expect(iconSwap?.getAttribute("data-state")).toBe("b");
+    await act(async () => vi.advanceTimersByTime(1000));
+    expect(iconSwap?.getAttribute("data-state")).toBe("a");
   });
 
   it("exibe toast de erro se falhar ao copiar o prompt", async () => {
@@ -265,7 +328,7 @@ describe("ItemCard", () => {
     );
   });
 
-  it("copia o link com toast de confirmação ao clicar na ação rápida", async () => {
+  it("copia o link com anúncio de confirmação ao clicar na ação rápida", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -281,9 +344,10 @@ describe("ItemCard", () => {
     });
 
     expect(writeText).toHaveBeenCalledWith("https://nextjs.org/docs");
-    expect(toast.success).toHaveBeenCalledWith(
+    expect(announce).toHaveBeenCalledWith(
       "Link copiado para a área de transferência.",
     );
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
   it("exibe toast de erro se falhar ao copiar o link", async () => {
@@ -356,7 +420,7 @@ describe("ItemCard", () => {
     expect(handleView).toHaveBeenCalledOnce();
   }, 15000);
 
-  it("copia o código com toast de confirmação ao clicar na ação rápida", async () => {
+  it("copia o código com anúncio de confirmação ao clicar na ação rápida", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, "clipboard", {
       configurable: true,
@@ -375,9 +439,10 @@ describe("ItemCard", () => {
     expect(writeText).not.toHaveBeenCalledWith(
       mockCodeComponent.contentPreview,
     );
-    expect(toast.success).toHaveBeenCalledWith(
+    expect(announce).toHaveBeenCalledWith(
       "Código copiado para a área de transferência.",
     );
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
   it("exibe toast de erro se não conseguir carregar o código completo", async () => {
@@ -451,9 +516,10 @@ describe("ItemCard", () => {
     expect(writeText).toHaveBeenCalledWith(
       "https://ui.shadcn.com/docs/components/button",
     );
-    expect(toast.success).toHaveBeenCalledWith(
+    expect(announce).toHaveBeenCalledWith(
       "Link copiado para a área de transferência.",
     );
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
   it("não renderiza botão de copiar link quando code_component não possui URL", async () => {

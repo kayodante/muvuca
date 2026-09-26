@@ -17,27 +17,24 @@ export default async function TagsLoading() {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] lg:items-start">
-        <div className="flex flex-col gap-4">
-          <Skeleton className="h-10 w-full max-w-xs rounded-md" />
-          <div className="flex flex-col gap-2">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] xl:items-start">
+        <div className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card">
+          <div className="border-b border-border p-2">
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
+          <div className="flex flex-col gap-px p-1.5 pt-10 sm:w-60">
             {Array.from({ length: 6 }, (_, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-2 rounded-md py-1 pr-1 pl-2"
-              >
+              <div key={index} className="flex h-9 items-center gap-2.5 pl-3">
                 <Skeleton className="size-2 shrink-0 rounded-full" />
                 <Skeleton
-                  className="h-5 rounded"
-                  style={{
-                    width: `${Math.max(6, ((index * 7 + 11) % 18) + 8)}rem`,
-                  }}
+                  className="h-4 rounded"
+                  style={{ width: `${((index * 7 + 11) % 6) + 5}rem` }}
                 />
               </div>
             ))}
           </div>
         </div>
-        <Skeleton className="hidden h-80 rounded-2xl lg:block" />
+        <Skeleton className="hidden h-80 rounded-2xl xl:block" />
       </div>
     </div>
   );

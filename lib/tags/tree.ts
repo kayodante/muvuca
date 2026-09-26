@@ -1,5 +1,5 @@
 /**
- * Pure tree helpers shared by TagTree (rendering), TagForm (parent picker)
+ * Pure tree helpers shared by TagColumns (rendering), TagForm (parent picker)
  * and the bulk panel. No I/O, no Supabase types -- operate on the flat tag
  * list the page already fetched once.
  */
@@ -161,6 +161,108 @@ function getDepths(flat: FlatTag[]): Map<string, number> {
 
   for (const tag of flat) depthOf(tag, 0);
   return depths;
+}
+
+export type TagColumn = { owner: FlatTag | null; tags: FlatTag[] };
+
+/**
+ * The `/tags` column browser: the roots, then the children of every tag on
+ * the path down to `browseId` that has any. `path` holds that path's ids
+ * (empty when `browseId` is null or gone); `childCounts` the number of
+ * direct children per tag. Same orphan rule as `buildTagTree`: a tag whose
+ * parent is missing sits with the roots.
+ */
+export function getTagColumns(
+  flat: FlatTag[],
+  browseId: string | null,
+): {
+  columns: TagColumn[];
+  path: Set<string>;
+  childCounts: Map<string, number>;
+} {
+  const byId = new Map(flat.map((tag) => [tag.id, tag]));
+  const childrenOf = new Map<string | null, FlatTag[]>();
+
+  for (const tag of flat) {
+    const key = tag.parentId && byId.has(tag.parentId) ? tag.parentId : null;
+    const siblings = childrenOf.get(key);
+    if (siblings) siblings.push(tag);
+    else childrenOf.set(key, [tag]);
+  }
+
+  const chain: FlatTag[] = [];
+  let current = browseId ? byId.get(browseId) : undefined;
+  // `length` bound: malformed/cyclic input must not loop forever.
+  while (current && chain.length < flat.length) {
+    chain.unshift(current);
+    current = current.parentId ? byId.get(current.parentId) : undefined;
+  }
+
+  const columns: TagColumn[] = [
+    { owner: null, tags: childrenOf.get(null) ?? [] },
+  ];
+  for (const tag of chain) {
+    const children = childrenOf.get(tag.id);
+    if (children) columns.push({ owner: tag, tags: children });
+  }
+
+  const childCounts = new Map<string, number>();
+  for (const [parentId, children] of childrenOf) {
+    if (parentId) childCounts.set(parentId, children.length);
+  }
+
+  return { columns, path: new Set(chain.map((tag) => tag.id)), childCounts };
+}
+
+/**
+ * Display names root-first ("Design", "Recursos"), for showing where a tag
+ * lives when its slug path would be less readable.
+ */
+export function getNamePath(
+  tag: FlatTag,
+  byId: ReadonlyMap<string, FlatTag>,
+): string[] {
+  const names: string[] = [];
+  let current: FlatTag | undefined = tag;
+  while (current && names.length <= TAG_MAX_DEPTH) {
+    names.unshift(current.name);
+    current = current.parentId ? byId.get(current.parentId) : undefined;
+  }
+  return names;
+}
+
+export type TagSummary = {
+  total: number;
+  roots: number;
+  levels: number;
+  withoutDescription: FlatTag[];
+  /** Tags sharing a name in different branches, one group per name. */
+  repeatedNames: FlatTag[][];
+};
+
+/**
+ * What the `/tags` inspector shows while nothing is selected: the shape of
+ * the hierarchy and the tags worth a curation pass. Names compare like the
+ * `name_normalized` column (lower(btrim(name))).
+ */
+export function summarizeTags(flat: FlatTag[]): TagSummary {
+  const depths = getDepths(flat);
+  const byName = new Map<string, FlatTag[]>();
+
+  for (const tag of flat) {
+    const key = tag.name.trim().toLowerCase();
+    const group = byName.get(key);
+    if (group) group.push(tag);
+    else byName.set(key, [tag]);
+  }
+
+  return {
+    total: flat.length,
+    roots: [...depths.values()].filter((depth) => depth === 1).length,
+    levels: Math.max(0, ...depths.values()),
+    withoutDescription: flat.filter((tag) => !tag.description?.trim()),
+    repeatedNames: [...byName.values()].filter((group) => group.length > 1),
+  };
 }
 
 /**

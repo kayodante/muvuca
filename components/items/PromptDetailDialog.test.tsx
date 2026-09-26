@@ -145,7 +145,7 @@ describe("PromptDetailDialog", () => {
 
     // Dois atalhos de cópia com o mesmo nome acessível coexistem: o ícone
     // no header do embed e o botão primário do footer. Ambos disparam o
-    // mesmo fluxo (clipboard + toast); a assertiva deixa de ser única por
+    // mesmo fluxo (clipboard + anúncio); a assertiva deixa de ser única por
     // design, por isso cada um é encontrado pelo seu formato.
     const footerCopy = Array.from(
       document.body.querySelectorAll("button"),

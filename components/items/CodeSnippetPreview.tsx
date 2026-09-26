@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { CODE_LANGUAGE_LABELS, type CodeLanguage } from "@/lib/code/languages";
+import type { CodeLanguage } from "@/lib/code/languages";
 
 import { useHighlightedLines } from "./useHighlightedLines";
 
@@ -37,7 +37,7 @@ const MAX_LINES = 6;
  * mesmo tamanho: `h-42` (168px) é p-3 + as 6 linhas de `leading-6` daqui.
  */
 export const PREVIEW_PANEL =
-  "h-42 overflow-hidden rounded-md bg-card bg-[linear-gradient(var(--shadow-1),var(--shadow-1))] p-3 inset-ring-[0.5px] inset-ring-border transition-colors duration-(--motion-slow) ease-out-muvuca motion-reduce:transition-none";
+  "h-42 overflow-hidden rounded-md bg-card bg-[linear-gradient(var(--shadow-1),var(--shadow-1))] p-3 inset-ring-[0.5px] inset-ring-border transition-[background-color] duration-(--motion-slow) ease-out-muvuca motion-reduce:transition-none";
 
 export function CodeSnippetPreview({
   contentPreview,
@@ -54,15 +54,7 @@ export function CodeSnippetPreview({
   const lines = useHighlightedLines(visibleSource, language);
 
   return (
-    <div className={cn("relative", PREVIEW_PANEL, className)}>
-      {language && (
-        <span
-          aria-hidden="true"
-          className="text-metadata absolute top-2 right-2 z-10 rounded border border-border/60 bg-card/80 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground select-none"
-        >
-          {CODE_LANGUAGE_LABELS[language] ?? language}
-        </span>
-      )}
+    <div className={cn(PREVIEW_PANEL, className)}>
       <div
         data-fade={truncated || undefined}
         className={cn(
@@ -76,17 +68,7 @@ export function CodeSnippetPreview({
           // min-h-6 mantém a linha vazia com a mesma altura das demais, e
           // whitespace-pre + overflow-hidden do painel clipam linhas longas
           // na horizontal em vez de quebrar a grade do card.
-          // Quando há badge de linguagem, a linha 0 trunca antes da badge
-          // para não passar por baixo de seu fundo opaco.
-          <div
-            key={index}
-            className={cn(
-              "min-h-6 whitespace-pre",
-              index === 0 &&
-                language &&
-                "max-w-[calc(100%-5.5rem)] overflow-hidden text-ellipsis",
-            )}
-          >
+          <div key={index} className="min-h-6 whitespace-pre">
             {line.map((token, tokenIndex) =>
               token.color ? (
                 <span key={tokenIndex} style={{ color: token.color }}>

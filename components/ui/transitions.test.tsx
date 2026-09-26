@@ -130,7 +130,7 @@ describe("UI transition hooks", () => {
       document.body
         .querySelector('[data-slot="dropdown-menu-content"]')
         ?.getAttribute("data-origin"),
-    ).toBe("top-right");
+    ).toBeNull();
     expect(
       document.body
         .querySelector('[data-slot="select-content"]')
@@ -140,7 +140,7 @@ describe("UI transition hooks", () => {
       document.body
         .querySelector('[data-slot="select-content"]')
         ?.getAttribute("data-origin"),
-    ).toBe("bottom-center");
+    ).toBeNull();
     expect(
       document.body
         .querySelector('[data-slot="tooltip-content"]')

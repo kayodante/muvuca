@@ -93,6 +93,18 @@ export function LibrarySearch() {
     return () => window.clearTimeout(timeout);
   }, [params, pathname, query, router, urlQuery]);
 
+  function finishClear() {
+    clearAnimationRef.current = null;
+    setIsClearing(false);
+    if (mirrorRef.current) mirrorRef.current.style.cssText = "";
+    if (placeholderRef.current) placeholderRef.current.style.cssText = "";
+    if (mirrorRef.current) mirrorRef.current.textContent = "";
+    if (glowRef.current) {
+      glowRef.current.style.opacity = "0";
+      glowRef.current.style.background = "";
+    }
+  }
+
   function handleClear() {
     const input = inputRef.current;
     const wrapper = wrapperRef.current;
@@ -174,13 +186,7 @@ export function LibrarySearch() {
     });
     clearAnimationRef.current = animation;
     void animation.finished.then(() => {
-      clearAnimationRef.current = null;
-      setIsClearing(false);
-      activeMirror.style.cssText = "";
-      activePlaceholder.style.cssText = "";
-      activeMirror.textContent = "";
-      activeGlow.style.opacity = "0";
-      activeGlow.style.background = "";
+      finishClear();
       if (keepFocus) {
         requestAnimationFrame(() => activeInput.focus({ preventScroll: true }));
       }
@@ -203,7 +209,16 @@ export function LibrarySearch() {
         dir="auto"
         maxLength={240}
         value={query}
-        onChange={(event) => setQuery(event.target.value)}
+        onChange={(event) => {
+          const value = event.target.value;
+          const animation = clearAnimationRef.current;
+          if (animation) {
+            animation.cancel();
+            finishClear();
+          }
+          if (value) skipDebouncedClearRef.current = false;
+          setQuery(value);
+        }}
         placeholder={t.shell.search.placeholder}
         aria-label={t.shell.search.placeholder}
         className="border-0 bg-background pr-14 pl-9 shadow-light dark:bg-background [&::-webkit-search-cancel-button]:hidden"

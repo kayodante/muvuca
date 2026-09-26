@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CheckIcon, ChevronDownIcon, RefreshCwIcon } from "lucide-react";
 import type { ItemType } from "@/lib/validation/item";
 import { SEARCH_SORTS, type SearchSort } from "@/lib/validation/search";
+import { cssDurationToMs } from "@/lib/motion/duration";
 import { useDictionary } from "@/lib/i18n/client";
 import type { Dictionary } from "@/lib/i18n/dictionaries/pt-BR";
 import { cn } from "@/lib/utils";
@@ -15,54 +16,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MatrixLoader } from "@/components/ui/matrix-loader";
-import { ShimmerText } from "@/components/ui/shimmer-text";
-
-/** How long the "Atualizado" confirmation holds before reverting to default
- * (Figma node 142:496). Only flashes after a click this hook was told about
- * via `markRequested` -- `isRefreshing` also goes true->false for the
- * automatic per-page drain (usePreviewDrain.ts) on mount/filter change,
- * which should keep the button silent, not claim credit for work the user
- * didn't ask this button to do. */
-const REFRESH_DONE_MS = 1500;
-
-function useRefreshDoneFlash(isRefreshing: boolean) {
-  const [done, setDone] = useState(false);
-  const wasRefreshing = useRef(isRefreshing);
-  const requested = useRef(false);
-
-  useEffect(() => {
-    if (wasRefreshing.current && !isRefreshing && requested.current) {
-      requested.current = false;
-      setDone(true);
-      const timer = window.setTimeout(() => setDone(false), REFRESH_DONE_MS);
-      wasRefreshing.current = isRefreshing;
-      return () => window.clearTimeout(timer);
-    }
-    wasRefreshing.current = isRefreshing;
-  }, [isRefreshing]);
-
-  return { done, markRequested: () => (requested.current = true) };
-}
 
 function MatrixIcon() {
   return <MatrixLoader variant="orbit" rounded aria-hidden="true" />;
 }
 
-function RefreshStateIcon({
-  state,
-}: {
-  state: "idle" | "refreshing" | "done";
-}) {
+function RefreshStateIcon({ state }: { state: "idle" | "refreshing" }) {
   const states = [
     {
       value: "idle",
       content: <RefreshCwIcon aria-hidden="true" data-icon="inline-start" />,
     },
     { value: "refreshing", content: <MatrixIcon /> },
-    {
-      value: "done",
-      content: <CheckIcon aria-hidden="true" data-icon="inline-start" />,
-    },
   ] as const;
   return (
     <span className="relative inline-block size-4">
@@ -98,20 +63,18 @@ function TextSwap({ text }: { text: string }) {
       return;
     }
     element.classList.add("is-exit");
-    const value = Number.parseFloat(
+    const duration = cssDurationToMs(
       getComputedStyle(document.documentElement).getPropertyValue(
         "--text-swap-dur",
       ),
+      120,
     );
-    timerRef.current = window.setTimeout(
-      () => {
-        element.classList.remove("is-exit");
-        element.classList.add("is-enter-start");
-        enteringRef.current = true;
-        setDisplayText(text);
-      },
-      Number.isFinite(value) ? value : 150,
-    );
+    timerRef.current = window.setTimeout(() => {
+      element.classList.remove("is-exit");
+      element.classList.add("is-enter-start");
+      enteringRef.current = true;
+      setDisplayText(text);
+    }, duration);
     return () => {
       if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     };
@@ -149,6 +112,7 @@ interface LibraryToolbarProps {
   type: ItemType | null;
   sort: SearchSort;
   isPending: boolean;
+  isUpdatingResults: boolean;
   /** This page renders at least one link item -- the only thing whose
    * preview can be refreshed. No server-side pending count gates the
    * button: "nothing was pending" is feedback the action itself gives. */
@@ -167,19 +131,14 @@ export function LibraryToolbar({
   type,
   sort,
   isPending,
+  isUpdatingResults,
   canRefreshPreviews,
   isRefreshingPreviews,
   onRefreshPreviews,
   onFilterChange,
 }: LibraryToolbarProps) {
   const t = useDictionary();
-  const { done: isDone, markRequested } =
-    useRefreshDoneFlash(isRefreshingPreviews);
-  const refreshState = isRefreshingPreviews
-    ? "refreshing"
-    : isDone
-      ? "done"
-      : "idle";
+  const refreshState = isRefreshingPreviews ? "refreshing" : "idle";
   const tabsRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLSpanElement>(null);
 
@@ -223,15 +182,12 @@ export function LibraryToolbar({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => {
-            markRequested();
-            onRefreshPreviews();
-          }}
+          onClick={onRefreshPreviews}
           disabled={refreshState === "refreshing"}
           aria-busy={refreshState === "refreshing" || undefined}
           className={cn(
             "min-w-[13rem]",
-            refreshState !== "idle" &&
+            refreshState === "refreshing" &&
               "bg-card! text-brand-accent disabled:opacity-100!",
           )}
         >
@@ -240,9 +196,7 @@ export function LibraryToolbar({
             text={
               refreshState === "refreshing"
                 ? t.items.toolbar.refreshing
-                : refreshState === "done"
-                  ? t.items.toolbar.refreshed
-                  : t.items.toolbar.refreshPreviews
+                : t.items.toolbar.refreshPreviews
             }
           />
         </Button>
@@ -301,20 +255,13 @@ export function LibraryToolbar({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {isPending && (
-        <span
-          className="text-body-sm flex items-center gap-1.5 text-muted-foreground"
-          aria-live="polite"
-        >
-          <MatrixLoader
-            variant="scan"
-            rounded
-            className="size-3.5"
-            aria-hidden="true"
-          />
-          <ShimmerText text={t.items.toolbar.loadingItem} />
-        </span>
-      )}
+      <span role="status" className="sr-only">
+        {isPending
+          ? t.items.toolbar.loadingItem
+          : isUpdatingResults
+            ? t.items.toolbar.updatingResults
+            : ""}
+      </span>
     </section>
   );
 }

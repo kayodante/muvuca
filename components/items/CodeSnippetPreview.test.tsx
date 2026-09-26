@@ -96,15 +96,14 @@ describe("CodeSnippetPreview", () => {
     expect(el.querySelector(FADE_SELECTOR)).toBeNull();
   });
 
-  it("reserva espaço na primeira linha para evitar sobreposição da badge de linguagem", async () => {
+  it("usa a largura inteira da primeira linha e deixa a linguagem para o detalhe", async () => {
     const el = await renderPreview(
       "import { veryLongImport } from 'module';\nconst x = 1;",
       "typescript",
     );
 
     const codeLines = el.querySelectorAll(".whitespace-pre");
-    expect(codeLines[0]?.className).toContain("overflow-hidden");
-    expect(codeLines[0]?.className).toContain("text-ellipsis");
-    expect(codeLines[1]?.className).not.toContain("text-ellipsis");
+    expect(codeLines[0]?.className).not.toContain("max-w-");
+    expect(el.textContent).not.toContain("TypeScript");
   });
 });

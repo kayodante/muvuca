@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { TagChip } from "@/components/tags/TagChip";
 import { Button } from "@/components/ui/button";
 import { MatrixLoader } from "@/components/ui/matrix-loader";
+import { announce } from "@/components/states/Announcer";
 import {
   Tooltip,
   TooltipContent,
@@ -36,11 +37,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toastError, toastSuccess } from "@/components/states/Toast";
+import { toastError } from "@/components/states/Toast";
 import { LinkPreviewMedia, previewImageSrc } from "./LinkPreviewMedia";
 import { CodeSnippetPreview } from "./CodeSnippetPreview";
 import { PromptMarkdownPreview } from "./PromptMarkdownPreview";
 import { SiteIdentity } from "./SiteIdentity";
+import { useTransientFlag } from "./useTransientFlag";
 
 /**
  * Type badge (Figma "Meta"): lowercase Geist Pixel label in the type's own
@@ -91,7 +93,7 @@ function typeMetaFor(t: Dictionary) {
  * a lista inteira.
  */
 const ACTION_CLASS =
-  "opacity-100 transition-[opacity,background-color,color,transform] [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100";
+  "opacity-100 transition-[opacity,background-color,color,scale] [@media(hover:hover)_and_(pointer:fine)]:opacity-0 [@media(hover:hover)_and_(pointer:fine)]:group-focus-within:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100";
 
 /**
  * Glass pill behind the header over a link thumbnail (see its use). Hairline
@@ -102,14 +104,6 @@ const ACTION_CLASS =
 const MEDIA_PILL =
   "flex h-8 items-center rounded-full bg-card/70 inset-ring-[0.5px] inset-ring-border backdrop-blur-md backdrop-saturate-150";
 
-/**
- * Crossfade entre o ícone de "copiar" e o Check de confirmação: os dois
- * ficam empilhados na mesma célula (não teleporta, e o botão não muda de
- * largura) e só opacidade/escala trocam. Nunca anima a partir de scale(0)
- * -- nada no mundo real aparece do nada, 0.8 é o piso. O ícone que está
- * saindo leva pointer-events-none: o Button (não o svg) continua sendo o
- * único alvo de clique, e o aria-label dele já dá o nome acessível.
- */
 /**
  * Figma hover (item-link/-code/-prompt, State=Hover): the tag chips (Tag,
  * State=Hover) gain `light-2` as a second fill; the card itself gets the
@@ -130,6 +124,15 @@ const HOVER_LIGHT =
  */
 const PREVIEW_HOVER = "group-hover:bg-secondary";
 
+/**
+ * Crossfade entre o ícone de "copiar" e o Check de confirmação: os dois
+ * ficam empilhados na mesma célula (não teleporta, e o botão não muda de
+ * largura) e só opacidade/blur/escala trocam. Nunca anima a partir de
+ * scale(0) -- nada no mundo real aparece do nada, 0.8 é o piso
+ * (`--icon-swap-start-scale`). O ícone que está saindo leva
+ * pointer-events-none: o Button (não o svg) continua sendo o único alvo de
+ * clique, e o aria-label dele já dá o nome acessível.
+ */
 function CopyStateIcon({
   copied,
   Icon,
@@ -188,9 +191,9 @@ export function ItemCard({
   onRefreshPreview: () => void;
 }) {
   const t = useDictionary();
-  const [copiedContent, setCopiedContent] = useState(false);
+  const [copiedContent, triggerCopiedContent] = useTransientFlag(1500);
   const [copyingContent, setCopyingContent] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedLink, triggerCopiedLink] = useTransientFlag(1500);
   const associatedTags = item.tagIds.flatMap((tagId) => {
     const tag = tags.find((candidate) => candidate.id === tagId);
     return tag ? [tag] : [];
@@ -226,9 +229,8 @@ export function ItemCard({
     const success = await copyToClipboard(onCopyContent());
     setCopyingContent(false);
     if (success) {
-      setCopiedContent(true);
-      setTimeout(() => setCopiedContent(false), 1500);
-      toastSuccess(
+      triggerCopiedContent();
+      announce(
         item.type === "prompt"
           ? t.items.card.promptCopied
           : t.items.card.codeCopied,
@@ -246,9 +248,8 @@ export function ItemCard({
     if (!safeHref) return;
     const success = await copyToClipboard(safeHref);
     if (success) {
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 1500);
-      toastSuccess(t.items.card.linkCopied);
+      triggerCopiedLink();
+      announce(t.items.card.linkCopied);
     } else {
       toastError(t.items.card.linkCopyFailed);
     }
@@ -270,7 +271,7 @@ export function ItemCard({
         <MatrixLoader
           variant="pulse"
           rounded
-          className="size-3"
+          className="size-3 transition-opacity [transition-delay:150ms] duration-(--motion-base) ease-out-muvuca motion-reduce:duration-0 starting:opacity-0"
           aria-label={t.items.card.loadingItem}
         />
       )}
@@ -288,7 +289,7 @@ export function ItemCard({
               // linha do badge não muda. O anel de foco fica no botão em si
               // (10x10), não no pseudo-elemento -- o anel acompanha o ícone,
               // a área de toque invisível é só clicável.
-              className="pointer-events-auto relative rounded-full text-muted-foreground transition-[color,transform] duration-(--motion-fast) ease-out-muvuca outline-none after:absolute after:-inset-[7px] after:content-[''] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-90 motion-reduce:transition-none motion-reduce:active:scale-100"
+              className="pointer-events-auto relative rounded-full text-muted-foreground transition-[color,scale] duration-(--motion-fast) ease-out-muvuca outline-none after:absolute after:-inset-[7px] after:content-[''] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100"
             />
           }
         >
@@ -585,13 +586,15 @@ export function ItemCard({
     // look 1px wider than the card. Over the text area it changes nothing.
     // Hover (Figma 251:1906) swaps that edge for effect "Light-2" and lays
     // `light-4` over the surface; no lift -- the thumbnail zoom and the
-    // actions fading in carry the motion. 300ms ease-out in Figma = --motion-slow.
+    // actions fading in carry the motion. Entry uses --motion-slow; exit
+    // uses --motion-base so adjacent cards settle quickly while scanning.
     <article
       aria-busy={isPending || undefined}
       className={cn(
-        "group relative flex min-h-56 flex-col overflow-hidden rounded-2xl bg-card shadow-[0_0_0_1px_var(--color-shadow-1)] inset-shadow-[0_0_0_999px] inset-shadow-transparent transition-[box-shadow,opacity] duration-(--motion-slow) ease-out-muvuca after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-[inherit] after:shadow-[var(--shadow-light),inset_0_0_0_1px_var(--card)] after:transition-shadow after:duration-(--motion-slow) after:ease-out-muvuca after:content-[''] hover:inset-shadow-light-4 hover:after:shadow-[var(--shadow-light-2),inset_0_0_0_1px_var(--card)] motion-reduce:transition-none motion-reduce:after:transition-none",
+        "group relative flex min-h-56 flex-col overflow-hidden rounded-2xl bg-card shadow-[0_0_0_1px_var(--color-shadow-1)] inset-shadow-[0_0_0_999px] inset-shadow-transparent transition-[box-shadow,opacity] duration-(--motion-base) ease-out-muvuca after:pointer-events-none after:absolute after:inset-0 after:z-20 after:rounded-[inherit] after:shadow-[var(--shadow-light),inset_0_0_0_1px_var(--card)] after:transition-shadow after:duration-(--motion-base) after:ease-out-muvuca after:content-[''] hover:inset-shadow-light-4 hover:duration-(--motion-slow) hover:after:shadow-[var(--shadow-light-2),inset_0_0_0_1px_var(--card)] hover:after:duration-(--motion-slow) motion-reduce:transition-none motion-reduce:after:transition-none",
         morphing && MORPH_CLASS,
-        isPending && "pointer-events-none opacity-75",
+        // Brief reads should reach the morph before any pending visual appears.
+        isPending && "pointer-events-none opacity-75 [transition-delay:150ms]",
       )}
     >
       {clickableMedia && domain && safeHref ? (

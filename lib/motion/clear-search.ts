@@ -41,6 +41,15 @@ export function animateSearchClear({
     const value = Number.parseFloat(root.getPropertyValue(name));
     return Number.isFinite(value) ? value : fallback;
   };
+  const duration = (name: string, fallback: number) => {
+    const match = /^(-?(?:\d+|\d*\.\d+))(ms|s)?$/.exec(
+      root.getPropertyValue(name).trim(),
+    );
+    if (!match) return fallback;
+    const value = Number(match[1]);
+    if (!Number.isFinite(value)) return fallback;
+    return match[2] === "s" ? value * 1000 : value;
+  };
   // `animate()` throws on an easing it cannot parse, so an unset or malformed
   // token degrades to linear instead of taking the clear button down with it.
   const easing = (name: string) => {
@@ -48,11 +57,11 @@ export function animateSearchClear({
     return CSS.supports("transition-timing-function", value) ? value : "linear";
   };
 
-  const total = number("--clear-dur", 1000);
+  const total = duration("--clear-dur", 280);
   const outFly = number("--clear-out-fly", 12);
   const inFly = number("--clear-in-fly", 12);
   const blur = number("--clear-blur", 2);
-  const glowDelay = number("--glow-delay", 50);
+  const glowDelay = duration("--glow-delay", 50);
   const glowPeak = number("--glow-peak-at", 0.15);
   const glowOpacity = number("--glow-opacity", 0.42);
 
@@ -66,7 +75,7 @@ export function animateSearchClear({
       },
     ],
     {
-      duration: number("--clear-out-dur", 400),
+      duration: duration("--clear-out-dur", 180),
       easing: easing("--clear-out-ease"),
       fill: "forwards",
     },
@@ -82,7 +91,7 @@ export function animateSearchClear({
       { transform: "translateY(0px)", opacity: 1, filter: "blur(0px)" },
     ],
     {
-      duration: number("--clear-in-dur", 400),
+      duration: duration("--clear-in-dur", 180),
       easing: easing("--clear-in-ease"),
       fill: "forwards",
     },

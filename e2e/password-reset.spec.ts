@@ -19,7 +19,9 @@ test("full password-reset flow: request, mismatch, reset, old password fails, ne
   await page
     .getByRole("button", { name: "Enviar link de redefinição" })
     .click();
-  await expect(page.getByRole("status")).toContainText(SUCCESS_MESSAGE);
+  await expect(
+    page.getByRole("status").filter({ hasText: SUCCESS_MESSAGE }),
+  ).toBeVisible();
 
   const link = await fetchEmailLink(email);
   await page.goto(link);
@@ -63,7 +65,9 @@ test("unknown email on /forgot-password shows the identical success state", asyn
   await page
     .getByRole("button", { name: "Enviar link de redefinição" })
     .click();
-  await expect(page.getByRole("status")).toContainText(SUCCESS_MESSAGE);
+  await expect(
+    page.getByRole("status").filter({ hasText: SUCCESS_MESSAGE }),
+  ).toBeVisible();
 });
 
 test("a normal password-login session visiting /reset-password never sees the reset form", async ({

@@ -52,6 +52,8 @@ afterEach(async () => {
   root = null;
   container = null;
   vi.clearAllMocks();
+  vi.useRealTimers();
+  document.documentElement.style.removeProperty("--dropdown-close-dur");
 });
 
 async function renderField(
@@ -127,7 +129,10 @@ describe("TagSelectField", () => {
 
     expect(trigger.getAttribute("aria-expanded")).toBe("true");
     const dropdown = document.querySelector(".t-dropdown");
-    expect(dropdown?.getAttribute("data-origin")).toBe("top-left");
+    expect(dropdown?.getAttribute("data-origin")).toBeNull();
+    expect(dropdown?.classList.contains("[--transform-origin:top_left]")).toBe(
+      true,
+    );
     expect(dropdown?.classList.contains("is-open")).toBe(true);
     const listbox = document.querySelector('[role="listbox"]');
     expect(listbox).not.toBeNull();
@@ -205,6 +210,48 @@ describe("TagSelectField", () => {
     expect(
       document.querySelector(".t-dropdown")?.classList.contains("is-closing"),
     ).toBe(true);
+  });
+
+  it("remove o estado de fechamento após 120ms sem token CSS", async () => {
+    vi.useFakeTimers();
+    await renderField();
+
+    const trigger = document.querySelector(
+      'button[aria-haspopup="listbox"]',
+    ) as HTMLButtonElement;
+    await act(async () => {
+      trigger.click();
+    });
+    await act(async () => {
+      trigger.click();
+    });
+
+    await act(async () => vi.advanceTimersByTime(120));
+
+    expect(document.querySelector(".t-dropdown")).toBeNull();
+  });
+
+  it("interpreta o token de fechamento em segundos", async () => {
+    vi.useFakeTimers();
+    document.documentElement.style.setProperty("--dropdown-close-dur", "0.12s");
+    await renderField();
+
+    const trigger = document.querySelector(
+      'button[aria-haspopup="listbox"]',
+    ) as HTMLButtonElement;
+    await act(async () => {
+      trigger.click();
+    });
+    await act(async () => {
+      trigger.click();
+    });
+    await act(async () => vi.advanceTimersByTime(119));
+
+    expect(document.querySelector(".t-dropdown")?.classList).toContain(
+      "is-closing",
+    );
+    await act(async () => vi.advanceTimersByTime(1));
+    expect(document.querySelector(".t-dropdown")).toBeNull();
   });
 
   it("renderiza estado desabilitado quando tags está vazio", async () => {

@@ -24,7 +24,19 @@ vi.mock("@/lib/security/logging", () => ({
 
 vi.mock("@/lib/i18n/server", () => ({ getDictionary: getDictionaryMock }));
 
-import { exportUserLibrary } from "./export";
+import { exportTagLibrary, exportUserLibrary } from "./export";
+
+function mockRows(
+  data: unknown[] | null,
+  error: { code: string } | null = null,
+) {
+  const query = {
+    order: vi.fn(),
+    range: vi.fn().mockResolvedValue({ data, error }),
+  };
+  query.order.mockReturnValue(query);
+  return query;
+}
 
 describe("exportUserLibrary", () => {
   beforeEach(() => {
@@ -101,11 +113,7 @@ describe("exportUserLibrary", () => {
           return {
             select: vi.fn((columns: string) => {
               selectCalls.tags = columns;
-              return {
-                order: vi
-                  .fn()
-                  .mockResolvedValue({ data: mockTags, error: null }),
-              };
+              return mockRows(mockTags);
             }),
           };
         }
@@ -113,19 +121,13 @@ describe("exportUserLibrary", () => {
           return {
             select: vi.fn((columns: string) => {
               selectCalls.library_items = columns;
-              return {
-                order: vi
-                  .fn()
-                  .mockResolvedValue({ data: mockItems, error: null }),
-              };
+              return mockRows(mockItems);
             }),
           };
         }
         if (table === "item_tags") {
           return {
-            select: vi
-              .fn()
-              .mockResolvedValue({ data: mockItemTags, error: null }),
+            select: vi.fn().mockReturnValue(mockRows(mockItemTags)),
           };
         }
         return { select: vi.fn() };
@@ -217,23 +219,17 @@ describe("exportUserLibrary", () => {
       from: vi.fn((table: string) => {
         if (table === "tags") {
           return {
-            select: vi.fn().mockReturnValue({
-              order: vi.fn().mockResolvedValue({ data: [], error: null }),
-            }),
+            select: vi.fn().mockReturnValue(mockRows([])),
           };
         }
         if (table === "library_items") {
           return {
-            select: vi.fn().mockReturnValue({
-              order: vi
-                .fn()
-                .mockResolvedValue({ data: mockItems, error: null }),
-            }),
+            select: vi.fn().mockReturnValue(mockRows(mockItems)),
           };
         }
         if (table === "item_tags") {
           return {
-            select: vi.fn().mockResolvedValue({ data: [], error: null }),
+            select: vi.fn().mockReturnValue(mockRows([])),
           };
         }
         return { select: vi.fn() };
@@ -255,17 +251,11 @@ describe("exportUserLibrary", () => {
       from: vi.fn((table: string) => {
         if (table === "tags") {
           return {
-            select: vi.fn().mockReturnValue({
-              order: vi
-                .fn()
-                .mockResolvedValue({ data: null, error: { code: "500" } }),
-            }),
+            select: vi.fn().mockReturnValue(mockRows(null, { code: "500" })),
           };
         }
         return {
-          select: vi.fn().mockReturnValue({
-            order: vi.fn().mockResolvedValue({ data: [], error: null }),
-          }),
+          select: vi.fn().mockReturnValue(mockRows([])),
         };
       }),
     };
@@ -279,5 +269,70 @@ describe("exportUserLibrary", () => {
       expect(result.code).toBe("UNKNOWN");
       expect(result.message).toBe(ptBR.errors.exportFailed);
     }
+  });
+
+  it("reads past Supabase's 1000-row response cap", async () => {
+    const tags = Array.from({ length: 1001 }, (_, index) => ({
+      id: `tag-${index}`,
+      name: `Tag ${index}`,
+      slug: `tag-${index}`,
+      color_token: "lime",
+      parent_id: null,
+      description: null,
+      created_at: "2026-08-10T00:00:00Z",
+    }));
+    const rows: Record<string, unknown[]> = {
+      tags,
+      library_items: [],
+      item_tags: [],
+    };
+    createClientMock.mockResolvedValue({
+      from: vi.fn((table: string) => ({
+        select: vi.fn(() => {
+          const query = mockRows([]);
+          query.range.mockImplementation(async (from: number, to: number) => ({
+            data: rows[table]?.slice(from, to + 1) ?? [],
+            error: null,
+          }));
+          return query;
+        }),
+      })),
+    });
+
+    const result = await exportUserLibrary();
+    expect(result.ok && result.data.tags).toHaveLength(1001);
+  });
+});
+
+describe("exportTagLibrary", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    requireUserMock.mockResolvedValue({ id: "user-123" });
+    getDictionaryMock.mockResolvedValue(ptBR);
+  });
+
+  it("rejects an invalid id before querying", async () => {
+    expect(await exportTagLibrary("invalid")).toEqual({
+      ok: false,
+      code: "VALIDATION_FAILED",
+      message: ptBR.errors.invalidTag,
+    });
+    expect(createClientMock).not.toHaveBeenCalled();
+  });
+
+  it("does not export a tag hidden by RLS", async () => {
+    createClientMock.mockResolvedValue({
+      from: vi.fn(() => ({
+        select: vi.fn(() => mockRows([])),
+      })),
+    });
+
+    expect(
+      await exportTagLibrary("11111111-1111-4111-8111-111111111111"),
+    ).toEqual({
+      ok: false,
+      code: "NOT_FOUND",
+      message: ptBR.errors.tagNotFound,
+    });
   });
 });

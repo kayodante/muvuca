@@ -36,6 +36,7 @@ import { swatchClassFor } from "@/lib/tags/colors";
 import { copyToClipboard } from "@/lib/clipboard";
 import { getItemDetails } from "@/lib/actions/items";
 import { normalizeHttpUrl } from "@/lib/validation/item";
+import { cssDurationToMs } from "@/lib/motion/duration";
 import {
   getSpotlightInitialData,
   searchSpotlightItems,
@@ -138,12 +139,12 @@ export function MuvucaSpotlight({
       typeof window !== "undefined" && typeof window.matchMedia === "function"
         ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
         : false;
-    const closeDuration = Number.parseFloat(
+    const closeDelay = cssDurationToMs(
       getComputedStyle(document.documentElement).getPropertyValue(
         "--modal-close-dur",
       ),
+      120,
     );
-    const closeDelay = Number.isFinite(closeDuration) ? closeDuration : 150;
     const timer = window.setTimeout(
       () => setMounted(false),
       reducedMotion ? 0 : closeDelay,

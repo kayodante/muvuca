@@ -215,16 +215,19 @@ test("cria uma tag raiz e uma tag filha", async ({ page }) => {
   await page.goto("/tags");
   const tree = page.getByRole("region", { name: "Árvore de tags" });
 
-  // A filha existe e o pai passou a ter chevron -- o chevron só é
-  // renderizado em nós com filhos, então ele é a prova da hierarquia.
-  await expect(
-    tree.getByRole("button", { name: "Trabalho", exact: true }),
-  ).toBeVisible();
+  // O pai anuncia a filha e, selecionado, abre a coluna dela: a prova da
+  // hierarquia sem depender de a filha estar à vista de saída.
+  const parent = tree.getByRole("button", { name: "Trabalho", exact: true });
+  await expect(parent).toHaveAccessibleDescription("1 tag filha");
   await expect(
     tree.getByRole("button", { name: "Referencias", exact: true }),
-  ).toBeVisible();
+  ).toHaveCount(0);
+  await parent.click();
   await expect(
-    tree.getByRole("button", { name: "Recolher Trabalho" }),
+    tree.getByRole("group", { name: "Trabalho" }).getByRole("button", {
+      name: "Referencias",
+      exact: true,
+    }),
   ).toBeVisible();
 
   // O shell também reflete a hierarquia nova (revalidatePath de layout).
@@ -284,12 +287,13 @@ test("excluir uma tag promove as filhas para o nível do pai", async ({
   await expect(
     tree.getByRole("button", { name: "Pai", exact: true }),
   ).toHaveCount(0);
-  // A filha sobreviveu e virou raiz: continua na árvore e ninguém tem
-  // chevron, porque não há mais nenhum nó com filhos.
-  await expect(
-    tree.getByRole("button", { name: "Filha", exact: true }),
-  ).toBeVisible();
-  await expect(tree.getByRole("button", { name: /^Recolher / })).toHaveCount(0);
+  // A filha sobreviveu e virou raiz: está na coluna de raízes e não
+  // anuncia filhas, porque não há mais nenhum nó com filhos.
+  const orphan = tree
+    .getByRole("group", { name: "Raízes" })
+    .getByRole("button", { name: "Filha", exact: true });
+  await expect(orphan).toBeVisible();
+  await expect(orphan).toHaveAccessibleDescription("");
 });
 
 test("nome duplicado no mesmo nível mostra erro e mantém o formulário aberto", async ({
@@ -331,7 +335,9 @@ test("deep link ?tag= abre o inspetor e /t leva de volta para editar", async ({
   await createRootTag(page, "Leituras");
 
   await page.goto("/t/leituras");
-  await page.getByRole("link", { name: "Editar tag" }).click();
+  // Desde AAA-236 "Editar tag" vive no menu de ações do cabeçalho.
+  await page.getByRole("button", { name: "Mais ações para Leituras" }).click();
+  await page.getByRole("menuitem", { name: "Editar tag" }).click();
   await expect(page).toHaveURL(/\/tags\?tag=leituras$/);
   await expect(page.getByRole("region", { name: "Leituras" })).toBeVisible();
 
@@ -502,6 +508,9 @@ test("o toast de criação não cobre o submit do inspetor sticky", async ({
   await inspector.getByLabel("Nome").fill("Segunda");
 
   const submit = inspector.getByRole("button", { name: "Criar tag" });
+  // Neste viewport o formulário passa da altura do inspetor, que rola por
+  // dentro: uma pessoa rolaria o painel até o botão antes de clicar.
+  await submit.scrollIntoViewIfNeeded();
   const box = await submit.boundingBox();
   if (!box) {
     throw new Error("submit do inspetor sem bounding box");
@@ -524,6 +533,8 @@ test("move várias tags de uma vez levando as filhas junto", async ({
   await page.getByRole("button", { name: "Selecionar" }).click();
   const tree = page.getByRole("region", { name: "Árvore de tags" });
   await tree.getByRole("checkbox", { name: "Origem" }).check();
+  // A filha mora na coluna de Origem: abrir o ramo não desmarca nada.
+  await tree.getByRole("button", { name: "Abrir Origem" }).click();
   await tree.getByRole("checkbox", { name: "Neta" }).check();
   await tree.getByRole("checkbox", { name: "Solta" }).check();
   await expect(page.getByText("3 tags selecionadas")).toBeVisible();
@@ -561,7 +572,9 @@ test("exclui várias tags e a neta sobe para o ancestral que sobrou", async ({
   await page.goto("/tags");
   await page.getByRole("button", { name: "Selecionar" }).click();
   const tree = page.getByRole("region", { name: "Árvore de tags" });
+  await tree.getByRole("button", { name: "Abrir Raiz" }).click();
   await tree.getByRole("checkbox", { name: "Meio" }).check();
+  await tree.getByRole("button", { name: "Abrir Meio" }).click();
   await tree.getByRole("checkbox", { name: "Baixo" }).check();
 
   await page.getByRole("button", { name: "Excluir", exact: true }).click();

@@ -189,7 +189,7 @@ export function TagForm({
               <span
                 aria-hidden="true"
                 className={cn(
-                  "size-7 rounded-full ring-offset-background transition-[box-shadow,transform] duration-(--motion-fast) ease-out-muvuca group-hover:scale-110 peer-checked:scale-105 active:scale-90 motion-reduce:transition-none motion-reduce:group-hover:scale-100 motion-reduce:peer-checked:scale-100 motion-reduce:active:scale-100",
+                  "size-7 rounded-full ring-offset-background transition-[box-shadow,scale] duration-(--motion-fast) ease-out-muvuca group-hover:scale-110 peer-checked:scale-105 active:scale-[0.97] motion-reduce:transition-none motion-reduce:group-hover:scale-100 motion-reduce:peer-checked:scale-100 motion-reduce:active:scale-100",
                   "peer-checked:ring-2 peer-checked:ring-foreground peer-checked:ring-offset-2",
                   "peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2",
                   TAG_SWATCH_CLASS[token],
@@ -198,7 +198,7 @@ export function TagForm({
               <CheckIcon
                 aria-hidden="true"
                 strokeWidth={3}
-                className="pointer-events-none absolute size-4 scale-75 text-white opacity-0 drop-shadow-[0_1px_1px_rgb(0_0_0/0.55)] transition-[opacity,transform] duration-(--motion-fast) ease-out-muvuca peer-checked:scale-100 peer-checked:opacity-100 motion-reduce:transition-none"
+                className="pointer-events-none absolute size-4 scale-[0.8] text-white opacity-0 drop-shadow-[0_1px_1px_rgb(0_0_0/0.55)] transition-[opacity,scale] duration-(--motion-fast) ease-out-muvuca peer-checked:scale-100 peer-checked:opacity-100 motion-reduce:transition-none"
               />
               <span className="sr-only">{t.tags.colors[token]}</span>
             </label>

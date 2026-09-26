@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { cn } from "@/lib/utils";
-import { swatchClassFor } from "@/lib/tags/colors";
+import { TagDot } from "./TagDot";
 
 /**
  * Low-intensity chip, color shown only as a small swatch dot (never a
@@ -34,12 +34,9 @@ export function TagChip({
 }) {
   const content = (
     <>
-      <span
-        aria-hidden="true"
-        className={cn(
-          "size-1.5 shrink-0 rounded-full transition-transform duration-(--motion-fast) ease-out-muvuca group-hover/chip:scale-125 motion-reduce:transition-none motion-reduce:group-hover/chip:scale-100",
-          swatchClassFor(colorToken),
-        )}
+      <TagDot
+        colorToken={colorToken}
+        className="size-1.5 transition-[scale] duration-(--motion-fast) ease-out-muvuca group-hover/chip:scale-125 motion-reduce:transition-none motion-reduce:group-hover/chip:scale-100"
       />
       <span className="truncate">{name}</span>
     </>
@@ -49,7 +46,7 @@ export function TagChip({
     "group/chip inline-flex h-7 max-w-full items-center gap-2 rounded-full bg-secondary inset-ring-[0.5px] inset-ring-border pr-2.5 pl-2 text-xs leading-4 font-medium text-muted-foreground inset-shadow-[0_0_0_999px] inset-shadow-transparent",
     selected && "ring-primary text-foreground ring-2",
     href &&
-      "hover:inset-shadow-light-2 active:scale-[0.96] focus-visible:ring-ring ease-out-muvuca transition-[box-shadow,transform] duration-(--motion-fast) focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none motion-reduce:active:scale-100 motion-reduce:transition-none",
+      "hover:inset-shadow-light-2 active:scale-[0.97] focus-visible:ring-ring ease-out-muvuca transition-[box-shadow,scale] duration-(--motion-fast) focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none motion-reduce:active:scale-100 motion-reduce:transition-none",
     className,
   );
 

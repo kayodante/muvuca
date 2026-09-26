@@ -27,6 +27,7 @@ async function renderToolbar(
     type: null,
     sort: "newest" as const,
     isPending: false,
+    isUpdatingResults: false,
     canRefreshPreviews: false,
     isRefreshingPreviews: false,
     onRefreshPreviews: vi.fn(),
@@ -103,9 +104,49 @@ describe("LibraryToolbar", () => {
     expect(sortTrigger?.textContent).toContain("Título A–Z");
   });
 
-  it("exibe indicador de carregamento quando isPending for true", async () => {
-    const dom = await renderToolbar({ isPending: true });
-    expect(dom.textContent).toContain("Carregando item…");
+  it("mantém o status montado e anuncia só no leitor de tela", async () => {
+    const dom = await renderToolbar();
+    const status = dom.querySelector('[role="status"]');
+    const visibleText = () =>
+      Array.from(dom.querySelectorAll("section > :not(.sr-only)"))
+        .map((element) => element.textContent)
+        .join("");
+    expect(status?.classList.contains("sr-only")).toBe(true);
+    expect(status?.textContent).toBe("");
+
+    await act(async () => {
+      root?.render(
+        <LibraryToolbar
+          type={null}
+          sort="newest"
+          isPending
+          isUpdatingResults={false}
+          canRefreshPreviews={false}
+          isRefreshingPreviews={false}
+          onRefreshPreviews={vi.fn()}
+          onFilterChange={vi.fn()}
+        />,
+      );
+    });
+    expect(status?.textContent).toBe("Carregando item…");
+    expect(visibleText()).not.toContain("Carregando item…");
+
+    await act(async () => {
+      root?.render(
+        <LibraryToolbar
+          type={null}
+          sort="newest"
+          isPending={false}
+          isUpdatingResults
+          canRefreshPreviews={false}
+          isRefreshingPreviews={false}
+          onRefreshPreviews={vi.fn()}
+          onFilterChange={vi.fn()}
+        />,
+      );
+    });
+    expect(status?.textContent).toBe("Atualizando resultados…");
+    expect(visibleText()).not.toContain("Atualizando resultados…");
   });
 
   it("oculta 'Atualizar pré-visualizações' quando a página não tem item de link", async () => {
@@ -154,11 +195,12 @@ describe("LibraryToolbar", () => {
 
   it("troca o texto de status somente após a fase de saída", async () => {
     vi.useFakeTimers();
-    document.documentElement.style.setProperty("--text-swap-dur", "150ms");
+    document.documentElement.style.setProperty("--text-swap-dur", "0.12s");
     const props = {
       type: null,
       sort: "newest" as const,
       isPending: false,
+      isUpdatingResults: false,
       canRefreshPreviews: true,
       onRefreshPreviews: vi.fn(),
       onFilterChange: vi.fn(),
@@ -173,7 +215,7 @@ describe("LibraryToolbar", () => {
     expect(label?.textContent).toBe("Atualizar pré-visualizações");
     expect(label?.classList.contains("is-exit")).toBe(true);
 
-    await act(async () => vi.advanceTimersByTime(149));
+    await act(async () => vi.advanceTimersByTime(119));
     expect(label?.textContent).toBe("Atualizar pré-visualizações");
 
     await act(async () => vi.advanceTimersByTime(1));
@@ -182,13 +224,35 @@ describe("LibraryToolbar", () => {
     expect(label?.classList.contains("is-enter-start")).toBe(false);
   });
 
-  it("mostra 'Atualizado' por 1500ms depois de um clique e então volta ao rótulo padrão", async () => {
+  it("usa 120ms quando o token de troca de texto não está disponível", async () => {
+    vi.useFakeTimers();
+    const props = {
+      type: null,
+      sort: "newest" as const,
+      isPending: false,
+      isUpdatingResults: false,
+      canRefreshPreviews: true,
+      onRefreshPreviews: vi.fn(),
+      onFilterChange: vi.fn(),
+    };
+    const dom = await renderToolbar({ ...props, isRefreshingPreviews: false });
+
+    await act(async () => {
+      root?.render(<LibraryToolbar {...props} isRefreshingPreviews />);
+    });
+    await act(async () => vi.advanceTimersByTime(120));
+
+    expect(dom.querySelector(".t-text-swap")?.textContent).toBe("Atualizando");
+  });
+
+  it("volta ao rótulo padrão sem confirmar sucesso só porque a drenagem terminou", async () => {
     vi.useFakeTimers();
     try {
       const props = {
         type: null,
         sort: "newest" as const,
         isPending: false,
+        isUpdatingResults: false,
         canRefreshPreviews: true,
         onRefreshPreviews: vi.fn(),
         onFilterChange: vi.fn(),
@@ -205,8 +269,7 @@ describe("LibraryToolbar", () => {
         refreshButton?.click();
       });
 
-      // Simula o pai propagando isDraining=true e depois false, como o
-      // usePreviewDrain faz ao concluir a rodada disparada pelo clique.
+      // A drenagem termina tanto após êxito quanto após erro ou fila vazia.
       await act(async () => {
         root?.render(<LibraryToolbar {...props} isRefreshingPreviews={true} />);
       });
@@ -217,38 +280,10 @@ describe("LibraryToolbar", () => {
       });
       await act(async () => vi.advanceTimersByTime(150));
 
-      expect(dom.textContent).toContain("Atualizado");
-      expect(dom.textContent).not.toContain("Atualizar pré-visualizações");
-
-      await act(async () => {
-        vi.advanceTimersByTime(1500);
-      });
-      await act(async () => vi.advanceTimersByTime(150));
-
       expect(dom.textContent).toContain("Atualizar pré-visualizações");
+      expect(dom.textContent).not.toContain("Atualizado");
     } finally {
       vi.useRealTimers();
     }
-  });
-
-  it("não mostra 'Atualizado' quando a drenagem automática termina sem clique no botão", async () => {
-    vi.useFakeTimers();
-    const props = {
-      type: null,
-      sort: "newest" as const,
-      isPending: false,
-      canRefreshPreviews: true,
-      onRefreshPreviews: vi.fn(),
-      onFilterChange: vi.fn(),
-    };
-    const dom = await renderToolbar({ ...props, isRefreshingPreviews: true });
-
-    await act(async () => {
-      root?.render(<LibraryToolbar {...props} isRefreshingPreviews={false} />);
-    });
-    await act(async () => vi.advanceTimersByTime(150));
-
-    expect(dom.textContent).not.toContain("Atualizado");
-    expect(dom.textContent).toContain("Atualizar pré-visualizações");
   });
 });

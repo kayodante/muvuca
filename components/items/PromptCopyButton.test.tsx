@@ -7,8 +7,10 @@ import { PromptCopyButton } from "@/components/items/PromptCopyButton";
 const { toast } = vi.hoisted(() => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
+const { announce } = vi.hoisted(() => ({ announce: vi.fn() }));
 
 vi.mock("sonner", () => ({ toast }));
+vi.mock("@/components/states/Announcer", () => ({ announce }));
 
 let root: Root | null = null;
 let container: HTMLDivElement | null = null;
@@ -65,7 +67,8 @@ describe("PromptCopyButton", () => {
     await act(async () => button.click());
 
     expect(writeText).toHaveBeenCalledWith("Line one\nLine two");
-    expect(toast.success).toHaveBeenCalledWith("Conteúdo copiado.");
+    expect(announce).toHaveBeenCalledWith("Conteúdo copiado.");
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
   it("supports custom label and success message", async () => {
@@ -83,9 +86,10 @@ describe("PromptCopyButton", () => {
     await act(async () => button.click());
 
     expect(writeText).toHaveBeenCalledWith("export const foo = 1;");
-    expect(toast.success).toHaveBeenCalledWith(
+    expect(announce).toHaveBeenCalledWith(
       "Código copiado para a área de transferência.",
     );
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
   it("shows a recoverable error when the Clipboard API rejects", async () => {
@@ -134,7 +138,8 @@ describe("PromptCopyButton", () => {
     await act(async () => button.click());
 
     expect(execCommand).toHaveBeenCalledWith("copy");
-    expect(toast.success).toHaveBeenCalledWith("Conteúdo copiado.");
+    expect(announce).toHaveBeenCalledWith("Conteúdo copiado.");
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
   it("exibe o estado tátil de confirmação com icon-swap e retorna ao repouso", async () => {

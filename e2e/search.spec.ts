@@ -209,6 +209,78 @@ test("filtro por tipo pelas tabs da barra de filtros", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("filtro e ordenação mostram o estado otimista enquanto o RSC espera", async ({
+  page,
+}) => {
+  const email = `e2e-search-pending-${Date.now()}@muvuca.test`;
+  await signIn(page, email);
+  await seedLibrary(page);
+  await page.goto("/library");
+
+  async function holdRsc(key: string, value: string) {
+    const requested = Promise.withResolvers<void>();
+    const release = Promise.withResolvers<void>();
+    await page.route(
+      (url) =>
+        url.pathname === "/library" &&
+        url.searchParams.has("_rsc") &&
+        url.searchParams.get(key) === value,
+      async (route) => {
+        const response = await route.fetch();
+        requested.resolve();
+        await release.promise;
+        await route.fulfill({ response });
+      },
+    );
+    return { requested: requested.promise, release: release.resolve };
+  }
+
+  const toolbar = page.getByRole("region", { name: "Filtros e ordenação" });
+  const tabs = toolbar.getByRole("group", { name: "Filtrar por tipo" });
+  const results = page.getByTestId("library-results");
+
+  const typeRsc = await holdRsc("type", "prompt");
+  const typeClick = tabs
+    .getByRole("button", { name: "Prompt", exact: true })
+    .click();
+  await typeRsc.requested;
+  await expect(tabs.getByRole("button", { name: "Prompt" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(tabs.getByRole("button", { name: "Tudo" })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+  await expect(results).toHaveAttribute("aria-busy", "true");
+  await expect(results).toHaveClass(/opacity-60/);
+  await expect
+    .poll(() =>
+      results.evaluate((element) => getComputedStyle(element).opacity),
+    )
+    .toBe("0.6");
+  typeRsc.release();
+  await typeClick;
+  await expect(results).not.toHaveAttribute("aria-busy", "true");
+  await expect(
+    page.getByRole("heading", { name: "Girafa alta" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Zebra listrada" }),
+  ).toHaveCount(0);
+
+  const sortRsc = await holdRsc("sort", "title_asc");
+  const sortTrigger = toolbar.getByRole("button", { name: "Ordenar itens" });
+  await sortTrigger.click();
+  const sortClick = page.getByRole("menuitem", { name: "Título A–Z" }).click();
+  await sortRsc.requested;
+  await expect(sortTrigger).toContainText("Título A–Z");
+  await expect(results).toHaveAttribute("aria-busy", "true");
+  sortRsc.release();
+  await sortClick;
+  await expect(results).not.toHaveAttribute("aria-busy", "true");
+});
+
 test("abrir a tag pai traz os itens das tags filhas (rollup)", async ({
   page,
 }) => {

@@ -144,7 +144,7 @@ function TagNavigationRow({
             }
             onClick={() => setExpanded((value) => !value)}
             className={cn(
-              "flex size-7 shrink-0 items-center justify-center rounded-md transition-[transform,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-90 motion-reduce:active:scale-100",
+              "flex size-7 shrink-0 items-center justify-center rounded-md transition-[scale,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.97] motion-reduce:active:scale-100",
               active
                 ? "text-surface hover:text-surface/80"
                 : "text-muted-foreground hover:text-foreground",
@@ -164,7 +164,7 @@ function TagNavigationRow({
             // No ring offset inside the tree: the subtree clips its own
             // overflow while expanding, and an offset ring on the first or
             // last row would be shaved by that clip.
-            "group/taglink text-label-md flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 transition-[transform,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.98] motion-reduce:active:scale-100",
+            "group/taglink text-body-lg flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 transition-[scale,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.97] motion-reduce:active:scale-100",
             active
               ? "font-medium text-surface"
               : "text-muted-foreground hover:text-foreground",

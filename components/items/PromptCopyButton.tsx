@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { CheckIcon, CopyIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { toastError, toastSuccess } from "@/components/states/Toast";
+import { announce } from "@/components/states/Announcer";
+import { toastError } from "@/components/states/Toast";
+import { useTransientFlag } from "./useTransientFlag";
 
 function copyWithExecCommand(content: string) {
   const textarea = document.createElement("textarea");
@@ -64,14 +66,7 @@ export function PromptCopyButton({
   className?: string;
 }) {
   const [pending, setPending] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
-  }, []);
+  const [copied, triggerCopied] = useTransientFlag(1500);
 
   async function copyContent() {
     setPending(true);
@@ -79,13 +74,9 @@ export function PromptCopyButton({
       if (navigator.clipboard) await navigator.clipboard.writeText(content);
       else if (!copyWithExecCommand(content)) throw new Error("copy failed");
 
-      setCopied(true);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      timeoutRef.current = setTimeout(() => {
-        setCopied(false);
-      }, 1800);
+      triggerCopied();
 
-      toastSuccess(successMessage);
+      announce(successMessage);
     } catch {
       toastError(errorMessage);
     } finally {
@@ -104,7 +95,6 @@ export function PromptCopyButton({
       pendingLabel={pendingLabel}
       onClick={copyContent}
       className={cn(
-        "relative transition-[border-color,background-color,color,transform] duration-(--motion-fast) ease-out-muvuca active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100",
         copied &&
           "border-brand-accent/40 bg-brand-accent/10 text-brand-accent hover:bg-brand-accent/15 dark:border-brand-accent/30 dark:bg-brand-accent/15",
         className,

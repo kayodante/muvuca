@@ -68,6 +68,38 @@ describe("ExportLibraryCard", () => {
     expect(el.textContent).toContain("Exportar HTML Bookmarks");
   });
 
+  it.each(["JSON", "HTML"])(
+    "mostra o estado pendente somente no botão de %s",
+    async (format) => {
+      let finishExport: (() => void) | undefined;
+      exportUserLibraryMock.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finishExport = () =>
+              resolve({ ok: false, message: "Falha ao exportar." });
+          }),
+      );
+
+      const el = await renderCard();
+      const buttons = Array.from(el.querySelectorAll("button"));
+      const selected = buttons.find((button) =>
+        button.textContent?.includes(`Exportar ${format}`),
+      );
+      const other = buttons.find((button) => button !== selected);
+
+      act(() => selected?.click());
+
+      expect(selected?.getAttribute("aria-busy")).toBe("true");
+      expect(selected?.hasAttribute("disabled")).toBe(true);
+      expect(other?.hasAttribute("aria-busy")).toBe(false);
+      expect(other?.hasAttribute("disabled")).toBe(false);
+
+      await act(async () => finishExport?.());
+
+      expect(selected?.hasAttribute("aria-busy")).toBe(false);
+    },
+  );
+
   it("faz download de JSON quando o botão de exportar JSON é acionado", async () => {
     const mockData = {
       version: "1.0",

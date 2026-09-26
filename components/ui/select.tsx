@@ -83,7 +83,6 @@ function SelectContent({
         <SelectPrimitive.Popup
           data-slot="select-content"
           data-align-trigger={alignItemWithTrigger}
-          data-origin={`${side === "top" ? "bottom" : "top"}-${align === "end" ? "right" : align === "center" ? "center" : "left"}`}
           className={cn(
             "t-dropdown relative isolate z-50 max-h-(--available-height) w-(--anchor-width) min-w-36 overflow-x-hidden overflow-y-auto rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10",
             className,

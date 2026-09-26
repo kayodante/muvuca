@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   BACKUP_FORMAT_VERSION,
   formatAsNetscapeBookmarks,
+  filterExportByTag,
   SUPPORTED_BACKUP_VERSIONS,
   type ExportData,
 } from "../formatter";
@@ -52,6 +53,33 @@ const mockExportData: ExportData = {
     },
   ],
 };
+
+describe("filterExportByTag", () => {
+  it("keeps the selected subtree and its rollup without external tag references", () => {
+    const data: ExportData = {
+      ...mockExportData,
+      tags: [
+        ...mockExportData.tags,
+        { ...mockExportData.tags[0]!, id: "tag-3", name: "Other" },
+      ],
+      items: [
+        { ...mockExportData.items[0]!, tagIds: ["tag-2", "tag-3"] },
+        mockExportData.items[1]!,
+        { ...mockExportData.items[1]!, id: "item-3", tagIds: ["tag-3"] },
+      ],
+    };
+
+    const selected = filterExportByTag(data, "tag-2");
+    expect(selected?.tags).toEqual([
+      { ...mockExportData.tags[1]!, parentId: null },
+    ]);
+    expect(selected?.items).toEqual([
+      { ...mockExportData.items[0]!, tagIds: ["tag-2"] },
+    ]);
+    expect(filterExportByTag(data, "tag-1")?.items).toHaveLength(2);
+    expect(filterExportByTag(data, "another-user-tag")).toBeNull();
+  });
+});
 
 describe("formatAsNetscapeBookmarks", () => {
   it("converte os links e estrutura de pastas em formato HTML Netscape válido", () => {

@@ -13,6 +13,9 @@ vi.mock("@/lib/actions/tags", () => ({
   moveTags: vi.fn(),
   deleteTags: vi.fn(),
 }));
+vi.mock("@/lib/actions/export", () => ({
+  exportTagLibrary: vi.fn(),
+}));
 vi.mock("sonner", () => ({ toast: { success: vi.fn() } }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: pushMock }),
@@ -215,6 +218,12 @@ describe("TagsPage", () => {
     ) as HTMLButtonElement;
     await act(async () => menuButton.click());
 
+    expect(
+      [...document.body.querySelectorAll('[role="menuitem"]')].some(
+        (item) => item.textContent === "Exportar JSON da tag",
+      ),
+    ).toBe(true);
+
     const deleteItem = [
       ...document.body.querySelectorAll('[role="menuitem"]'),
     ].find((el) => el.textContent === "Excluir") as HTMLElement;
@@ -228,6 +237,65 @@ describe("TagsPage", () => {
 
     expect(heading()).toBe("Nenhuma tag selecionada");
     expect(document.activeElement?.id).toBe("tag-inspector-heading");
+  });
+
+  it("selecting a tag opens its children as the next column", async () => {
+    await render(TAGS);
+    expect(row("icons")).toBeNull();
+
+    await act(async () => row("design").click());
+
+    expect(row("icons")).not.toBeNull();
+    expect(
+      [...document.querySelectorAll('[role="group"]')].map((group) =>
+        group.getAttribute("aria-label"),
+      ),
+    ).toEqual(["Raízes", "Design"]);
+  });
+
+  it("'/' focuses the filter, which lists deep matches flat", async () => {
+    await render(TAGS);
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "/" }));
+    });
+    const search = document.getElementById("tag-search") as HTMLInputElement;
+    expect(document.activeElement).toBe(search);
+
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      )?.set?.call(search, "íco");
+      search.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(row("icons")).not.toBeNull();
+    expect(row("design")).toBeNull();
+  });
+
+  it("with nothing selected the inspector points at tags worth curating", async () => {
+    await render([
+      ...TAGS,
+      {
+        id: "icons-dev",
+        parentId: "dev",
+        path: "dev/icones",
+        name: "Ícones",
+        colorToken: "lime",
+        description: "Pacotes de ícones",
+      },
+    ]);
+
+    const inspector = document.querySelector(
+      'section[aria-labelledby="tag-inspector-heading"]',
+    );
+    expect(inspector?.textContent).toContain("4 tags · 2 raízes · 2 níveis");
+    expect(inspector?.textContent).toContain("Nomes repetidos");
+    const chip = [...(inspector?.querySelectorAll("button") ?? [])].find(
+      (button) => button.textContent === "Dev / Ícones",
+    );
+    await act(async () => chip?.click());
+    expect(heading()).toBe("Ícones");
   });
 
   it("'Abrir itens' with unsaved edits asks before navigating away", async () => {

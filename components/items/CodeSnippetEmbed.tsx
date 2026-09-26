@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import { CheckIcon, CopyIcon } from "lucide-react";
 
 import { CODE_LANGUAGE_LABELS, type CodeLanguage } from "@/lib/code/languages";
 import { copyToClipboard } from "@/lib/clipboard";
 import { useDictionary } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
-import { toastError, toastSuccess } from "@/components/states/Toast";
+import { announce } from "@/components/states/Announcer";
+import { toastError } from "@/components/states/Toast";
 
 import { useHighlightedLines } from "./useHighlightedLines";
+import { useTransientFlag } from "./useTransientFlag";
 
 /**
  * Bloco de código completo do dialog de detalhe: header com a identidade do
@@ -61,7 +62,7 @@ export function CodeSnippetEmbed({
 }) {
   const t = useDictionary();
   const lines = useHighlightedLines(content, language);
-  const [copied, setCopied] = useState(false);
+  const [copied, triggerCopied] = useTransientFlag(1500);
 
   const lineCount = content.replace(/\n$/, "").split("\n").length;
   // Code points, não unidades UTF-16 — a mesma contagem do char_length do
@@ -69,13 +70,12 @@ export function CodeSnippetEmbed({
   const charCount = [...content].length;
 
   // Mesmo fluxo de ItemCard.handleCopyCode: clipboard, feedback visual por
-  // 1,5s e toast com o texto padrão do app.
+  // 1,5s e anúncio acessível com o texto padrão do app.
   async function handleCopy() {
     const success = await copyToClipboard(content);
     if (success) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-      toastSuccess(t.items.codeSnippetEmbed.codeCopied);
+      triggerCopied();
+      announce(t.items.codeSnippetEmbed.codeCopied);
     } else {
       toastError(t.items.codeSnippetEmbed.codeCopyFailed);
     }

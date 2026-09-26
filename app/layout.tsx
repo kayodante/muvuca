@@ -7,6 +7,8 @@ import { getDictionary, getLocale } from "@/lib/i18n/server";
 import { LocaleProvider } from "@/lib/i18n/client";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { Announcer } from "@/components/states/Announcer";
+import { ThemeTransitionGuard } from "@/components/shell/ThemeTransitionGuard";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -40,7 +42,9 @@ export default async function RootLayout({
         <LocaleProvider locale={locale}>
           <TooltipProvider>{children}</TooltipProvider>
           <Toaster />
+          <Announcer />
         </LocaleProvider>
+        <ThemeTransitionGuard />
       </body>
     </html>
   );

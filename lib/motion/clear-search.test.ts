@@ -81,7 +81,7 @@ describe("animateSearchClear", () => {
 
   it("runs the glow for the full clear window after its delay", () => {
     setTokens({
-      "--clear-dur": "900px",
+      "--clear-dur": "900ms",
       "--glow-delay": "50",
       "--glow-peak-at": "0.2",
     });
@@ -93,5 +93,22 @@ describe("animateSearchClear", () => {
     expect(glow?.options.delay).toBe(50);
     expect(glow?.options.duration).toBe(850);
     expect(glow?.keyframes[1]?.offset).toBe(0.2);
+  });
+
+  it("converts computed second durations to milliseconds", () => {
+    setTokens({
+      "--clear-dur": ".28s",
+      "--clear-out-dur": ".18s",
+      "--clear-in-dur": ".18s",
+      "--glow-delay": ".05s",
+    });
+    const calls = installAnimate();
+
+    run();
+
+    expect(calls[0]?.options.duration).toBe(180);
+    expect(calls[1]?.options.duration).toBe(180);
+    expect(calls[2]?.options.delay).toBe(50);
+    expect(calls[2]?.options.duration).toBe(230);
   });
 });

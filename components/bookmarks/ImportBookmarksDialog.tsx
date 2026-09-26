@@ -418,10 +418,7 @@ export function ImportBookmarksDialog({
             </>
           )}
           {result && (
-            <Button
-              onClick={() => close(false)}
-              className="transition-transform duration-(--motion-fast) ease-out-muvuca active:scale-[0.96] motion-reduce:transition-none motion-reduce:active:scale-100"
-            >
+            <Button onClick={() => close(false)}>
               {t.bookmarks.dialog.done}
             </Button>
           )}

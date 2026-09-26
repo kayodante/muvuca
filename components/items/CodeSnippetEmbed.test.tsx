@@ -9,8 +9,10 @@ import { CodeSnippetEmbed } from "./CodeSnippetEmbed";
 const { toast } = vi.hoisted(() => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
+const { announce } = vi.hoisted(() => ({ announce: vi.fn() }));
 
 vi.mock("sonner", () => ({ toast }));
+vi.mock("@/components/states/Announcer", () => ({ announce }));
 
 const { copyToClipboard } = vi.hoisted(() => ({
   copyToClipboard: vi.fn<(text: string) => Promise<boolean>>(),
@@ -91,7 +93,7 @@ describe("CodeSnippetEmbed", () => {
     expect(gutter?.children).toHaveLength(3);
   });
 
-  it("copia o conteúdo exato, sem números de linha, e confirma com toast", async () => {
+  it("copia o conteúdo exato, sem números de linha, e anuncia o sucesso", async () => {
     copyToClipboard.mockResolvedValue(true);
     const content = "const x = 1;\n// comenta";
     const el = await renderEmbed(content, "typescript");
@@ -106,9 +108,10 @@ describe("CodeSnippetEmbed", () => {
     });
 
     expect(copyToClipboard).toHaveBeenCalledWith(content);
-    expect(toast.success).toHaveBeenCalledWith(
+    expect(announce).toHaveBeenCalledWith(
       "Código copiado para a área de transferência.",
     );
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
   it("avisa com toast de erro quando a cópia falha", async () => {
