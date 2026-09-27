@@ -18,3 +18,4 @@ lib/metadata/__fixtures__/*.html
 .claude/
 .impeccable/
 .repowise/
+.playwright-mcp/

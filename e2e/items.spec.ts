@@ -125,7 +125,9 @@ test("associa tags a um item na criação", async ({ page }) => {
   await page.goto("/tags");
   await selectTag(page, "Estudos");
   await expect(
-    page.getByRole("region", { name: "Estudos" }).getByText("1 item com esta tag"),
+    page
+      .getByRole("region", { name: "Estudos" })
+      .getByText("1 item com esta tag"),
   ).toBeVisible();
 });
 
