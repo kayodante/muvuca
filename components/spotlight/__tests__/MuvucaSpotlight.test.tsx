@@ -150,7 +150,7 @@ describe("MuvucaSpotlight", () => {
     setThemeMock.mockResolvedValue({ ok: true, data: "light" });
   });
 
-  it("renderiza o input de busca, badge de marca, ações e atalhos quando aberto", () => {
+  it("renderiza o input de busca, ações e atalhos quando aberto", () => {
     const handleOpenChange = vi.fn();
     const markup = renderToStaticMarkup(
       <MuvucaSpotlight
@@ -160,7 +160,6 @@ describe("MuvucaSpotlight", () => {
       />,
     );
 
-    expect(markup).toContain("MUVUCA SPOTLIGHT");
     expect(markup).toContain("Buscar itens ou ações…");
     expect(markup).toContain("Filtrar por tag:");
     expect(markup).toContain("Criar novo item");
@@ -1182,10 +1181,12 @@ describe("MuvucaSpotlight", () => {
     ) as HTMLInputElement;
     expect(reopenedInput.value).toBe("");
 
-    const allChip = [...container.querySelectorAll("button")].find(
-      (btn) => btn.textContent === "Todas",
+    // No mais "Todas": aria-pressed no próprio chip é o único estado --
+    // reabrir deve limpar o filtro escolhido antes de fechar.
+    const devChipReopened = [...container.querySelectorAll("button")].find(
+      (btn) => btn.textContent === "Dev",
     );
-    expect(allChip?.className).toContain("bg-primary");
+    expect(devChipReopened?.getAttribute("aria-pressed")).toBe("false");
 
     await act(async () => root.unmount());
     container.remove();
@@ -1501,14 +1502,10 @@ describe("MuvucaSpotlight", () => {
     const input = container.querySelector(
       "input[type='text']",
     ) as HTMLInputElement;
-    const allChip = [...container.querySelectorAll("button")].find(
-      (btn) => btn.textContent === "Todas",
-    );
     const devChip = [...container.querySelectorAll("button")].find(
       (btn) => btn.textContent === "Dev",
     );
 
-    expect(allChip?.getAttribute("aria-pressed")).toBe("true");
     expect(devChip?.getAttribute("aria-pressed")).toBe("false");
 
     await act(async () => {
@@ -1516,7 +1513,15 @@ describe("MuvucaSpotlight", () => {
     });
 
     expect(devChip?.getAttribute("aria-pressed")).toBe("true");
-    expect(allChip?.getAttribute("aria-pressed")).toBe("false");
+    expect(document.activeElement).toBe(input);
+
+    // Clicar de novo no chip já pressionado limpa o filtro -- não há mais
+    // um chip "Todas" separado para isso.
+    await act(async () => {
+      devChip!.click();
+    });
+
+    expect(devChip?.getAttribute("aria-pressed")).toBe("false");
     expect(document.activeElement).toBe(input);
 
     await act(async () => root.unmount());
@@ -1624,6 +1629,174 @@ describe("MuvucaSpotlight", () => {
     // Resultados frescos chegaram, mas a busca continua vazia: ainda deve
     // ficar em silêncio (não anuncia a contagem de "Recentes").
     expect(container.querySelector("[role='status']")?.textContent).toBe("");
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("opção selecionada tem o marcador lateral lime; as demais não", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <MuvucaSpotlight
+          open={true}
+          onOpenChange={vi.fn()}
+          initialTags={mockTags}
+        />,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    const options = [...container.querySelectorAll("[role='option']")];
+    expect(options.length).toBeGreaterThan(1);
+
+    const selected = options.find(
+      (el) => el.getAttribute("aria-selected") === "true",
+    );
+    const unselected = options.find(
+      (el) => el.getAttribute("aria-selected") === "false",
+    );
+    expect(selected).toBeDefined();
+    expect(unselected).toBeDefined();
+
+    // O marcador é o span absolute/left-0.5/bg-primary do commit 4 -- só a
+    // linha selecionada deve ter um.
+    expect(selected!.querySelector('span[class*="left-0.5"]')).not.toBeNull();
+    expect(unselected!.querySelector('span[class*="left-0.5"]')).toBeNull();
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("linha do item mostra o rótulo do tipo e o caminho da tag até o pai", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<MuvucaSpotlight open={true} onOpenChange={vi.fn()} />);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    searchSpotlightItemsMock.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        items: [
+          {
+            id: "item-tag-path",
+            type: "link",
+            title: "Documentação interna",
+            url: "https://example.com/doc",
+            tagIds: ["tag-child"],
+          },
+        ],
+        tags: [
+          {
+            id: "tag-parent",
+            name: "Trabalho",
+            description: null,
+            colorToken: "lime",
+            parentId: null,
+            path: "trabalho",
+            createdAt: "2026-01-01",
+            updatedAt: "2026-01-01",
+          },
+          {
+            id: "tag-child",
+            name: "Cliente X",
+            description: null,
+            colorToken: "blue",
+            parentId: "tag-parent",
+            path: "trabalho/cliente-x",
+            createdAt: "2026-01-01",
+            updatedAt: "2026-01-01",
+          },
+        ],
+        hasMore: false,
+      },
+    });
+
+    const input = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
+
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      setter?.call(input, "documentação");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+
+    const option = [...container.querySelectorAll("[role='option']")].find(
+      (el) => el.textContent?.includes("Documentação interna"),
+    );
+    expect(option).toBeDefined();
+    expect(option!.textContent).toContain("link");
+    expect(option!.textContent).toContain("Trabalho › Cliente X");
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("item code sem linguagem não mostra texto de linguagem", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<MuvucaSpotlight open={true} onOpenChange={vi.fn()} />);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    searchSpotlightItemsMock.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        items: [
+          {
+            id: "item-code-no-lang",
+            type: "code_component",
+            title: "Snippet sem linguagem",
+            language: null,
+            contentPreview: "console.log('hi')",
+            tagIds: [],
+          },
+        ],
+        tags: [],
+        hasMore: false,
+      },
+    });
+
+    const input = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
+
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      setter?.call(input, "snippet");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+
+    const option = [...container.querySelectorAll("[role='option']")].find(
+      (el) => el.textContent?.includes("Snippet sem linguagem"),
+    );
+    expect(option).toBeDefined();
+    expect(option!.textContent).toContain("code");
+    // Sem linguagem, sem tags, sem domínio: nenhum separador "·" deveria
+    // sobrar na linha de meta.
+    expect(option!.textContent?.match(/·/g)).toBeNull();
 
     await act(async () => root.unmount());
     container.remove();

@@ -621,8 +621,6 @@ export const en: Dictionary = {
     dialogLabel: "Quick search",
     closeSpotlight: "Close quick search",
     filterByTag: "Filter by tag:",
-    allTag: "All",
-    execute: "Run",
     navigate: "navigate",
     select: "select",
     peek: "preview",
@@ -649,11 +647,6 @@ export const en: Dictionary = {
     promptCopiedMessage: "Prompt copied to clipboard.",
     codeCopiedMessage: "Code copied to clipboard.",
     copyContentFailed: "Couldn't copy the content.",
-    badges: {
-      link: "LINK",
-      prompt: "PROMPT",
-      code: "CODE",
-    },
     quickLook: {
       regionLabel: "Item preview",
       close: "Close preview",

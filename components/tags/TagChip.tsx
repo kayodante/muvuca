@@ -23,6 +23,7 @@ export function TagChip({
   name,
   colorToken,
   href,
+  onClick,
   selected = false,
   className,
   title,
@@ -30,6 +31,12 @@ export function TagChip({
   name: string;
   colorToken: string;
   href?: string;
+  /**
+   * Renders as a `<button aria-pressed>` toggle instead of a link/span --
+   * the spotlight's tag filter row, which has no href to navigate to.
+   * Mutually exclusive with `href` in practice.
+   */
+  onClick?: () => void;
   selected?: boolean;
   className?: string;
   /** Pointer tooltip when the label truncates. Defaults to `name`; pass a
@@ -46,10 +53,11 @@ export function TagChip({
     </>
   );
 
+  const interactive = Boolean(href || onClick);
   const classes = cn(
     "group/chip inline-flex h-7 max-w-full items-center gap-2 rounded-full bg-secondary inset-ring-[0.5px] inset-ring-border pr-2.5 pl-2 text-xs leading-4 font-medium text-muted-foreground inset-shadow-[0_0_0_999px] inset-shadow-transparent",
     selected && "ring-primary text-foreground ring-2",
-    href &&
+    interactive &&
       "hover:inset-shadow-light-2 active:scale-[0.97] focus-visible:ring-ring ease-out-muvuca transition-[box-shadow,scale] duration-(--motion-fast) focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none motion-reduce:active:scale-100 motion-reduce:transition-none",
     className,
   );
@@ -64,6 +72,20 @@ export function TagChip({
       >
         {content}
       </Link>
+    );
+  }
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={selected}
+        title={title ?? name}
+        className={classes}
+      >
+        {content}
+      </button>
     );
   }
 

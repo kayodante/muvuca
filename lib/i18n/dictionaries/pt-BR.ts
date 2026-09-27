@@ -666,8 +666,6 @@ export const ptBR = {
     dialogLabel: "Busca rápida",
     closeSpotlight: "Fechar busca rápida",
     filterByTag: "Filtrar por tag:",
-    allTag: "Todas",
-    execute: "Executar",
     navigate: "navegar",
     select: "selecionar",
     peek: "prévia",
@@ -694,11 +692,6 @@ export const ptBR = {
     promptCopiedMessage: "Prompt copiado para a área de transferência.",
     codeCopiedMessage: "Código copiado para a área de transferência.",
     copyContentFailed: "Não foi possível copiar o conteúdo.",
-    badges: {
-      link: "LINK",
-      prompt: "PROMPT",
-      code: "CÓDIGO",
-    },
     quickLook: {
       regionLabel: "Pré-visualização do item",
       close: "Fechar pré-visualização",

@@ -1,27 +1,25 @@
 "use client";
 
-import { useState, type Ref } from "react";
+import { useMemo, useState, type Ref } from "react";
 import {
   ExternalLinkIcon,
   CopyIcon,
-  CheckIcon,
   ChevronLeftIcon,
   PanelRightCloseIcon,
-  LinkIcon,
-  FileTextIcon,
-  Code2Icon,
 } from "lucide-react";
 
 import type { LibraryItemSummary } from "@/lib/database/queries/items";
-import type { FlatTag } from "@/lib/tags/tree";
+import { getNamePath, type FlatTag } from "@/lib/tags/tree";
 import type { Tag } from "@/lib/database/queries/tags";
-import { swatchClassFor } from "@/lib/tags/colors";
 import { copyToClipboard } from "@/lib/clipboard";
 import { getItemDetails } from "@/lib/actions/items";
 import { normalizeHttpUrl } from "@/lib/validation/item";
 import { Button } from "@/components/ui/button";
 import { useHighlightedLines } from "@/components/items/useHighlightedLines";
 import { LinkPreviewMedia } from "@/components/items/LinkPreviewMedia";
+import { typeMetaFor } from "@/components/items/typeMeta";
+import { CopyStateIcon } from "@/components/items/CopyStateIcon";
+import { TagChip } from "@/components/tags/TagChip";
 import { useDictionary } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { toastError, toastSuccess } from "@/components/states/Toast";
@@ -42,9 +40,16 @@ export function QuickLookPreview({
 }) {
   const t = useDictionary();
   const [copied, setCopied] = useState(false);
+  const meta = typeMetaFor(t)[item.type];
 
   // Associated tags
   const associatedTags = tags.filter((tag) => item.tagIds?.includes(tag.id));
+  // For each chip's `title`: the full ancestor path ("Pai › Filha"), not
+  // just the leaf name -- the row above already shows the leaf.
+  const tagsById = useMemo(
+    () => new Map(tags.map((tag) => [tag.id, tag])),
+    [tags],
+  );
 
   // Extract preview values safely
   const isLink = item.type === "link";
@@ -113,30 +118,18 @@ export function QuickLookPreview({
       {/* Header */}
       <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
         <div className="flex items-center gap-2">
-          {isLink && (
-            <div className="flex size-7 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
-              <LinkIcon className="size-3.5" aria-hidden="true" />
-            </div>
-          )}
-          {isPrompt && (
-            <div className="flex size-7 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
-              <FileTextIcon className="size-3.5" aria-hidden="true" />
-            </div>
-          )}
-          {isCode && (
-            <div className="flex size-7 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary">
-              <Code2Icon className="size-3.5" aria-hidden="true" />
-            </div>
-          )}
-          <span className="text-brand-pixel rounded bg-muted/60 px-1.5 py-0.5 text-foreground">
-            {isLink
-              ? t.spotlight.badges.link
-              : isPrompt
-                ? t.spotlight.badges.prompt
-                : t.spotlight.badges.code}
-          </span>
+          <div className="flex size-7 items-center justify-center rounded-md bg-secondary">
+            <meta.Icon
+              aria-hidden="true"
+              className={cn("size-3.5", meta.hue)}
+            />
+          </div>
+          {/* Concat literal, não cn(): twMerge trataria os dois `text-*` como
+              o mesmo grupo "cor de texto" e descartaria text-brand-pixel
+              (fonte) em favor de meta.hue (cor). Mesma regra de ItemCard. */}
+          <span className={`text-brand-pixel ${meta.hue}`}>{meta.label}</span>
           {language && (
-            <span className="text-metadata font-mono text-muted-foreground uppercase">
+            <span className="text-metadata text-muted-foreground">
               {language}
             </span>
           )}
@@ -181,19 +174,12 @@ export function QuickLookPreview({
         {associatedTags.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {associatedTags.map((tag) => (
-              <span
+              <TagChip
                 key={tag.id}
-                className="text-metadata inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-0.5"
-              >
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "size-1.5 rounded-full",
-                    swatchClassFor(tag.colorToken),
-                  )}
-                />
-                <span className="text-foreground">{tag.name}</span>
-              </span>
+                name={tag.name}
+                colorToken={tag.colorToken}
+                title={getNamePath(tag, tagsById).join(" › ")}
+              />
             ))}
           </div>
         )}
@@ -264,11 +250,11 @@ export function QuickLookPreview({
                 handleCopy(url, t.spotlight.quickLook.linkCopiedMessage)
               }
             >
-              {copied ? (
-                <CheckIcon className="size-3.5 text-primary" />
-              ) : (
-                <CopyIcon className="size-3.5" />
-              )}
+              <CopyStateIcon
+                copied={copied}
+                Icon={CopyIcon}
+                className="size-3.5"
+              />
               <span>
                 {copied
                   ? t.spotlight.quickLook.linkCopiedShort
@@ -292,11 +278,11 @@ export function QuickLookPreview({
               )
             }
           >
-            {copied ? (
-              <CheckIcon className="size-3.5 text-primary" />
-            ) : (
-              <CopyIcon className="size-3.5" />
-            )}
+            <CopyStateIcon
+              copied={copied}
+              Icon={CopyIcon}
+              className="size-3.5"
+            />
             <span>
               {copied
                 ? t.spotlight.quickLook.copiedShort

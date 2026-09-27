@@ -12,11 +12,7 @@ import {
 import { useRouter } from "next/navigation";
 import {
   SearchIcon,
-  LinkIcon,
-  FileTextIcon,
-  Code2Icon,
   ExternalLinkIcon,
-  CheckIcon,
   CopyIcon,
   XIcon,
   CornerDownLeftIcon,
@@ -26,14 +22,12 @@ import {
   SettingsIcon,
   SunMoonIcon,
   EyeIcon,
-  Loader2Icon,
 } from "lucide-react";
 
 import type { LibraryItemSummary } from "@/lib/database/queries/items";
 import type { FlatTag } from "@/lib/tags/tree";
-import { normalizeForSearch } from "@/lib/tags/tree";
+import { getNamePath, normalizeForSearch } from "@/lib/tags/tree";
 import type { Tag } from "@/lib/database/queries/tags";
-import { swatchClassFor } from "@/lib/tags/colors";
 import { copyToClipboard } from "@/lib/clipboard";
 import { getItemDetails } from "@/lib/actions/items";
 import { normalizeHttpUrl } from "@/lib/validation/item";
@@ -50,6 +44,10 @@ import { useSpotlight } from "./SpotlightContext";
 import { QuickLookPreview } from "./QuickLookPreview";
 import { cn } from "@/lib/utils";
 import { toastError, toastSuccess } from "@/components/states/Toast";
+import { typeMetaFor } from "@/components/items/typeMeta";
+import { CopyStateIcon } from "@/components/items/CopyStateIcon";
+import { TagChip } from "@/components/tags/TagChip";
+import { TagDot } from "@/components/tags/TagDot";
 
 type QuickAction = {
   id: string;
@@ -79,6 +77,15 @@ interface MuvucaSpotlightProps {
   onOpenChange?: (open: boolean) => void;
   initialTags?: (FlatTag | Tag)[];
 }
+
+/**
+ * Row affordances (eye, copy pill, "Abrir"): visible at rest only where
+ * there's no hover to reveal them (touch) or on the selected row -- same
+ * gate idea as ItemCard's `ACTION_CLASS`, but keyed off `isSelected` (a row
+ * "selects" on mouseenter already) instead of `group-hover`.
+ */
+const ROW_AFFORDANCE_CLASS =
+  "opacity-100 transition-opacity duration-(--motion-fast) ease-out-muvuca [@media(hover:hover)_and_(pointer:fine)]:opacity-0 motion-reduce:transition-none";
 
 function actionMatchesQuery(action: QuickAction, q: string): boolean {
   return (
@@ -117,6 +124,7 @@ export function MuvucaSpotlight({
   initialTags = [],
 }: MuvucaSpotlightProps) {
   const t = useDictionary();
+  const typeMeta = useMemo(() => typeMetaFor(t), [t]);
   const router = useRouter();
   const context = useSpotlight();
 
@@ -582,6 +590,14 @@ export function MuvucaSpotlight({
     return blocks;
   }, [flatOptions]);
 
+  // For the row's tag path (getNamePath climbs parentId) and QuickLook's
+  // associated-tags title -- `tags` already holds the full flat list from
+  // the server action, not just the 8 shown as filter chips.
+  const tagsById = useMemo(
+    () => new Map(tags.map((tag) => [tag.id, tag])),
+    [tags],
+  );
+
   const safeSelectedIndex =
     flatOptions.length > 0
       ? Math.min(selectedIndex, flatOptions.length - 1)
@@ -715,6 +731,18 @@ export function MuvucaSpotlight({
 
   function renderOption(option: OptionItem, idx: number) {
     const isSelected = idx === safeSelectedIndex;
+    const rowClass = cn(
+      "group relative flex cursor-pointer items-center justify-between rounded-lg p-2.5 transition-[background-color,color] duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none",
+      isSelected ? "bg-selected text-foreground" : "text-muted-foreground",
+    );
+    // Selection is weight + background + this marker, never hue alone --
+    // same pair of tokens as the Sidebar/TagColumns row.
+    const selectionMarker = isSelected && (
+      <span
+        aria-hidden="true"
+        className="absolute top-1/2 left-0.5 h-4 w-1 -translate-y-1/2 rounded-full bg-primary"
+      />
+    );
 
     if (option.kind === "action") {
       const action = option.action;
@@ -730,21 +758,18 @@ export function MuvucaSpotlight({
           aria-describedby={optionMetaId(idx)}
           onMouseEnter={() => setSelectedIndex(idx)}
           onClick={() => handleAction(option)}
-          className={`group flex cursor-pointer items-center justify-between rounded-lg p-2.5 transition-colors duration-(--motion-fast) ease-out-muvuca ${
-            isSelected
-              ? "bg-secondary text-foreground"
-              : "text-muted-foreground hover:bg-muted/50"
-          }`}
+          className={rowClass}
         >
+          {selectionMarker}
           <div className="flex min-w-0 items-center gap-3">
-            <div
-              className={`flex size-7 shrink-0 items-center justify-center rounded-md border ${
-                isSelected
-                  ? "border-primary/40 bg-primary/10 text-primary"
-                  : "border-border bg-card text-muted-foreground"
-              }`}
-            >
-              <Icon className="size-3.5" aria-hidden="true" />
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-secondary">
+              <Icon
+                aria-hidden="true"
+                className={cn(
+                  "size-4",
+                  isSelected ? "text-foreground" : "text-muted-foreground",
+                )}
+              />
             </div>
             <div className="min-w-0">
               <span
@@ -755,23 +780,18 @@ export function MuvucaSpotlight({
               </span>
               <p
                 id={optionMetaId(idx)}
-                className="text-metadata truncate text-muted-foreground max-sm:hidden"
+                className="text-body-sm truncate text-muted-foreground max-sm:hidden"
               >
                 {action.description}
               </p>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2 pl-3">
-            <span className="text-metadata hidden text-muted-foreground group-hover:text-foreground sm:inline">
-              {t.spotlight.execute}
-            </span>
-            {isSelected && (
-              <CornerDownLeftIcon
-                className="hidden size-3.5 text-primary sm:block"
-                aria-hidden="true"
-              />
-            )}
-          </div>
+          {isSelected && (
+            <CornerDownLeftIcon
+              className="hidden size-3.5 shrink-0 text-muted-foreground sm:block"
+              aria-hidden="true"
+            />
+          )}
         </div>
       );
     }
@@ -779,8 +799,8 @@ export function MuvucaSpotlight({
     // Library Item option
     const item = option.item;
     const isLink = item.type === "link";
-    const isPrompt = item.type === "prompt";
     const isCode = item.type === "code_component";
+    const meta = typeMeta[item.type];
 
     let domain: string | null = null;
     if (isLink && item.url) {
@@ -791,8 +811,18 @@ export function MuvucaSpotlight({
       }
     }
 
-    const snippet =
-      item.description || ("contentPreview" in item ? item.contentPreview : "");
+    // First associated tag's full ancestor path ("Pai › Filha"), plus a
+    // "+N" count for the rest -- the row shows where an item lives, the
+    // preview (commit 2's aria-describedby target moved there) shows more.
+    const itemTags = item.tagIds
+      .map((tagId) => tagsById.get(tagId))
+      .filter((tag): tag is FlatTag | Tag => Boolean(tag));
+    const firstTag = itemTags[0] ?? null;
+    const extraTagCount = itemTags.length > 1 ? itemTags.length - 1 : 0;
+    const tagPathLabel = firstTag
+      ? getNamePath(firstTag, tagsById).join(" › ") +
+        (extraTagCount > 0 ? ` +${extraTagCount}` : "")
+      : null;
 
     return (
       // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus
@@ -805,49 +835,65 @@ export function MuvucaSpotlight({
         aria-describedby={optionMetaId(idx)}
         onMouseEnter={() => setSelectedIndex(idx)}
         onClick={() => handleAction(option)}
-        className={`group flex cursor-pointer items-center justify-between rounded-lg p-2.5 transition-colors duration-(--motion-fast) ease-out-muvuca ${
-          isSelected
-            ? "bg-secondary text-foreground"
-            : "text-muted-foreground hover:bg-muted/50"
-        }`}
+        className={rowClass}
       >
+        {selectionMarker}
         <div className="flex min-w-0 items-center gap-3">
-          <div
-            className={`flex size-8 shrink-0 items-center justify-center rounded-md border ${
-              isSelected
-                ? "border-primary/40 bg-primary/10 text-primary"
-                : "border-border bg-card text-muted-foreground"
-            }`}
-          >
-            {isLink && <LinkIcon className="size-4" aria-hidden="true" />}
-            {isPrompt && <FileTextIcon className="size-4" aria-hidden="true" />}
-            {isCode && <Code2Icon className="size-4" aria-hidden="true" />}
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-secondary">
+            <meta.Icon aria-hidden="true" className={cn("size-4", meta.hue)} />
           </div>
 
           <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span
-                id={optionTitleId(idx)}
-                className="text-body-sm truncate font-medium text-foreground"
-              >
-                {item.title}
+            <span
+              id={optionTitleId(idx)}
+              dir="auto"
+              className="text-body-sm block truncate font-medium text-foreground"
+            >
+              {item.title}
+            </span>
+            <div
+              id={optionMetaId(idx)}
+              className="text-body-sm flex min-w-0 items-center gap-1.5 text-muted-foreground"
+            >
+              {/* Concat literal, não cn(): twMerge trataria os dois `text-*`
+                  como o mesmo grupo "cor de texto" e descartaria
+                  text-brand-pixel (fonte) em favor de meta.hue (cor). */}
+              <span className={`text-brand-pixel shrink-0 ${meta.hue}`}>
+                {meta.label}
               </span>
-              <span
-                id={optionMetaId(idx)}
-                className="text-metadata shrink-0 font-mono text-muted-foreground uppercase"
-              >
-                {isLink
-                  ? domain
-                  : isPrompt
-                    ? t.spotlight.badges.prompt
-                    : item.language || "CODE"}
-              </span>
+              {isLink && domain && (
+                <>
+                  <span aria-hidden="true" className="shrink-0">
+                    ·
+                  </span>
+                  <span className="text-metadata min-w-0 truncate">
+                    {domain}
+                  </span>
+                </>
+              )}
+              {isCode && item.language && (
+                <>
+                  <span aria-hidden="true" className="shrink-0">
+                    ·
+                  </span>
+                  <span className="text-metadata min-w-0 truncate">
+                    {item.language}
+                  </span>
+                </>
+              )}
+              {firstTag && tagPathLabel && (
+                <>
+                  <span aria-hidden="true" className="shrink-0">
+                    ·
+                  </span>
+                  <TagDot
+                    colorToken={firstTag.colorToken}
+                    className="size-1.5 shrink-0"
+                  />
+                  <span className="min-w-0 truncate">{tagPathLabel}</span>
+                </>
+              )}
             </div>
-            {snippet && (
-              <p className="text-metadata truncate text-muted-foreground">
-                {snippet}
-              </p>
-            )}
           </div>
         </div>
 
@@ -857,7 +903,8 @@ export function MuvucaSpotlight({
               handleInputKeyDown), so this is aria-hidden rather than a
               second Tab stop with an inflated option name. No aria-label
               here: aria-hidden discards it, Rams correctly flagged it as
-              dead. */}
+              dead. Hidden at rest for a mouse (mouseenter already selects
+              the row); always on for touch and for the selected row. */}
           <span
             aria-hidden="true"
             onClick={(e) => {
@@ -866,8 +913,11 @@ export function MuvucaSpotlight({
               setQuickLookOpen((prev) => !prev);
             }}
             className={cn(
-              "rounded p-1 text-muted-foreground transition-colors hover:text-foreground [@media(pointer:coarse)]:flex [@media(pointer:coarse)]:size-9 [@media(pointer:coarse)]:items-center [@media(pointer:coarse)]:justify-center",
-              quickLookOpen && isSelected && "text-primary",
+              ROW_AFFORDANCE_CLASS,
+              isSelected &&
+                "[@media(hover:hover)_and_(pointer:fine)]:opacity-100",
+              "rounded p-1 text-muted-foreground hover:text-foreground [@media(pointer:coarse)]:flex [@media(pointer:coarse)]:size-9 [@media(pointer:coarse)]:items-center [@media(pointer:coarse)]:justify-center",
+              quickLookOpen && isSelected && "text-foreground",
             )}
             title={t.spotlight.quickLookTitle}
           >
@@ -875,7 +925,14 @@ export function MuvucaSpotlight({
           </span>
 
           {isLink ? (
-            <span className="text-metadata hidden items-center gap-1 text-muted-foreground group-hover:text-foreground sm:inline-flex">
+            <span
+              className={cn(
+                ROW_AFFORDANCE_CLASS,
+                isSelected &&
+                  "[@media(hover:hover)_and_(pointer:fine)]:opacity-100",
+                "text-body-sm hidden items-center gap-1 text-muted-foreground sm:inline-flex",
+              )}
+            >
               <span>{t.spotlight.open}</span>
               <ExternalLinkIcon className="size-3" />
             </span>
@@ -888,24 +945,28 @@ export function MuvucaSpotlight({
                 e.stopPropagation();
                 handleAction(option);
               }}
-              className="text-metadata inline-flex items-center gap-1 rounded-md bg-muted/60 px-2 py-1 text-foreground transition-colors duration-(--motion-fast) ease-out-muvuca group-hover:bg-primary group-hover:text-primary-foreground motion-reduce:transition-none"
-            >
-              {copiedId === item.id ? (
-                <>
-                  <CheckIcon className="size-3" />
-                  <span>{t.spotlight.copiedShort}</span>
-                </>
-              ) : (
-                <>
-                  <CopyIcon className="size-3" />
-                  <span>{t.spotlight.copyShort}</span>
-                </>
+              className={cn(
+                ROW_AFFORDANCE_CLASS,
+                isSelected &&
+                  "[@media(hover:hover)_and_(pointer:fine)]:opacity-100",
+                "text-metadata inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-foreground inset-shadow-[0_0_0_999px] inset-shadow-transparent transition-[opacity,box-shadow] duration-(--motion-fast) ease-out-muvuca hover:inset-shadow-hover motion-reduce:transition-none",
               )}
+            >
+              <CopyStateIcon
+                copied={copiedId === item.id}
+                Icon={CopyIcon}
+                className="size-3"
+              />
+              <span>
+                {copiedId === item.id
+                  ? t.spotlight.copiedShort
+                  : t.spotlight.copyShort}
+              </span>
             </span>
           )}
           {isSelected && (
             <CornerDownLeftIcon
-              className="hidden size-3.5 text-primary sm:block"
+              className="hidden size-3.5 text-muted-foreground sm:block"
               aria-hidden="true"
             />
           )}
@@ -921,8 +982,12 @@ export function MuvucaSpotlight({
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
     <div
       className={cn(
-        "fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 pt-[8vh] backdrop-blur-xs transition-opacity duration-(--motion-fast) motion-reduce:transition-none sm:pt-[10vh]",
-        closing ? "animate-out fade-out" : "animate-in fade-in",
+        // No blur: DESIGN reserves the glass treatment for media overlays,
+        // not the app-wide scrim. dark:/40 -> dark:/60 mirrors DialogOverlay.
+        "fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-[8vh] duration-(--motion-base) ease-out-muvuca motion-reduce:transition-none sm:pt-[10vh] dark:bg-black/60",
+        closing
+          ? "animate-out duration-(--motion-fast) fade-out"
+          : "animate-in fade-in",
       )}
       onClick={(e) => {
         if (e.target === e.currentTarget) onOpenChange(false);
@@ -934,7 +999,7 @@ export function MuvucaSpotlight({
         aria-modal="true"
         aria-label={t.spotlight.dialogLabel}
         className={cn(
-          "t-modal relative flex max-h-[calc(100dvh-8vh-1rem)] w-full flex-col overflow-hidden rounded-xl border border-border bg-card text-foreground shadow-2xl transition-[max-width] duration-(--motion-fast) ease-out-muvuca sm:max-h-none sm:flex-row",
+          "t-modal relative flex max-h-[calc(100dvh-8vh-1rem)] w-full flex-col overflow-hidden rounded-xl bg-popover text-popover-foreground shadow-[var(--shadow-overlay)] ring-1 ring-foreground/10 sm:max-h-none sm:flex-row",
           quickLookOpen && currentItem ? "max-w-4xl" : "max-w-2xl",
           closing ? "is-closing" : entered ? "is-open" : undefined,
         )}
@@ -949,18 +1014,11 @@ export function MuvucaSpotlight({
           )}
         >
           {/* Header Search Bar */}
-          <div className="flex items-center gap-3 border-b border-border bg-muted/20 px-4 py-3.5">
-            {isSearching ? (
-              <Loader2Icon
-                className="size-5 shrink-0 animate-spin text-primary"
-                aria-hidden="true"
-              />
-            ) : (
-              <SearchIcon
-                className="size-5 shrink-0 text-muted-foreground"
-                aria-hidden="true"
-              />
-            )}
+          <div className="relative flex items-center gap-3 border-b border-border bg-muted/20 px-4 py-3.5">
+            <SearchIcon
+              className="size-5 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
             <input
               ref={inputRef}
               type="text"
@@ -991,19 +1049,23 @@ export function MuvucaSpotlight({
               autoCapitalize="off"
             />
 
-            <div className="flex items-center gap-2">
-              <span className="text-brand-pixel hidden rounded-md bg-primary/10 px-2 py-0.5 text-primary sm:inline">
-                MUVUCA SPOTLIGHT
-              </span>
-              <button
-                type="button"
-                onClick={() => onOpenChange(false)}
-                className="rounded-md p-1 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [@media(pointer:coarse)]:flex [@media(pointer:coarse)]:size-9 [@media(pointer:coarse)]:items-center [@media(pointer:coarse)]:justify-center"
-                aria-label={t.spotlight.closeSpotlight}
-              >
-                <XIcon className="size-4" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="rounded-md p-1 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [@media(pointer:coarse)]:flex [@media(pointer:coarse)]:size-9 [@media(pointer:coarse)]:items-center [@media(pointer:coarse)]:justify-center"
+              aria-label={t.spotlight.closeSpotlight}
+            >
+              <XIcon className="size-4" />
+            </button>
+            {/* A hairline under the field, not a spinner: same 1px search
+                sweep as LibrarySearch, the smallest indicator that resolves
+                "searching". */}
+            {isSearching && (
+              <span
+                aria-hidden="true"
+                className="absolute inset-x-0 bottom-0 h-px rounded-full bg-primary motion-safe:animate-search-sweep"
+              />
+            )}
           </div>
 
           {/* Always mounted: a live region inserted together with its text is
@@ -1014,10 +1076,10 @@ export function MuvucaSpotlight({
 
           {/* Tag quick filters */}
           {tags.length > 0 && (
-            <div className="text-metadata flex items-center gap-1.5 overflow-x-auto border-b border-border bg-muted/10 px-4 py-2">
+            <div className="flex items-center gap-1.5 overflow-x-auto border-b border-border bg-muted/10 px-4 py-2">
               <span
                 id={tagFilterLabelId}
-                className="mr-1 shrink-0 text-muted-foreground"
+                className="text-body-sm mr-1 shrink-0 text-muted-foreground"
               >
                 {t.spotlight.filterByTag}
               </span>
@@ -1026,49 +1088,21 @@ export function MuvucaSpotlight({
                 aria-labelledby={tagFilterLabelId}
                 className="contents"
               >
-                <button
-                  type="button"
-                  aria-pressed={selectedTagFilter === null}
-                  onClick={() => {
-                    setSelectedTagFilter(null);
-                    setSelectedIndex(0);
-                    inputRef.current?.focus();
-                  }}
-                  className={`shrink-0 rounded-md px-2 py-0.5 transition-colors duration-(--motion-fast) ease-out-muvuca outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none ${
-                    selectedTagFilter === null
-                      ? "bg-primary font-medium text-primary-foreground"
-                      : "text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  {t.spotlight.allTag}
-                </button>
                 {tags.slice(0, 8).map((tag) => {
                   const isSelected = selectedTagFilter === tag.id;
                   return (
-                    <button
+                    <TagChip
                       key={tag.id}
-                      type="button"
-                      aria-pressed={isSelected}
+                      name={tag.name}
+                      colorToken={tag.colorToken}
+                      selected={isSelected}
+                      className="shrink-0"
                       onClick={() => {
                         setSelectedTagFilter(isSelected ? null : tag.id);
                         setSelectedIndex(0);
                         inputRef.current?.focus();
                       }}
-                      className={`flex shrink-0 items-center gap-1.5 rounded-md px-2 py-0.5 transition-colors duration-(--motion-fast) ease-out-muvuca outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none ${
-                        isSelected
-                          ? "bg-primary font-medium text-primary-foreground"
-                          : "text-muted-foreground hover:bg-muted"
-                      }`}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className={cn(
-                          "size-1.5 shrink-0 rounded-full",
-                          swatchClassFor(tag.colorToken),
-                        )}
-                      />
-                      <span>{tag.name}</span>
-                    </button>
+                    />
                   );
                 })}
               </div>
