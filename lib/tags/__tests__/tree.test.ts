@@ -9,6 +9,7 @@ import {
   getInvalidMoveTargets,
   getNamePath,
   getTagColumns,
+  matchTagsByName,
   normalizeMoveSelection,
   summarizeTags,
   type FlatTag,
@@ -151,6 +152,29 @@ describe("filterTagTree", () => {
   it("returns an empty forest when nothing matches", () => {
     const tree = buildTagTree(SKILLS_TREE);
     expect(filterTagTree(tree, "nonexistent")).toEqual([]);
+  });
+});
+
+describe("matchTagsByName", () => {
+  const ACCENTED: FlatTag[] = [
+    tag("icones", null, "Ícones"),
+    tag("design", null, "Design"),
+  ];
+
+  it("matches ignoring accents and case", () => {
+    expect(matchTagsByName(ACCENTED, "icon").map((t) => t.id)).toEqual([
+      "icones",
+    ]);
+    expect(matchTagsByName(ACCENTED, "ÍCON").map((t) => t.id)).toEqual([
+      "icones",
+    ]);
+    expect(matchTagsByName(ACCENTED, "icones").map((t) => t.id)).toEqual([
+      "icones",
+    ]);
+  });
+
+  it("returns nothing for a blank query", () => {
+    expect(matchTagsByName(ACCENTED, "   ")).toEqual([]);
   });
 });
 

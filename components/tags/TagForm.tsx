@@ -33,6 +33,7 @@ export function TagForm({
   flatTags,
   onSaved,
   onDirtyChange,
+  onCancel,
 }: {
   target: TagFormTarget;
   flatTags: FlatTag[];
@@ -40,6 +41,8 @@ export function TagForm({
   onSaved: (id: string) => void;
   /** `true` on the first edit, `false` once saved. */
   onDirtyChange?: (dirty: boolean) => void;
+  /** Create mode only: renders "Cancelar" beside the submit button. */
+  onCancel?: () => void;
 }) {
   const t = useDictionary();
   const [createState, createFormAction, createPending] = useActionState(
@@ -212,7 +215,12 @@ export function TagForm({
         </p>
       )}
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        {mode === "create" && onCancel && (
+          <Button type="button" variant="ghost" onClick={onCancel}>
+            {t.common.cancel}
+          </Button>
+        )}
         <Button
           type="submit"
           pending={pending}

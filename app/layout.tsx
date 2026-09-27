@@ -14,7 +14,7 @@ import "./globals.css";
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDictionary();
   return {
-    title: t.metadata.title,
+    title: { default: t.metadata.title, template: `%s · ${t.metadata.title}` },
     description: t.metadata.description,
     // Ícones vêm das convenções de arquivo do App Router (app/icon.svg,
     // app/icon.png, app/apple-icon.png) e do app/manifest.ts.

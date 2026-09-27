@@ -10,7 +10,7 @@ import {
 import { useRouter } from "next/navigation";
 import { PlusIcon, SearchIcon, TagIcon } from "lucide-react";
 
-import type { FlatTag } from "@/lib/tags/tree";
+import { matchTagsByName, type FlatTag } from "@/lib/tags/tree";
 import { useDictionary } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { TagColumns, TagSearchResults } from "./TagColumns";
@@ -105,6 +105,15 @@ function isTypingTarget(target: EventTarget | null): boolean {
   );
 }
 
+/** A dialog/alertdialog/menu/listbox already owns Escape while it's open. */
+function hasOpenOverlay(): boolean {
+  return (
+    document.querySelector(
+      "[role='dialog'], [role='alertdialog'], [role='menu'], [role='listbox']",
+    ) !== null
+  );
+}
+
 /**
  * Re-selecting the target already shown (the current row again, or "Criar
  * tag" while already creating under the same parent) is a no-op, not a
@@ -173,6 +182,11 @@ export function TagsPage({
   const [checked, setChecked] = useState<ReadonlySet<string>>(() => new Set());
   const headingRef = useRef<HTMLHeadingElement>(null);
   const focusInspector = useRef(false);
+  // Row-originated selection (a click, or the filter's Enter) keeps focus on
+  // the row instead of jumping to the inspector heading -- but only once the
+  // row exists again after this render (the filter's Enter can select a
+  // result the same commit it's chosen).
+  const focusRowId = useRef<string | null>(null);
   const selectToggleRef = useRef<HTMLButtonElement>(null);
   const focusSelectToggle = useRef(false);
   // Fallback landing spot for `focusSelectToggle` when a bulk delete empties
@@ -193,56 +207,16 @@ export function TagsPage({
       : null;
   const creating = current.kind === "create";
 
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    for (const key of ["tag", "new", "parent"]) url.searchParams.delete(key);
-    if (tagParam) url.searchParams.set("tag", tagParam);
-    if (creating) url.searchParams.set("new", "1");
-    if (parentParam) url.searchParams.set("parent", parentParam);
-    if (url.href !== window.location.href) {
-      window.history.replaceState(null, "", url);
-    }
-  }, [tagParam, parentParam, creating]);
+  const focusRow = (id: string) =>
+    document.querySelector<HTMLElement>(`[data-tag-row="${id}"]`)?.focus();
 
-  // Move focus to the inspector only after a user-initiated change.
-  useEffect(() => {
-    if (!focusInspector.current) return;
-    focusInspector.current = false;
-    headingRef.current?.focus();
-  });
-
-  // Selection mode has no inspector heading to land on, so entering it and
-  // every way out of it (bulk success, the panel's own cancel, the header
-  // toggle) returns focus to the toggle button instead of letting it fall
-  // to <body>.
-  useEffect(() => {
-    if (!focusSelectToggle.current) return;
-    focusSelectToggle.current = false;
-    (selectToggleRef.current ?? createButtonRef.current)?.focus();
-  });
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.key !== "/" ||
-        event.defaultPrevented ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.altKey ||
-        isTypingTarget(event.target) ||
-        !searchRef.current
-      ) {
-        return;
-      }
-      event.preventDefault();
-      searchRef.current.focus();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
-
-  const apply = (next: InspectorTarget) => {
-    focusInspector.current = next.kind !== "none";
+  const apply = (
+    next: InspectorTarget,
+    opts?: { keepFocusOnRow?: boolean },
+  ) => {
+    const keepOnRow = Boolean(opts?.keepFocusOnRow) && isDesktop;
+    focusInspector.current = next.kind !== "none" && !keepOnRow;
+    if (keepOnRow && next.kind === "edit") focusRowId.current = next.id;
     setDirty(false);
     setTarget(next);
     const nextBrowseId = browseIdFor(next);
@@ -258,9 +232,16 @@ export function TagsPage({
     }
   };
 
-  const select = (next: InspectorTarget) => {
+  const select = (
+    next: InspectorTarget,
+    opts?: { keepFocusOnRow?: boolean },
+  ) => {
     if (isSameTarget(next, current)) return;
-    guard(() => apply(next));
+    // A guarded (dirty) change surfaces the "Descartar alterações?" dialog,
+    // whose own `finalFocus={headingRef}` (TagsPage's AlertDialogContent)
+    // owns focus restoration on confirm -- `keepFocusOnRow` only applies to
+    // the immediate, unguarded case.
+    guard(() => apply(next, dirty ? undefined : opts));
   };
 
   const stopSelecting = () => {
@@ -304,9 +285,6 @@ export function TagsPage({
     />
   );
 
-  const focusRow = (id: string) =>
-    document.querySelector<HTMLElement>(`[data-tag-row="${id}"]`)?.focus();
-
   const inspector = (
     <TagInspector
       target={current}
@@ -333,10 +311,86 @@ export function TagsPage({
 
   const rowProps = {
     selectedId: current.kind === "edit" ? current.id : null,
-    onSelect: (tag: FlatTag) => select({ kind: "edit", id: tag.id }),
+    // Row-originated: the inspector updates beside it, focus stays put
+    // (desktop only -- `select` itself gates `keepFocusOnRow` on `isDesktop`).
+    onSelect: (tag: FlatTag) =>
+      select({ kind: "edit", id: tag.id }, { keepFocusOnRow: true }),
     checked: selecting ? checked : undefined,
     onToggleChecked: (tag: FlatTag) => toggleChecked(tag.id),
   };
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    for (const key of ["tag", "new", "parent"]) url.searchParams.delete(key);
+    if (tagParam) url.searchParams.set("tag", tagParam);
+    if (creating) url.searchParams.set("new", "1");
+    if (parentParam) url.searchParams.set("parent", parentParam);
+    if (url.href !== window.location.href) {
+      window.history.replaceState(null, "", url);
+    }
+  }, [tagParam, parentParam, creating]);
+
+  // Move focus to the inspector only after a user-initiated change.
+  useEffect(() => {
+    if (!focusInspector.current) return;
+    focusInspector.current = false;
+    headingRef.current?.focus();
+  });
+
+  // A row-originated selection on desktop keeps focus on the row itself
+  // (the inspector just updates beside it) instead of jumping to the h2.
+  useEffect(() => {
+    if (!focusRowId.current) return;
+    const id = focusRowId.current;
+    focusRowId.current = null;
+    focusRow(id);
+  });
+
+  // Selection mode has no inspector heading to land on, so entering it and
+  // every way out of it (bulk success, the panel's own cancel, the header
+  // toggle) returns focus to the toggle button instead of letting it fall
+  // to <body>.
+  useEffect(() => {
+    if (!focusSelectToggle.current) return;
+    focusSelectToggle.current = false;
+    (selectToggleRef.current ?? createButtonRef.current)?.focus();
+  });
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.key !== "/" ||
+        event.defaultPrevented ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        isTypingTarget(event.target) ||
+        !searchRef.current
+      ) {
+        return;
+      }
+      event.preventDefault();
+      searchRef.current.focus();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  // Escape leaves selection mode from anywhere on the page, unless some
+  // other open overlay (a dialog, a menu, the parent picker's listbox)
+  // already claimed it -- or the filter's own Escape-clears-first already
+  // called `preventDefault`.
+  useEffect(() => {
+    if (!selecting) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      if (hasOpenOverlay()) return;
+      endSelecting();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selecting]);
 
   return (
     <div className={cn("flex flex-col gap-6", selecting && "pb-32 xl:pb-0")}>
@@ -403,6 +457,21 @@ export function TagsPage({
                   if (event.key === "Escape" && search) {
                     event.preventDefault();
                     setSearch("");
+                    return;
+                  }
+                  if (!search.trim()) return;
+                  const matches = matchTagsByName(flatTags, search);
+                  const first = matches[0];
+                  if (!first) return;
+                  if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    focusRow(first.id);
+                  } else if (event.key === "Enter") {
+                    event.preventDefault();
+                    select(
+                      { kind: "edit", id: first.id },
+                      { keepFocusOnRow: true },
+                    );
                   }
                 }}
                 className="border-transparent bg-secondary/60 pr-10 pl-9 shadow-none dark:bg-secondary/60"
@@ -429,6 +498,7 @@ export function TagsPage({
                     setSearch("");
                     searchRef.current?.focus();
                   }}
+                  onFocusFilter={() => searchRef.current?.focus()}
                   {...rowProps}
                 />
               ) : (
@@ -475,6 +545,10 @@ export function TagsPage({
           <SheetContent
             side="right"
             aria-labelledby={TAG_INSPECTOR_HEADING_ID}
+            // Base UI's own default would land on the first focusable
+            // element inside (the "Mais ações" menu trigger, which holds
+            // Excluir) instead of the heading -- explicit beats incidental.
+            initialFocus={headingRef as RefObject<HTMLElement | null>}
             className="w-full overflow-y-auto p-5 pt-12 sm:max-w-md"
           >
             {inspector}

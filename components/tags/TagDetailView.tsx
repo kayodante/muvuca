@@ -56,13 +56,27 @@ export function TagDetailView({
           )}
           <h1
             dir="auto"
+            aria-labelledby="tag-detail-heading-prefix tag-detail-heading-name"
             className="text-headline-md flex min-w-0 flex-wrap items-center gap-3 font-medium [overflow-wrap:anywhere]"
           >
-            {t.tags.detail.headingPrefix}
+            {/*
+              The button inside (TagDetailActions, "Mais ações" -> Excluir)
+              would otherwise fold its own accessible name into the h1's,
+              reading as "... Mais ações para X" -- aria-labelledby narrows
+              it to just the prefix and the tag's own name.
+            */}
+            <span id="tag-detail-heading-prefix">
+              {t.tags.detail.headingPrefix}
+            </span>
             <span className="inline-flex min-w-0 items-center gap-3 rounded-full bg-secondary py-2 pr-4 pl-3 leading-6 shadow-light inset-shadow-[0_0_0_999px] inset-shadow-light-4">
               <span className="inline-flex min-w-0 items-center gap-2">
                 <TagDot colorToken={tag.colorToken} className="size-3" />
-                <span className="truncate font-semibold">{tag.name}</span>
+                <span
+                  id="tag-detail-heading-name"
+                  className="truncate font-semibold"
+                >
+                  {tag.name}
+                </span>
               </span>
               <TagDetailActions
                 tagId={tag.id}

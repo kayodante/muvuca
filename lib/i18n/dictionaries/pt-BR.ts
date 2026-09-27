@@ -210,6 +210,10 @@ export const ptBR = {
       emptyTitle: "Nenhuma tag selecionada",
       emptyDescription:
         "Escolha uma tag nas colunas para editar nome, cor, tag pai e descrição.",
+      shortcutFilter: "filtra",
+      shortcutNavigate: "navega nas colunas",
+      shortcutSelect: "seleciona",
+      shortcutBack: "volta",
       summary: (total: number, roots: number, levels: number) =>
         [
           total === 1 ? "1 tag" : `${total} tags`,

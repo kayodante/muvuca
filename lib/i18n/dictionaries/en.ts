@@ -187,6 +187,10 @@ export const en: Dictionary = {
       emptyTitle: "No tag selected",
       emptyDescription:
         "Pick a tag in the columns to edit its name, color, parent and description.",
+      shortcutFilter: "filters",
+      shortcutNavigate: "navigates the columns",
+      shortcutSelect: "selects",
+      shortcutBack: "goes back",
       summary: (total: number, roots: number, levels: number) =>
         [
           total === 1 ? "1 tag" : `${total} tags`,

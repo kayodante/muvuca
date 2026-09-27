@@ -30,7 +30,10 @@ export type InspectorTarget =
 export const TAG_INSPECTOR_HEADING_ID = "tag-inspector-heading";
 
 const HEADING_CLASS =
-  "text-headline-sm flex min-w-0 items-center gap-2 [overflow-wrap:anywhere] focus:outline-none";
+  "text-headline-sm flex min-w-0 items-center gap-2 [overflow-wrap:anywhere] rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+const KBD_CLASS =
+  "rounded-md bg-secondary px-1.5 py-0.5 font-mono text-metadata text-muted-foreground shadow-light";
 
 /**
  * Right-hand panel of the /tags workspace: nothing selected, one tag being
@@ -97,17 +100,31 @@ export function TagInspector({
     </h2>
   );
 
+  // Leaving create mode (the form's own "Cancelar" or a bare Escape) goes
+  // back to the parent being edited, or to nothing for a root tag -- through
+  // `onSelect`, so the page's unsaved-changes guard still applies.
+  const cancelCreate = () => {
+    if (target.kind !== "create") return;
+    onSelect(
+      target.parentId
+        ? { kind: "edit", id: target.parentId }
+        : { kind: "none" },
+    );
+  };
+
   return (
     // Delegated Escape handling only (not a new interaction paradigm): an
     // open Select/menu inside consumes its own Escape first
     // (defaultPrevented), so this only fires for the panel's own bare
-    // "go back to the row" shortcut.
+    // "go back to the row" shortcut (edit mode) or "Cancelar" (create mode).
     // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
     <section
       aria-labelledby={TAG_INSPECTOR_HEADING_ID}
       className="flex flex-col gap-5"
       onKeyDown={(event) => {
-        if (event.key === "Escape" && !event.defaultPrevented) onEscape();
+        if (event.key !== "Escape" || event.defaultPrevented) return;
+        if (target.kind === "create") cancelCreate();
+        else onEscape();
       }}
     >
       {target.kind === "create" ? (
@@ -119,6 +136,7 @@ export function TagInspector({
             flatTags={flatTags}
             onSaved={onSaved}
             onDirtyChange={onDirtyChange}
+            onCancel={cancelCreate}
           />
         </>
       ) : tag ? (
@@ -215,6 +233,24 @@ export function TagInspector({
             {heading(t.tags.inspector.emptyTitle)}
             <p className="text-body-sm text-muted-foreground">
               {t.tags.inspector.emptyDescription}
+            </p>
+            {/*
+              Discoverable shortcuts, not the only way to know them: hidden
+              below `sm` rather than gated on pointer capability -- there's
+              no reusable `(hover: hover) and (pointer: fine)` utility in
+              the project yet (ItemCard.tsx repeats the raw arbitrary
+              variant inline), so this stays a plain breakpoint instead of
+              introducing one for a single, low-stakes hint.
+            */}
+            <p className="text-metadata hidden flex-wrap items-center gap-x-1.5 gap-y-1 text-muted-foreground sm:flex">
+              <kbd className={KBD_CLASS}>/</kbd>{" "}
+              {t.tags.inspector.shortcutFilter}
+              <kbd className={KBD_CLASS}>↑↓</kbd>{" "}
+              {t.tags.inspector.shortcutNavigate}
+              <kbd className={KBD_CLASS}>Enter</kbd>{" "}
+              {t.tags.inspector.shortcutSelect}
+              <kbd className={KBD_CLASS}>Esc</kbd>{" "}
+              {t.tags.inspector.shortcutBack}
             </p>
             <Button
               variant="outline"

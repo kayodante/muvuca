@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
+
 import { getTagList } from "@/lib/database/queries/tags";
+import { getDictionary } from "@/lib/i18n/server";
 import { TagsPage } from "@/components/tags/TagsPage";
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -11,6 +14,11 @@ function singlePath(value: string | string[] | undefined): string | null {
   return typeof value === "string" && value.length <= MAX_PATH_LENGTH
     ? value
     : null;
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getDictionary();
+  return { title: t.tags.page.heading };
 }
 
 /** Tag curation workspace; `?tag=`/`?new=&parent=` pick the initial inspector state. */

@@ -1,12 +1,21 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+} from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
   getNamePath,
   getTagColumns,
+  matchTagsByName,
+  normalizeForSearch,
   type FlatTag,
   type TagColumn,
 } from "@/lib/tags/tree";
@@ -25,6 +34,29 @@ type RowProps = {
 const FOCUS_RING =
   "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none";
 
+/** Modifier-held keys never trigger column-nav or typeahead. */
+function isModified(event: ReactKeyboardEvent): boolean {
+  return event.ctrlKey || event.metaKey || event.altKey;
+}
+
+/** Next row (from `fromIndex`, wrapping) whose name starts with `char`. */
+function findTypeaheadMatch(
+  tags: readonly FlatTag[],
+  fromIndex: number,
+  char: string,
+): FlatTag | undefined {
+  const n = tags.length;
+  for (let offset = 1; offset <= n; offset += 1) {
+    const candidate = tags[(fromIndex + offset) % n]!;
+    if (normalizeForSearch(candidate.name).startsWith(char)) return candidate;
+  }
+  return undefined;
+}
+
+/** A tag whose column a pending keyboard action wants focus to land in. */
+type PendingFocus =
+  { kind: "row"; id: string } | { kind: "first-child"; ownerId: string };
+
 /**
  * The /tags column browser (Finder-style): roots in the first column, then
  * one column per level down to the browsed tag, so a long list scrolls
@@ -34,6 +66,16 @@ const FOCUS_RING =
  * "Abrir itens". `compact` (phones) keeps only the deepest column, with a
  * back button, and a row with children drills in instead of opening the
  * inspector Sheet -- the column header's "Editar" does that.
+ *
+ * Keyboard model (Finder-style, per column): exactly one row per column is
+ * tabbable (roving `tabIndex`) -- the last-focused row there, else the
+ * selected one, else the one on the open path, else the first. Arrow
+ * Up/Down/Home/End move within a column; Right opens a row's children as
+ * the next column *without* selecting, and focuses its first row once
+ * mounted (`pendingFocusRef`, since the column does not exist until the
+ * parent re-renders with the new `browseId`); Left focuses the current
+ * column's owner in the column to the left. In `compact` (one column
+ * visible), Right/Left additionally drill/go back like the header button.
  */
 export function TagColumns({
   flatTags,
@@ -48,10 +90,48 @@ export function TagColumns({
   compact: boolean;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const pendingFocusRef = useRef<PendingFocus | null>(null);
+  const [lastFocused, setLastFocused] = useState<Record<string, string>>({});
   const { columns, path, childCounts } = getTagColumns(flatTags, browseId);
   const byId = new Map(flatTags.map((tag) => [tag.id, tag]));
   const visible = compact ? columns.slice(-1) : columns;
   const deepest = columns.at(-1)?.owner?.id ?? null;
+
+  function focusRow(id: string) {
+    scrollerRef.current
+      ?.querySelector<HTMLElement>(`[data-tag-row="${id}"]`)
+      ?.focus();
+  }
+
+  function requestFocusRow(id: string) {
+    pendingFocusRef.current = { kind: "row", id };
+  }
+
+  function requestFocusFirstChild(ownerId: string) {
+    pendingFocusRef.current = { kind: "first-child", ownerId };
+  }
+
+  function rememberFocus(columnKey: string, id: string) {
+    setLastFocused((previous) =>
+      previous[columnKey] === id ? previous : { ...previous, [columnKey]: id },
+    );
+  }
+
+  // A row-nav request (open a child column, go back a column) targets a
+  // column that may not exist yet in this render -- it appears once the
+  // parent re-renders with the `browseId` this component just requested.
+  useEffect(() => {
+    const pending = pendingFocusRef.current;
+    if (!pending) return;
+    pendingFocusRef.current = null;
+    if (pending.kind === "row") {
+      focusRow(pending.id);
+      return;
+    }
+    const column = columns.find((c) => c.owner?.id === pending.ownerId);
+    const first = column?.tags[0];
+    if (first) focusRow(first.id);
+  });
 
   // Keep the deepest column in view once the path outgrows the panel.
   useEffect(() => {
@@ -69,7 +149,7 @@ export function TagColumns({
   // A deep link can land on a row below the fold of its own column.
   useEffect(() => {
     scrollerRef.current
-      ?.querySelector('[aria-pressed="true"]')
+      ?.querySelector('[aria-current="true"]')
       ?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
   }, []);
 
@@ -92,6 +172,11 @@ export function TagColumns({
           path={path}
           childCounts={childCounts}
           onBrowse={onBrowse}
+          focusRow={focusRow}
+          requestFocusRow={requestFocusRow}
+          requestFocusFirstChild={requestFocusFirstChild}
+          lastFocused={lastFocused}
+          rememberFocus={rememberFocus}
           {...rowProps}
         />
       ))}
@@ -107,6 +192,11 @@ function ColumnView({
   path,
   childCounts,
   onBrowse,
+  focusRow,
+  requestFocusRow,
+  requestFocusFirstChild,
+  lastFocused,
+  rememberFocus,
   ...rowProps
 }: RowProps & {
   column: TagColumn;
@@ -116,10 +206,100 @@ function ColumnView({
   path: ReadonlySet<string>;
   childCounts: ReadonlyMap<string, number>;
   onBrowse: (id: string | null) => void;
+  focusRow: (id: string) => void;
+  requestFocusRow: (id: string) => void;
+  requestFocusFirstChild: (ownerId: string) => void;
+  lastFocused: Readonly<Record<string, string>>;
+  rememberFocus: (columnKey: string, id: string) => void;
 }) {
   const t = useDictionary();
   const { owner, tags } = column;
   const label = owner?.name ?? t.tags.columns.roots;
+  const columnKey = owner?.id ?? "roots";
+
+  // Roving tabindex target: last-focused row in this column, else the
+  // selected one, else the one on the open path, else the first.
+  const remembered = lastFocused[columnKey];
+  const tabTarget =
+    (remembered && tags.some((tag) => tag.id === remembered)
+      ? remembered
+      : undefined) ??
+    (rowProps.selectedId && tags.some((tag) => tag.id === rowProps.selectedId)
+      ? rowProps.selectedId
+      : undefined) ??
+    tags.find((tag) => path.has(tag.id))?.id ??
+    tags[0]?.id;
+
+  function handleKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (isModified(event)) return;
+    const targetRow = (event.target as HTMLElement).closest<HTMLElement>(
+      "[data-tag-row]",
+    );
+    if (!targetRow) return;
+    const currentId = targetRow.dataset.tagRow;
+    const index = tags.findIndex((tag) => tag.id === currentId);
+    if (index === -1) return;
+    const tag = tags[index]!;
+
+    switch (event.key) {
+      case "ArrowDown": {
+        const next = tags[index + 1];
+        if (!next) return;
+        event.preventDefault();
+        focusRow(next.id);
+        return;
+      }
+      case "ArrowUp": {
+        const previous = tags[index - 1];
+        if (!previous) return;
+        event.preventDefault();
+        focusRow(previous.id);
+        return;
+      }
+      case "Home": {
+        event.preventDefault();
+        focusRow(tags[0]!.id);
+        return;
+      }
+      case "End": {
+        event.preventDefault();
+        focusRow(tags[tags.length - 1]!.id);
+        return;
+      }
+      case "ArrowRight": {
+        // Same as the compact drill/row click: open the children as the
+        // next column without selecting this row.
+        if ((childCounts.get(tag.id) ?? 0) === 0) return;
+        event.preventDefault();
+        onBrowse(tag.id);
+        requestFocusFirstChild(tag.id);
+        return;
+      }
+      case "ArrowLeft": {
+        if (!owner) return; // already at roots
+        event.preventDefault();
+        if (compact) {
+          onBrowse(owner.parentId);
+          requestFocusRow(owner.id);
+        } else {
+          focusRow(owner.id);
+        }
+        return;
+      }
+      default: {
+        if (event.key.length !== 1 || event.key === " ") return;
+        const match = findTypeaheadMatch(
+          tags,
+          index,
+          normalizeForSearch(event.key),
+        );
+        if (match) {
+          event.preventDefault();
+          focusRow(match.id);
+        }
+      }
+    }
+  }
 
   return (
     <div
@@ -196,11 +376,32 @@ function ColumnView({
         )}
       </div>
 
-      <ul className="flex flex-col gap-px px-1.5 pb-1.5">
+      {/*
+        No widget role here on purpose. `toolbar` (tried first) is wrong --
+        it tells assistive tech "buttons that act on a shared object", not
+        "browse a list"; `listbox`/`option` is closer but implies
+        `aria-selected`, and this column's current-item indicator is
+        `aria-current` (DESIGN.md), not a selection state. Short of
+        restructuring rows away from plain `<button>` into `option`/
+        `treeitem` semantics -- which the project's HTML-before-ARIA rule
+        argues against -- the honest fix is a discoverability hint, not a
+        role: the inspector's empty state spells out the shortcuts
+        (TagInspector.tsx) instead of asserting a widget model that doesn't
+        quite fit.
+      */}
+      {/*
+        Delegated keyboard nav only, same as TagInspector.tsx's section: the
+        real interactive elements are the row buttons inside.
+      */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
+      <div
+        className="flex flex-col gap-px px-1.5 pb-1.5"
+        onKeyDown={handleKeyDown}
+      >
         {tags.map((tag) => {
           const count = childCounts.get(tag.id) ?? 0;
           return (
-            <li key={tag.id}>
+            <div key={tag.id}>
               <TagRow
                 tag={tag}
                 compact={compact}
@@ -208,6 +409,8 @@ function ColumnView({
                 emphasis={count > 0}
                 drill={compact && count > 0}
                 onDrill={() => onBrowse(tag.id)}
+                tabIndex={tag.id === tabTarget ? 0 : -1}
+                onRowFocus={() => rememberFocus(columnKey, tag.id)}
                 description={
                   count > 0 ? t.tags.columns.childCount(count) : undefined
                 }
@@ -232,10 +435,10 @@ function ColumnView({
                 }
                 {...rowProps}
               />
-            </li>
+            </div>
           );
         })}
-      </ul>
+      </div>
     </div>
   );
 }
@@ -249,16 +452,67 @@ export function TagSearchResults({
   flatTags,
   query,
   onClear,
+  onFocusFilter,
   ...rowProps
 }: RowProps & {
   flatTags: FlatTag[];
   query: string;
   onClear: () => void;
+  /** Up-arrow from the first result hands focus back to the filter input. */
+  onFocusFilter: () => void;
 }) {
   const t = useDictionary();
+  const listRef = useRef<HTMLDivElement>(null);
+  const [lastFocused, setLastFocused] = useState<string | null>(null);
   const byId = new Map(flatTags.map((tag) => [tag.id, tag]));
-  const q = query.trim().toLowerCase();
-  const matches = flatTags.filter((tag) => tag.name.toLowerCase().includes(q));
+  const matches = matchTagsByName(flatTags, query);
+
+  function focusRow(id: string) {
+    listRef.current
+      ?.querySelector<HTMLElement>(`[data-tag-row="${id}"]`)
+      ?.focus();
+  }
+
+  function handleKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (isModified(event)) return;
+    const targetRow = (event.target as HTMLElement).closest<HTMLElement>(
+      "[data-tag-row]",
+    );
+    if (!targetRow) return;
+    const index = matches.findIndex(
+      (tag) => tag.id === targetRow.dataset.tagRow,
+    );
+    if (index === -1) return;
+
+    switch (event.key) {
+      case "ArrowDown": {
+        const next = matches[index + 1];
+        if (!next) return;
+        event.preventDefault();
+        focusRow(next.id);
+        return;
+      }
+      case "ArrowUp": {
+        event.preventDefault();
+        const previous = matches[index - 1];
+        if (previous) focusRow(previous.id);
+        else onFocusFilter();
+        return;
+      }
+      case "Home": {
+        event.preventDefault();
+        focusRow(matches[0]!.id);
+        return;
+      }
+      case "End": {
+        event.preventDefault();
+        focusRow(matches[matches.length - 1]!.id);
+        return;
+      }
+      default:
+        return;
+    }
+  }
 
   if (matches.length === 0) {
     return (
@@ -276,18 +530,31 @@ export function TagSearchResults({
     );
   }
 
+  const tabTarget =
+    (lastFocused && matches.some((tag) => tag.id === lastFocused)
+      ? lastFocused
+      : undefined) ?? matches[0]?.id;
+
   return (
-    <ul className="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto overscroll-y-contain p-1.5">
+    // No widget role -- same rationale as the column's list above.
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
+    <div
+      ref={listRef}
+      onKeyDown={handleKeyDown}
+      className="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto overscroll-y-contain p-1.5"
+    >
       {matches.map((tag) => {
         const ancestors = getNamePath(tag, byId).slice(0, -1).join(" / ");
         return (
-          <li key={tag.id}>
+          <div key={tag.id}>
             <TagRow
               tag={tag}
               compact={false}
               onPath={false}
               emphasis
               drill={false}
+              tabIndex={tag.id === tabTarget ? 0 : -1}
+              onRowFocus={() => setLastFocused(tag.id)}
               description={ancestors || undefined}
               meta={
                 ancestors ? (
@@ -302,10 +569,10 @@ export function TagSearchResults({
               }
               {...rowProps}
             />
-          </li>
+          </div>
         );
       })}
-    </ul>
+    </div>
   );
 }
 
@@ -316,6 +583,8 @@ function TagRow({
   emphasis,
   drill,
   onDrill,
+  tabIndex,
+  onRowFocus,
   description,
   meta,
   openLabel,
@@ -333,6 +602,9 @@ function TagRow({
   /** Compact rows with children browse into them instead of selecting. */
   drill: boolean;
   onDrill?: () => void;
+  /** Roving tabindex: exactly one row per column/list is `0`. */
+  tabIndex: number;
+  onRowFocus: () => void;
   /** Screen-reader text for `meta`, kept out of the row's name. */
   description?: string;
   meta: ReactNode;
@@ -393,7 +665,9 @@ function TagRow({
     <button
       type="button"
       data-tag-row={tag.id}
-      aria-pressed={drill ? undefined : selected}
+      tabIndex={tabIndex}
+      onFocus={onRowFocus}
+      aria-current={!drill && selected ? "true" : undefined}
       aria-describedby={description ? descriptionId : undefined}
       onClick={() => (drill ? onDrill?.() : onSelect(tag))}
       className={cn(

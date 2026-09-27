@@ -214,6 +214,26 @@ export function getTagColumns(
   return { columns, path: new Set(chain.map((tag) => tag.id)), childCounts };
 }
 
+/** Case- and accent-insensitive key for name matching/typeahead. */
+export function normalizeForSearch(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+}
+
+/**
+ * Flat name matches for the `/tags` filter: used both by `TagSearchResults`
+ * (the list) and the filter input's own Enter/ArrowDown shortcuts, so the
+ * two can never disagree on what "the first match" is.
+ */
+export function matchTagsByName(flat: FlatTag[], query: string): FlatTag[] {
+  const q = normalizeForSearch(query);
+  if (!q) return [];
+  return flat.filter((tag) => normalizeForSearch(tag.name).includes(q));
+}
+
 /**
  * Display names root-first ("Design", "Recursos"), for showing where a tag
  * lives when its slug path would be less readable.
