@@ -463,6 +463,7 @@ export const en: Dictionary = {
     },
     codeSnippetEmbed: {
       copyCode: "Copy code",
+      codeRegion: "Code",
       codeCopied: "Code copied to clipboard.",
       codeCopyFailed: "Couldn't copy the code.",
       lineCount: (n: number) =>

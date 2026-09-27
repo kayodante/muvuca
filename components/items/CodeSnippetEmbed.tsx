@@ -88,7 +88,17 @@ export function CodeSnippetEmbed({
           </Button>
         </div>
       </div>
-      <div className="max-h-[min(65dvh,44rem)] overflow-auto bg-secondary/30">
+      {/* Região focável: sem nada focável dentro, o Safari não alcança o
+          scroll pelo teclado (Chrome 130+ e Firefox já tornam o scroller
+          focável sozinhos). Anel inset porque o wrapper corta com
+          overflow-hidden. */}
+      <div
+        role="region"
+        aria-label={t.items.codeSnippetEmbed.codeRegion}
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- área de scroll precisa de parada de Tab (comentário acima)
+        tabIndex={0}
+        className="max-h-[min(65dvh,44rem)] overflow-auto bg-secondary/30 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+      >
         <div
           className="text-body-sm flex gap-4 px-4 py-3 font-mono leading-6"
           style={{ color: "var(--code-foreground)" }}

@@ -1090,7 +1090,7 @@ body {
   transition:
     transform var(--motion-base) var(--ease-out-muvuca),
     width var(--motion-base) var(--ease-out-muvuca);
-  will-change: transform, width;
+  will-change: transform;
   z-index: 0;
   pointer-events: none;
 }

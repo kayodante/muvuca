@@ -492,6 +492,7 @@ export const ptBR = {
     },
     codeSnippetEmbed: {
       copyCode: "Copiar código",
+      codeRegion: "Código",
       codeCopied: "Código copiado para a área de transferência.",
       codeCopyFailed: "Não foi possível copiar o código.",
       lineCount: (n: number) =>
