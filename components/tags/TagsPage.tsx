@@ -553,14 +553,19 @@ export function TagsPage({
             // element inside (the "Mais ações" menu trigger, which holds
             // Excluir) instead of the heading -- explicit beats incidental.
             initialFocus={headingRef as RefObject<HTMLElement | null>}
-            className="w-full overflow-y-auto p-5 pt-12 sm:max-w-md"
+            // sheet.tsx's own `data-[side=right]:w-3/4` and
+            // `data-[side=right]:sm:max-w-sm` win over a bare `w-full`/
+            // `sm:max-w-md` here (same attribute-selector specificity, and
+            // sheet.tsx is the one that sets `data-side`) -- so the override
+            // has to match that same variant instead of the plain utility.
+            className="overflow-y-auto p-5 pt-12 data-[side=right]:w-full data-[side=right]:sm:max-w-md"
           >
             {inspector}
           </SheetContent>
         </Sheet>
       )}
       {!isDesktop && selecting && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background p-4">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           {bulkPanel}
         </div>
       )}

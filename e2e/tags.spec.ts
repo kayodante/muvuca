@@ -560,6 +560,66 @@ test("move várias tags de uma vez levando as filhas junto", async ({
   ).toBeVisible();
 });
 
+test("colunas e inspetor não estouram a largura com nomes longos e hierarquia funda", async ({
+  page,
+}) => {
+  // Regressão da crítica de truncamento: 3+ níveis abertos empurram as
+  // colunas ao mínimo (176px) e nomes longos, sem `title` nem elipse
+  // recuperável, cortavam sem aviso; o painel do inspetor também rolava na
+  // horizontal por um chip (aqui, um filho de nome longo em TagChildren)
+  // cujo `<li>` não tinha `max-w-full`. jsdom não mede layout -- só o
+  // navegador real prova as duas coisas.
+  await signIn(page, `e2e-tags-overflow-${Date.now()}@muvuca.test`);
+
+  const l1 = "Compras & Desejos de Presentes Diversos";
+  const l2 = "Eletrônicos e Gadgets Importados";
+  const l3 = "Betting & investimentos financeiros arriscados";
+  const l4 = "Livros Técnicos de Programação Avançada e Arquitetura";
+  const l5 = "Edições Esgotadas de Fotografia Analógica Vintage Rara";
+  await createRootTag(page, l1);
+  await createChildTag(page, l1, l2);
+  await createChildTag(page, l2, l3);
+  await createChildTag(page, l3, l4);
+  await createChildTag(page, l4, l5);
+  // A leaf, so tapping it in the phone's compact column *selects* it
+  // instead of drilling in (DESIGN.md: a tag with children drills).
+  const mobileLeaf = "Contas & Boletos Domésticos Pendentes";
+  await createRootTag(page, mobileLeaf);
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/tags");
+  await selectTag(page, l4);
+
+  // Two `<aside>` exist on desktop: the shell's own navigation sidebar and
+  // the inspector's panel -- scope to the one that actually holds the
+  // selected tag's inspector.
+  const inspectorAside = page.locator("aside", {
+    has: page.getByRole("heading", { level: 2, name: l4 }),
+  });
+  const overflow = await inspectorAside.evaluate((el) => ({
+    scrollWidth: el.scrollWidth,
+    clientWidth: el.clientWidth,
+  }));
+  expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/tags");
+  await page
+    .getByRole("region", { name: "Árvore de tags" })
+    .getByRole("button", { name: mobileLeaf, exact: true })
+    .click();
+
+  const sheet = page.getByRole("dialog", { name: mobileLeaf });
+  await expect(sheet).toBeVisible();
+  const widths = await page.evaluate(() => ({
+    sheet: document
+      .querySelector('[data-slot="sheet-content"]')
+      ?.getBoundingClientRect().width,
+    viewport: window.innerWidth,
+  }));
+  expect(widths.sheet).toBe(widths.viewport);
+});
+
 test("exclui várias tags e a neta sobe para o ancestral que sobrou", async ({
   page,
 }) => {

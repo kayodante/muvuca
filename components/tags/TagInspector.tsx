@@ -367,7 +367,7 @@ function TagCuration({
                       .join(" / ");
                     const location = ancestors || t.tags.inspector.rootLabel;
                     return (
-                      <li key={tag.id}>
+                      <li key={tag.id} className="max-w-full min-w-0">
                         <button
                           type="button"
                           onClick={() => onSelect({ kind: "edit", id: tag.id })}
@@ -457,15 +457,15 @@ function CurationPreviewSection({
       <p className="text-body-sm text-muted-foreground">{hint}</p>
       <ul className="flex flex-wrap gap-1.5">
         {shown.map((tag) => (
-          <li key={tag.id}>
+          <li key={tag.id} className="max-w-full min-w-0">
             <button
               type="button"
               onClick={() => onSelect({ kind: "edit", id: tag.id })}
-              title={getNamePath(tag, byId).join(" / ")}
               className="max-w-full rounded-full focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
               <TagChip
                 name={tag.name}
+                title={getNamePath(tag, byId).join(" / ")}
                 colorToken={tag.colorToken}
                 className={CHIP_HOVER_CLASS}
               />
@@ -517,11 +517,11 @@ function TagChildren({
       ) : (
         <ul className="flex flex-wrap gap-1.5">
           {children.map((child) => (
-            <li key={child.id}>
+            <li key={child.id} className="max-w-full min-w-0">
               <button
                 type="button"
                 onClick={() => onSelect({ kind: "edit", id: child.id })}
-                className="rounded-full focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                className="max-w-full rounded-full focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               >
                 <TagChip name={child.name} colorToken={child.colorToken} />
               </button>

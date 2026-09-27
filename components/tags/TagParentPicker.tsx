@@ -13,6 +13,7 @@ import {
 } from "@/lib/tags/tree";
 import { indentClassFor } from "@/lib/tags/indent";
 import { useDictionary } from "@/lib/i18n/client";
+import { AncestorPath } from "./AncestorPath";
 import { TagDot } from "./TagDot";
 
 /** Value reserved for "no parent" (tag becomes/stays root). */
@@ -237,9 +238,6 @@ function TagParentPickerItem({
   option: Option;
   indent: boolean;
 }) {
-  const ancestors = option.ancestorNames;
-  const immediateParent = ancestors.at(-1);
-  const earlierAncestors = ancestors.slice(0, -1);
   const fullLabel = pathLabel(option);
 
   return (
@@ -261,25 +259,15 @@ function TagParentPickerItem({
           />
         )}
         <span className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
-          {ancestors.length > 0 && (
-            <span className="text-body-sm flex min-w-0 items-center overflow-hidden text-muted-foreground">
-              {earlierAncestors.length > 0 && (
-                // Truncate from the start, not the end: the immediate parent
-                // (right below) has to stay visible, the older ancestors are
-                // what gives way. `direction: rtl` moves the browser's own
-                // ellipsis truncation to the left edge of this span; the text
-                // itself is still plain LTR names, so it still reads normally
-                // once visible.
-                <span className="min-w-0 truncate text-left [direction:rtl]">
-                  {earlierAncestors.join(" / ")}
-                </span>
-              )}
-              <span className="shrink-0 whitespace-nowrap">
-                {immediateParent} /{" "}
-              </span>
-            </span>
-          )}
-          <span className="shrink-0 truncate">{option.name}</span>
+          <AncestorPath
+            names={option.ancestorNames}
+            className="text-body-sm text-muted-foreground"
+          />
+          {/* Ancestors give way first (AncestorPath's own internal
+              truncation); the name only shrinks/truncates once there's no
+              room left, instead of overflowing uncut past this row's
+              overflow-hidden. */}
+          <span className="max-w-full min-w-0 truncate">{option.name}</span>
         </span>
       </div>
       <Combobox.ItemIndicator className="pointer-events-none absolute right-2 flex size-4 items-center justify-center">

@@ -25,12 +25,16 @@ export function TagChip({
   href,
   selected = false,
   className,
+  title,
 }: {
   name: string;
   colorToken: string;
   href?: string;
   selected?: boolean;
   className?: string;
+  /** Pointer tooltip when the label truncates. Defaults to `name`; pass a
+   * fuller string (e.g. a full ancestor path) when the caller has one. */
+  title?: string;
 }) {
   const content = (
     <>
@@ -38,7 +42,7 @@ export function TagChip({
         colorToken={colorToken}
         className="size-1.5 transition-[scale] duration-(--motion-fast) ease-out-muvuca group-hover/chip:scale-125 motion-reduce:transition-none motion-reduce:group-hover/chip:scale-100"
       />
-      <span className="truncate">{name}</span>
+      <span className="min-w-0 truncate">{name}</span>
     </>
   );
 
@@ -54,6 +58,7 @@ export function TagChip({
     return (
       <Link
         href={href}
+        title={title ?? name}
         className={classes}
         aria-current={selected || undefined}
       >
@@ -62,5 +67,9 @@ export function TagChip({
     );
   }
 
-  return <span className={classes}>{content}</span>;
+  return (
+    <span title={title ?? name} className={classes}>
+      {content}
+    </span>
+  );
 }

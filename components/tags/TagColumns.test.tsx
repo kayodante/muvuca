@@ -176,6 +176,39 @@ describe("TagColumns", () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
+  it("a row's truncating name carries a title, in both normal and selection mode", async () => {
+    const dom = await renderColumns();
+    expect(
+      row(dom, "dev")?.querySelector("span[title]")?.getAttribute("title"),
+    ).toBe("Dev");
+
+    const withChecked = await renderColumns({ checked: new Set() });
+    const label = withChecked.querySelector("label span[title]");
+    expect(label?.getAttribute("title")).toBe("Dev");
+  });
+
+  it("compact header shows the ancestor trail above/below a nested tag's name", async () => {
+    // "frontend" needs a child of its own ("hooks") to become a column
+    // *owner* two levels deep -- otherwise (as with "react", a leaf) the
+    // compact column shown is its parent's, not its own.
+    const deep: FlatTag[] = [...TAGS, tag("hooks", "react", "Hooks")];
+    const dom = await renderColumns({
+      compact: true,
+      browseId: "react",
+      flatTags: deep,
+    });
+    const header = dom.querySelector(".sticky")!;
+    expect(header.textContent).toContain("Dev / Frontend");
+    const trail = header.querySelector("[title]");
+    expect(trail?.getAttribute("title")).toBe("Dev / Frontend");
+  });
+
+  it("compact header has no ancestor trail for a root tag", async () => {
+    const dom = await renderColumns({ compact: true, browseId: "dev" });
+    const header = dom.querySelector(".sticky")!;
+    expect(header.querySelector("[title]")).toBeNull();
+  });
+
   it("roving tabindex: one tabbable row per column, on the open path by default", async () => {
     const dom = await renderColumns({ browseId: "react", selectedId: "react" });
     // Roots column: "dev" is on the open path, "notas" is not.

@@ -21,6 +21,7 @@ import {
 } from "@/lib/tags/tree";
 import { useDictionary } from "@/lib/i18n/client";
 import { Button } from "@/components/ui/button";
+import { AncestorPath } from "./AncestorPath";
 import { TagDot } from "./TagDot";
 
 type RowProps = {
@@ -169,6 +170,9 @@ export function TagColumns({
               ? byId.get(column.owner.parentId)?.name
               : undefined
           }
+          ancestorNames={
+            column.owner ? getNamePath(column.owner, byId).slice(0, -1) : []
+          }
           path={path}
           childCounts={childCounts}
           onBrowse={onBrowse}
@@ -189,6 +193,7 @@ function ColumnView({
   last,
   compact,
   parentName,
+  ancestorNames,
   path,
   childCounts,
   onBrowse,
@@ -203,6 +208,8 @@ function ColumnView({
   last: boolean;
   compact: boolean;
   parentName: string | undefined;
+  /** Root-first ancestor names of `column.owner`, for the compact header's trail. */
+  ancestorNames: string[];
   path: ReadonlySet<string>;
   childCounts: ReadonlyMap<string, number>;
   onBrowse: (id: string | null) => void;
@@ -318,45 +325,54 @@ function ColumnView({
     >
       <div
         className={cn(
-          "sticky top-0 z-10 flex shrink-0 items-center gap-2 bg-card px-3",
-          compact ? "h-12" : "h-10",
+          "sticky top-0 z-10 flex shrink-0 flex-col justify-center gap-0.5 bg-card px-3",
+          compact ? "min-h-12 py-1.5" : "h-10",
         )}
       >
         {compact && owner ? (
           <>
-            <button
-              type="button"
-              onClick={() => onBrowse(owner.parentId)}
-              aria-label={t.tags.columns.back(
-                parentName ?? t.tags.columns.roots,
-              )}
-              className={cn(
-                "-ml-2 flex size-10 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca hover:bg-secondary/60 hover:text-foreground",
-                FOCUS_RING,
-              )}
-            >
-              <ChevronLeftIcon aria-hidden="true" className="size-4" />
-            </button>
-            <TagDot colorToken={owner.colorToken} className="size-2" />
-            <span
-              dir="auto"
-              className="text-label-md min-w-0 flex-1 truncate text-foreground"
-            >
-              {owner.name}
-            </span>
-            {!rowProps.checked && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => rowProps.onSelect(owner)}
-                aria-label={t.tags.columns.editTag(owner.name)}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onBrowse(owner.parentId)}
+                aria-label={t.tags.columns.back(
+                  parentName ?? t.tags.columns.roots,
+                )}
+                className={cn(
+                  "-ml-2 flex size-10 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca hover:bg-secondary/60 hover:text-foreground",
+                  FOCUS_RING,
+                )}
               >
-                {t.tags.columns.edit}
-              </Button>
-            )}
+                <ChevronLeftIcon aria-hidden="true" className="size-4" />
+              </button>
+              <TagDot colorToken={owner.colorToken} className="size-2" />
+              <span
+                dir="auto"
+                className="text-label-md min-w-0 flex-1 truncate text-foreground"
+              >
+                {owner.name}
+              </span>
+              {!rowProps.checked && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => rowProps.onSelect(owner)}
+                  aria-label={t.tags.columns.editTag(owner.name)}
+                >
+                  {t.tags.columns.edit}
+                </Button>
+              )}
+            </div>
+            {/* Where the open tag lives, so a leaf reached three levels
+                down never reads as a bare, context-free name. Root tags
+                have no ancestors: AncestorPath renders nothing for them. */}
+            <AncestorPath
+              names={ancestorNames}
+              className="text-body-sm text-muted-foreground"
+            />
           </>
         ) : (
-          <>
+          <div className="flex items-center gap-2">
             {owner && (
               <TagDot colorToken={owner.colorToken} className="size-1.5" />
             )}
@@ -372,7 +388,7 @@ function ColumnView({
             >
               {tags.length}
             </span>
-          </>
+          </div>
         )}
       </div>
 
@@ -544,7 +560,7 @@ export function TagSearchResults({
       className="flex min-h-0 flex-1 flex-col gap-px overflow-y-auto overscroll-y-contain p-1.5"
     >
       {matches.map((tag) => {
-        const ancestors = getNamePath(tag, byId).slice(0, -1).join(" / ");
+        const ancestorNames = getNamePath(tag, byId).slice(0, -1);
         return (
           <div key={tag.id}>
             <TagRow
@@ -555,16 +571,16 @@ export function TagSearchResults({
               drill={false}
               tabIndex={tag.id === tabTarget ? 0 : -1}
               onRowFocus={() => setLastFocused(tag.id)}
-              description={ancestors || undefined}
+              description={
+                ancestorNames.length ? ancestorNames.join(" / ") : undefined
+              }
               meta={
-                ancestors ? (
-                  <span
-                    aria-hidden="true"
-                    dir="auto"
-                    className="text-body-sm max-w-[50%] shrink truncate text-muted-foreground"
-                  >
-                    {ancestors}
-                  </span>
+                ancestorNames.length ? (
+                  <AncestorPath
+                    names={ancestorNames}
+                    aria-hidden
+                    className="text-body-sm max-w-[50%] shrink text-muted-foreground"
+                  />
                 ) : null
               }
               {...rowProps}
@@ -635,7 +651,7 @@ function TagRow({
             className="size-4 shrink-0 accent-primary"
           />
           <TagDot colorToken={tag.colorToken} className="size-2" />
-          <span dir="auto" className="truncate">
+          <span dir="auto" title={tag.name} className="truncate">
             {tag.name}
           </span>
         </label>
@@ -694,7 +710,7 @@ function TagRow({
         colorToken={tag.colorToken}
         className="size-2 transition-[scale] duration-(--motion-fast) ease-out-muvuca group-hover/row:scale-125 motion-reduce:transition-none motion-reduce:group-hover/row:scale-100"
       />
-      <span dir="auto" className="min-w-0 flex-1 truncate">
+      <span dir="auto" title={tag.name} className="min-w-0 flex-1 truncate">
         {tag.name}
       </span>
       {meta}
