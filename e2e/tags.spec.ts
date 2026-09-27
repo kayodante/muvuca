@@ -447,7 +447,7 @@ test("no celular excluir uma tag fecha o painel e mostra o toast", async ({
   await expect(sheet).toBeHidden();
 });
 
-test("o inspetor sticky no desktop cabe sob o topbar com uma árvore longa", async ({
+test("o inspetor no desktop cabe na tela com uma árvore longa", async ({
   page,
 }) => {
   // Creating 30 tags through the real UI, one at a time, is the slow part
@@ -478,14 +478,19 @@ test("o inspetor sticky no desktop cabe sob o topbar com uma árvore longa", asy
   const saveButton = page.getByRole("button", { name: "Salvar alterações" });
   await expect(heading).toBeVisible();
 
-  // Scroll the page roughly to the middle of the tree column, as someone
-  // browsing a long list before picking a tag near the bottom would.
+  // Wheel over the tree, as someone browsing a long list would.
   await page.mouse.wheel(0, 600);
 
-  // The sticky aside must offset below the sticky Topbar and scroll within
-  // its own bounds -- not spill its lower half (Save, "Abrir itens") off
-  // the bottom of the viewport under the AppShell's decorative fade.
+  // The panels scroll inside their own bounds and the page never does --
+  // neither a stray page scroll nor the aside's lower half (Save, "Abrir
+  // itens") spilling off the bottom under the AppShell's decorative fade.
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollHeight - window.innerHeight,
+    ),
+  ).toBe(0);
   await expect(heading).toBeInViewport();
+  await saveButton.scrollIntoViewIfNeeded();
   await expect(saveButton).toBeInViewport();
 });
 

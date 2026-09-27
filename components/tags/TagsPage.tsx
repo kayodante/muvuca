@@ -397,7 +397,18 @@ export function TagsPage({
   }, [selecting]);
 
   return (
-    <div className={cn("flex flex-col gap-6", selecting && "pb-32 xl:pb-0")}>
+    <div
+      className={cn(
+        "flex flex-col gap-6",
+        // From `sm` the page is exactly the viewport left between the
+        // Topbar, `main`'s `pt-4` and its 8rem bottom fade (AppShell.tsx):
+        // the header takes its own height, the panels the rest, and they
+        // scroll inside -- the page never does. Below `sm` the page scrolls
+        // and needs room past the fixed bulk bar.
+        "sm:h-[calc(100dvh-var(--layout-topbar-min-height)-1rem-8rem)]",
+        selecting && "pb-32 sm:pb-0",
+      )}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-headline-md">{t.tags.page.heading}</h1>
         <div className="flex gap-2">
@@ -423,7 +434,9 @@ export function TagsPage({
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] xl:items-start">
+      {/* `minmax(0,1fr)` pins the row to the grid's height, so the panels'
+          `max-h-full` resolves against it instead of their own content. */}
+      <div className="grid min-h-0 flex-1 items-start gap-6 sm:grid-rows-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
         {flatTags.length === 0 ? (
           <EmptyState
             icon={TagIcon}
@@ -431,14 +444,7 @@ export function TagsPage({
             description={t.tags.page.emptyDescription}
           />
         ) : (
-          <div
-            className={cn(
-              "flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card",
-              // Same bound as the inspector aside below: the columns scroll
-              // inside the panel, never the page.
-              "sm:max-h-[calc(100dvh-var(--layout-topbar-min-height)-1.5rem-8rem)] xl:sticky xl:top-[calc(var(--layout-topbar-min-height)+1.5rem)]",
-            )}
-          >
+          <div className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card sm:max-h-full">
             <div className="relative shrink-0 border-b border-border p-2">
               <label htmlFor="tag-search" className="sr-only">
                 {t.tags.page.filterLabel}
@@ -519,21 +525,7 @@ export function TagsPage({
         )}
 
         {isDesktop && (
-          <aside
-            className={cn(
-              "hidden rounded-2xl border border-border bg-card p-5 xl:block",
-              // Offset below the sticky Topbar (--layout-topbar-min-height,
-              // Topbar.tsx) instead of a bare `top-6`, which let the panel
-              // stick 24px under the header with its lower half (Save,
-              // children, "Abrir itens") off-screen. Bounded height + its
-              // own scroll keeps the panel from growing past the viewport.
-              // The bound also subtracts the shell's 8rem bottom fade
-              // (AppShell.tsx), so the panel ends above it instead of
-              // padding every state -- empty and bulk included -- with 8rem
-              // of dead space to scroll clear of it.
-              "xl:sticky xl:top-[calc(var(--layout-topbar-min-height)+1.5rem)] xl:max-h-[calc(100dvh-var(--layout-topbar-min-height)-1.5rem-8rem)] xl:overflow-y-auto",
-            )}
-          >
+          <aside className="hidden max-h-full overflow-y-auto rounded-2xl border border-border bg-card p-5 xl:block">
             {selecting ? bulkPanel : inspector}
           </aside>
         )}

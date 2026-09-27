@@ -323,7 +323,9 @@ body {
   /* Layout. */
   --layout-sidebar-width: 272px;
   --layout-content-max: 1600px;
-  --layout-topbar-min-height: 64px;
+  /* The Topbar's rendered height (40px controls + 2x12px padding + 1px
+     border); /tags subtracts it to fit the viewport exactly. */
+  --layout-topbar-min-height: 65px;
 }
 
 @media (prefers-color-scheme: dark) {
