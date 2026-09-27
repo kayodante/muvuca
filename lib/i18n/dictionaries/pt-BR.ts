@@ -661,7 +661,7 @@ export const ptBR = {
     },
     themeChangedDark: "Tema alterado para escuro.",
     themeChangedLight: "Tema alterado para claro.",
-    searchPlaceholder: "Buscar links, prompts, código ou ações...",
+    searchPlaceholder: "Buscar itens ou ações…",
     searchInputLabel: "Digitar busca",
     dialogLabel: "Busca rápida",
     closeSpotlight: "Fechar busca rápida",

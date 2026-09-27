@@ -616,7 +616,7 @@ export const en: Dictionary = {
     },
     themeChangedDark: "Theme changed to dark.",
     themeChangedLight: "Theme changed to light.",
-    searchPlaceholder: "Search links, prompts, code, or actions...",
+    searchPlaceholder: "Search items or actions…",
     searchInputLabel: "Type to search",
     dialogLabel: "Quick search",
     closeSpotlight: "Close quick search",

@@ -161,7 +161,7 @@ describe("MuvucaSpotlight", () => {
     );
 
     expect(markup).toContain("MUVUCA SPOTLIGHT");
-    expect(markup).toContain("Buscar links, prompts, código ou ações...");
+    expect(markup).toContain("Buscar itens ou ações…");
     expect(markup).toContain("Filtrar por tag:");
     expect(markup).toContain("Criar novo item");
     expect(markup).toContain("Ir para Biblioteca");
@@ -1518,6 +1518,112 @@ describe("MuvucaSpotlight", () => {
     expect(devChip?.getAttribute("aria-pressed")).toBe("true");
     expect(allChip?.getAttribute("aria-pressed")).toBe("false");
     expect(document.activeElement).toBe(input);
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("viewport estreito: abrir a prévia foca seu botão de fechar; fechar devolve o foco ao input", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    // A prévia REPLACES a lista abaixo de `sm` -- só nesse layout compacto
+    // faz sentido mover o foco para dentro dela, já que não sobra mais nada
+    // na tela para receber foco.
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: (query: string) => ({
+        matches: query.includes("639.98"),
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }),
+    });
+
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <MuvucaSpotlight
+          open={true}
+          onOpenChange={vi.fn()}
+          initialTags={mockTags}
+        />,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    const input = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
+
+    // Busca vazia: as 5 ações vêm antes dos "Recentes" -- desce até o
+    // primeiro item para ter um `currentItem` real.
+    await act(async () => {
+      for (let i = 0; i < 5; i++) {
+        input.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+        );
+      }
+    });
+
+    // Caret no fim de um valor vazio: trivialmente 0 === 0 === length.
+    await act(async () => {
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
+      );
+    });
+
+    const closeButton = [...container.querySelectorAll("button")].find(
+      (btn) => btn.getAttribute("aria-label") === "Fechar pré-visualização",
+    );
+    expect(closeButton).toBeDefined();
+    expect(document.activeElement).toBe(closeButton);
+
+    await act(async () => {
+      closeButton!.click();
+    });
+
+    expect(
+      container.querySelector('[aria-label="Pré-visualização do item"]'),
+    ).toBeNull();
+    expect(document.activeElement).toBe(input);
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("region role='status' fica em silêncio ao abrir com busca vazia, mesmo com a revalidação dos recentes pendente", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    let resolveInitial!: (value: unknown) => void;
+    getSpotlightInitialDataMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveInitial = resolve;
+        }),
+    );
+
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<MuvucaSpotlight open={true} onOpenChange={vi.fn()} />);
+    });
+
+    // Busca vazia + carregamento inicial ainda pendente (`isSearching` true):
+    // a spec pede silêncio aqui, não "Buscando…", já que reabrir o spotlight
+    // sempre revalida os recentes em segundo plano.
+    const status = container.querySelector("[role='status']");
+    expect(status?.textContent).toBe("");
+
+    await act(async () => {
+      resolveInitial({ ok: true, data: initialMockData });
+    });
+
+    // Resultados frescos chegaram, mas a busca continua vazia: ainda deve
+    // ficar em silêncio (não anuncia a contagem de "Recentes").
+    expect(container.querySelector("[role='status']")?.textContent).toBe("");
 
     await act(async () => root.unmount());
     container.remove();

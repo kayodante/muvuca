@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type Ref } from "react";
 import {
   ExternalLinkIcon,
   CopyIcon,
   CheckIcon,
-  XIcon,
+  ChevronLeftIcon,
+  PanelRightCloseIcon,
   LinkIcon,
   FileTextIcon,
   Code2Icon,
@@ -29,10 +30,15 @@ export function QuickLookPreview({
   item,
   tags,
   onClose,
+  closeButtonRef,
 }: {
   item: LibraryItemSummary;
   tags: (FlatTag | Tag)[];
   onClose: () => void;
+  // Exposed so the caller can move focus here when the preview replaces the
+  // list below `sm` instead of stacking under it -- there's nothing else on
+  // screen to receive focus.
+  closeButtonRef?: Ref<HTMLButtonElement>;
 }) {
   const t = useDictionary();
   const [copied, setCopied] = useState(false);
@@ -100,7 +106,9 @@ export function QuickLookPreview({
     <div
       role="region"
       aria-label={t.spotlight.quickLook.regionLabel}
-      className="flex h-full w-full flex-col border-t border-border bg-card p-4 sm:w-80 sm:border-t-0 sm:border-l sm:p-5"
+      // No top border: below `sm` the preview replaces the list instead of
+      // stacking under it, so there's no seam to draw one against.
+      className="flex h-full w-full flex-col bg-card p-4 sm:w-80 sm:border-l sm:border-border sm:p-5"
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3 border-b border-border pb-3">
@@ -134,17 +142,25 @@ export function QuickLookPreview({
           )}
         </div>
         <button
+          ref={closeButtonRef}
           type="button"
           onClick={onClose}
-          className="rounded-md p-1 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          className="rounded-md p-1 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [@media(pointer:coarse)]:flex [@media(pointer:coarse)]:size-9 [@media(pointer:coarse)]:items-center [@media(pointer:coarse)]:justify-center"
           aria-label={t.spotlight.quickLook.close}
         >
-          <XIcon className="size-4" />
+          {/* Same control, same name: below `sm` it replaces the list (a
+              "back" gesture), from `sm` it sits beside it (a "close panel"
+              gesture) -- two icons for one action, not two actions. */}
+          <ChevronLeftIcon className="size-4 sm:hidden" aria-hidden="true" />
+          <PanelRightCloseIcon
+            className="size-4 max-sm:hidden"
+            aria-hidden="true"
+          />
         </button>
       </div>
 
       {/* Content scroll area */}
-      <div className="flex-1 overflow-y-auto py-3">
+      <div className="min-h-0 flex-1 overflow-y-auto py-3">
         <h3 className="text-headline-sm font-semibold text-foreground">
           {item.title}
         </h3>

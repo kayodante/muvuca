@@ -155,8 +155,10 @@ export function MuvucaSpotlight({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const quickLookCloseButtonRef = useRef<HTMLButtonElement>(null);
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
   const latestRequestIdRef = useRef(0);
+  const wasQuickLookOpenRef = useRef(false);
   // Enter pressed on an item while its query/tag key was still loading:
   // resolved by the pending-Enter effect once fresh results for that key land.
   const pendingEnterRef = useRef(false);
@@ -245,6 +247,25 @@ export function MuvucaSpotlight({
       previousActiveElementRef.current?.focus();
     }
   }, [open]);
+
+  // Quick Look focus: below `sm` the preview REPLACES the main column (see
+  // the wrapper below), so opening it must move focus into the only thing
+  // left on screen; closing it returns focus to the search input. From `sm`
+  // up the list stays visible and usable, so this only matters in the
+  // compact layout.
+  useEffect(() => {
+    const wasOpen = wasQuickLookOpenRef.current;
+    wasQuickLookOpenRef.current = quickLookOpen;
+    if (quickLookOpen && !wasOpen) {
+      const narrow =
+        typeof window !== "undefined" && typeof window.matchMedia === "function"
+          ? window.matchMedia("(max-width: 639.98px)").matches
+          : false;
+      if (narrow) quickLookCloseButtonRef.current?.focus();
+    } else if (!quickLookOpen && wasOpen) {
+      inputRef.current?.focus();
+    }
+  }, [quickLookOpen]);
 
   // Global shortcut ⌘K / Ctrl+K, Escape, and modal focus trap
   useEffect(() => {
@@ -465,15 +486,16 @@ export function MuvucaSpotlight({
     tags.find((tag) => tag.id === selectedTagFilter)?.name ||
     "";
   // Single source for the always-mounted live region: priority is error,
-  // then in-flight/stale, then (for an active query/filter) count or
-  // no-items, and finally silence for the empty-query recents so opening
-  // the spotlight doesn't chatter.
+  // then silence for the empty-query recents -- opening the spotlight
+  // revalidates them in the background (isSearching goes true) but that
+  // isn't something to announce -- then in-flight/stale, then (for an
+  // active query/filter) count or no-items.
   const statusText = loadError
     ? t.spotlight.loadFailed
-    : isSearching || stale
-      ? t.spotlight.searching
-      : isEmptySearch
-        ? ""
+    : isEmptySearch
+      ? ""
+      : isSearching || stale
+        ? t.spotlight.searching
         : currentItems.length === 0
           ? t.spotlight.noItems(emptyStateSubject)
           : t.spotlight.itemCount(currentItems.length, freshHasMore);
@@ -733,7 +755,7 @@ export function MuvucaSpotlight({
               </span>
               <p
                 id={optionMetaId(idx)}
-                className="text-metadata truncate text-muted-foreground"
+                className="text-metadata truncate text-muted-foreground max-sm:hidden"
               >
                 {action.description}
               </p>
@@ -844,7 +866,7 @@ export function MuvucaSpotlight({
               setQuickLookOpen((prev) => !prev);
             }}
             className={cn(
-              "rounded p-1 text-muted-foreground transition-colors hover:text-foreground",
+              "rounded p-1 text-muted-foreground transition-colors hover:text-foreground [@media(pointer:coarse)]:flex [@media(pointer:coarse)]:size-9 [@media(pointer:coarse)]:items-center [@media(pointer:coarse)]:justify-center",
               quickLookOpen && isSelected && "text-primary",
             )}
             title={t.spotlight.quickLookTitle}
@@ -912,13 +934,20 @@ export function MuvucaSpotlight({
         aria-modal="true"
         aria-label={t.spotlight.dialogLabel}
         className={cn(
-          "t-modal relative flex w-full flex-col overflow-hidden rounded-xl border border-border bg-card text-foreground shadow-2xl transition-[max-width] duration-(--motion-fast) ease-out-muvuca sm:flex-row",
+          "t-modal relative flex max-h-[calc(100dvh-8vh-1rem)] w-full flex-col overflow-hidden rounded-xl border border-border bg-card text-foreground shadow-2xl transition-[max-width] duration-(--motion-fast) ease-out-muvuca sm:max-h-none sm:flex-row",
           quickLookOpen && currentItem ? "max-w-4xl" : "max-w-2xl",
           closing ? "is-closing" : entered ? "is-open" : undefined,
         )}
       >
-        {/* Main Column */}
-        <div className="flex min-w-0 flex-1 flex-col">
+        {/* Main Column: hidden below `sm` while the preview is open -- on a
+            phone screen the preview REPLACES the list instead of stacking
+            under it (that's what used to push "Copiar prompt" off-screen). */}
+        <div
+          className={cn(
+            "flex min-h-0 min-w-0 flex-1 flex-col",
+            quickLookOpen && currentItem && "max-sm:hidden",
+          )}
+        >
           {/* Header Search Bar */}
           <div className="flex items-center gap-3 border-b border-border bg-muted/20 px-4 py-3.5">
             {isSearching ? (
@@ -950,9 +979,16 @@ export function MuvucaSpotlight({
               }}
               onKeyDown={handleInputKeyDown}
               placeholder={t.spotlight.searchPlaceholder}
-              className="text-body-md w-full bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
+              // text-body-lg (16px) below `sm`: anything smaller makes iOS
+              // Safari zoom the page on focus.
+              className="text-body-lg sm:text-body-md w-full bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
               aria-label={t.spotlight.searchInputLabel}
               aria-describedby={footerLegendId}
+              enterKeyHint="go"
+              spellCheck={false}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
             />
 
             <div className="flex items-center gap-2">
@@ -962,7 +998,7 @@ export function MuvucaSpotlight({
               <button
                 type="button"
                 onClick={() => onOpenChange(false)}
-                className="rounded-md p-1 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+                className="rounded-md p-1 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [@media(pointer:coarse)]:flex [@media(pointer:coarse)]:size-9 [@media(pointer:coarse)]:items-center [@media(pointer:coarse)]:justify-center"
                 aria-label={t.spotlight.closeSpotlight}
               >
                 <XIcon className="size-4" />
@@ -1091,7 +1127,9 @@ export function MuvucaSpotlight({
           {/* Results List */}
           <div
             ref={listRef}
-            className="max-h-[50vh] overflow-y-auto p-2 sm:max-h-[60vh]"
+            // overscroll-contain: scrolling past the end of the list must
+            // not bleed into the page behind the backdrop.
+            className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2 sm:max-h-[60vh] sm:flex-none"
             role="listbox"
             id={listboxId}
           >
@@ -1126,7 +1164,11 @@ export function MuvucaSpotlight({
           <div className="text-metadata flex items-center justify-between border-t border-border bg-muted/30 px-4 py-2.5 text-muted-foreground">
             <div
               id={footerLegendId}
-              className="flex flex-wrap items-center gap-3"
+              // Pointer capability, not a breakpoint: hidden for touch (where
+              // it wrapped to two lines and named a shortcut nobody can
+              // press), shown for any fine pointer regardless of window
+              // width. The count stays outside this element.
+              className="flex flex-wrap items-center gap-3 [@media(pointer:coarse)]:hidden"
             >
               <span>
                 <kbd className="rounded border border-border bg-background px-1.5 py-0.5 font-mono">
@@ -1143,7 +1185,7 @@ export function MuvucaSpotlight({
                 </kbd>{" "}
                 {t.spotlight.select}
               </span>
-              <span className="hidden sm:inline">
+              <span>
                 <kbd className="rounded border border-border bg-background px-1.5 py-0.5 font-mono">
                   →
                 </kbd>{" "}
@@ -1165,13 +1207,16 @@ export function MuvucaSpotlight({
           </div>
         </div>
 
-        {/* Quick Look Preview Side Panel (Overdrive) */}
+        {/* Quick Look Preview: replaces the main column below `sm` instead of
+            stacking under it (min-h-0 flex-1 in the column-direction dialog),
+            sits beside it as a fixed 320px panel from `sm` up. */}
         {quickLookOpen && currentItem && (
-          <div className="w-full shrink-0 sm:w-80">
+          <div className="min-h-0 flex-1 sm:w-80 sm:flex-none">
             <QuickLookPreview
               item={currentItem}
               tags={tags}
               onClose={() => setQuickLookOpen(false)}
+              closeButtonRef={quickLookCloseButtonRef}
             />
           </div>
         )}
