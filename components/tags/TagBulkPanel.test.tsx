@@ -87,6 +87,22 @@ describe("TagBulkPanel", () => {
     expect(button("Excluir")?.disabled).toBe(true);
   });
 
+  it("hides the panel's own cancel above xl, where the header toggle already covers it", async () => {
+    await act(async () =>
+      root?.render(
+        <TagBulkPanel
+          selectedIds={[]}
+          flatTags={TAGS}
+          itemCounts={{}}
+          onDone={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      ),
+    );
+
+    expect(button("Cancelar seleção")?.className).toContain("xl:hidden");
+  });
+
   it("deletes every selected tag, then reports done", async () => {
     deleteTagsMock.mockResolvedValue({ ok: true, data: null });
     const onDone = vi.fn();
@@ -257,7 +273,7 @@ describe("TagBulkPanel", () => {
 
     const dialog = document.querySelector('[role="dialog"]');
     expect(dialog?.textContent).toContain("Mover 2 tags");
-    expect(dialog?.textContent).toContain("1 tag já vai junto com a tag mãe.");
+    expect(dialog?.textContent).toContain("1 tag já vai junto com a tag pai.");
     expect(button("Mover")?.disabled).toBe(true);
     expect(
       [...(dialog?.querySelectorAll('input[name="ids"]') ?? [])].map(
@@ -284,7 +300,7 @@ describe("TagBulkPanel", () => {
 
     // "b" (Beta) rides along under its selected parent "a" -- only the tag
     // actually being moved explicitly (Alfa) is listed; the ride-along
-    // count is what "1 tag já vai junto com a tag mãe." already covers.
+    // count is what "1 tag já vai junto com a tag pai." already covers.
     expect(dialog.textContent).toContain("Alfa");
 
     const destinationInput = dialog.querySelector(

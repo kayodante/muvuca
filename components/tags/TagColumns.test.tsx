@@ -89,6 +89,29 @@ describe("TagColumns", () => {
     expect(row(dom, "dev")?.hasAttribute("aria-current")).toBe(false);
   });
 
+  it("uses bg-selected for the selected row and bg-hover for the open path, with the path's count/chevron in text-foreground", async () => {
+    const dom = await renderColumns({ browseId: "react", selectedId: "react" });
+
+    // "dev" is an ancestor of the browsed "react": open path, not selected.
+    const dev = row(dom, "dev")!;
+    expect(dev.className).toContain("bg-hover");
+    expect(dev.className).not.toContain("bg-selected");
+    // `.flex` picks the count/chevron wrapper, not the leading TagDot swatch
+    // (also `aria-hidden`, but a plain circle with no `flex`).
+    const devMeta = dev.querySelector("span[aria-hidden='true'].flex");
+    expect(devMeta?.className).toContain("text-foreground");
+    expect(devMeta?.className).not.toContain("text-muted-foreground");
+
+    // "react" is the selected leaf itself.
+    const react = row(dom, "react")!;
+    expect(react.className).toContain("bg-selected");
+
+    // "notas" is neither: plain hover state only.
+    const notas = row(dom, "notas")!;
+    expect(notas.className).toContain("hover:bg-hover");
+    expect(notas.className).not.toContain("bg-selected");
+  });
+
   it("names a row by the tag alone and describes how many children it has", async () => {
     const dom = await renderColumns();
     const dev = row(dom, "dev")!;

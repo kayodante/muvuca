@@ -102,7 +102,15 @@ export function TagBulkPanel({
         >
           {t.tags.bulk.delete}
         </Button>
-        <Button variant="ghost" size="sm" onClick={onCancel}>
+        {/* xl duplicates this with the header toggle (TagsPage.tsx), which
+            stays visible there; below xl the header can be scrolled out of
+            view, so this fixed-bar copy is the one still reachable. */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="xl:hidden"
+          onClick={onCancel}
+        >
           {t.tags.page.cancelSelection}
         </Button>
       </div>

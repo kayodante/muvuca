@@ -542,7 +542,7 @@ test("move várias tags de uma vez levando as filhas junto", async ({
   await page.getByRole("button", { name: "Mover para…" }).click();
   const dialog = page.getByRole("dialog", { name: "Mover 3 tags" });
   await expect(
-    dialog.getByText("1 tag já vai junto com a tag mãe."),
+    dialog.getByText("1 tag já vai junto com a tag pai."),
   ).toBeVisible();
   await dialog.getByRole("combobox", { name: "Destino" }).click();
   await page.getByRole("option", { name: "Destino" }).click();

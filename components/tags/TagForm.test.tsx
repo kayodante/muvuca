@@ -209,6 +209,58 @@ describe("TagForm", () => {
     expect(onSaved).toHaveBeenCalledWith("dev");
   });
 
+  it("edit mode: Save starts outline, turns lime on the first edit, and returns to outline after a successful save", async () => {
+    updateTagMock.mockResolvedValue({ ok: true, data: null });
+    await act(async () => {
+      root?.render(
+        <TagForm
+          target={{ mode: "edit", tag: flatTags[0]! }}
+          flatTags={flatTags}
+          onSaved={vi.fn()}
+        />,
+      );
+    });
+
+    const submit = () =>
+      container!.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+    // Clean: outline, never lime -- direct edit means the form is always
+    // open even with nothing pending, and "Salvar alterações" must not read
+    // as a third lime call-to-action next to "Criar item"/"Criar tag".
+    expect(submit().className).toContain("border-border");
+    expect(submit().className).not.toContain("bg-primary");
+
+    await act(async () =>
+      setValue(
+        container!.querySelector('input[name="name"]') as HTMLInputElement,
+        "Dev 2",
+      ),
+    );
+    expect(submit().className).toContain("bg-primary");
+    expect(submit().className).not.toContain("border-border");
+
+    await act(async () => container!.querySelector("form")!.requestSubmit());
+    expect(submit().className).toContain("border-border");
+    expect(submit().className).not.toContain("bg-primary");
+  });
+
+  it("create mode: Save is always lime, dirty or not", async () => {
+    await act(async () => {
+      root?.render(
+        <TagForm
+          target={{ mode: "create", parentId: null }}
+          flatTags={flatTags}
+          onSaved={vi.fn()}
+        />,
+      );
+    });
+
+    const submit = container!.querySelector(
+      'button[type="submit"]',
+    ) as HTMLButtonElement;
+    expect(submit.className).toContain("bg-primary");
+  });
+
   it("hands the new id to onSaved after a create", async () => {
     createTagMock.mockResolvedValue({ ok: true, data: { id: "new-id" } });
     const onSaved = vi.fn();
@@ -349,11 +401,18 @@ describe("TagForm", () => {
         );
       });
 
+      const submit = () =>
+        container!.querySelector('button[type="submit"]') as HTMLButtonElement;
+
       await act(async () => typeIntoPicker(getPickerInput(), "Design"));
       expect(onDirtyChange).not.toHaveBeenCalled();
+      // Same signal the Save button reads: typing alone must not flip it
+      // from outline to lime.
+      expect(submit().className).toContain("border-border");
 
       await act(async () => clickPickerOption((text) => text === "Design"));
       expect(onDirtyChange).toHaveBeenCalledWith(true);
+      expect(submit().className).toContain("bg-primary");
     });
 
     it('submits the chosen parentId, and "" for root', async () => {

@@ -274,8 +274,8 @@ export const ptBR = {
       chooseDestination: "Escolha o destino",
       includedByParent: (n: number) =>
         n === 1
-          ? "1 tag já vai junto com a tag mãe."
-          : `${n} tags já vão junto com as tags mães.`,
+          ? "1 tag já vai junto com a tag pai."
+          : `${n} tags já vão junto com as tags pais.`,
       nameCollision: (names: string) =>
         `Já existe uma tag com o nome de ${names} nesse destino. Renomeie antes de mover.`,
       moveConfirm: "Mover",

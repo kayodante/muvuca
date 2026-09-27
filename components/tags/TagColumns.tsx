@@ -339,7 +339,7 @@ function ColumnView({
                   parentName ?? t.tags.columns.roots,
                 )}
                 className={cn(
-                  "-ml-2 flex size-10 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca hover:bg-secondary/60 hover:text-foreground",
+                  "-ml-2 flex size-10 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca hover:bg-hover hover:text-foreground",
                   FOCUS_RING,
                 )}
               >
@@ -416,12 +416,13 @@ function ColumnView({
       >
         {tags.map((tag) => {
           const count = childCounts.get(tag.id) ?? 0;
+          const onPath = path.has(tag.id);
           return (
             <div key={tag.id}>
               <TagRow
                 tag={tag}
                 compact={compact}
-                onPath={path.has(tag.id)}
+                onPath={onPath}
                 emphasis={count > 0}
                 drill={compact && count > 0}
                 onDrill={() => onBrowse(tag.id)}
@@ -434,7 +435,13 @@ function ColumnView({
                   count > 0 ? (
                     <span
                       aria-hidden="true"
-                      className="flex shrink-0 items-center gap-1 text-muted-foreground"
+                      className={cn(
+                        "flex shrink-0 items-center gap-1",
+                        // The path row's own bg-hover is quiet in dark mode,
+                        // so the count/chevron carry a second, non-color
+                        // signal instead of dimming with the rest.
+                        onPath ? "text-foreground" : "text-muted-foreground",
+                      )}
                     >
                       <span className="text-metadata font-mono tabular-nums">
                         {count}
@@ -634,8 +641,8 @@ function TagRow({
     return (
       <div
         className={cn(
-          "flex items-center gap-1 rounded-lg transition-colors duration-(--motion-fast) ease-out-muvuca hover:bg-secondary/60",
-          onPath && "bg-secondary/60",
+          "flex items-center gap-1 rounded-lg transition-colors duration-(--motion-fast) ease-out-muvuca hover:bg-hover",
+          onPath && "bg-hover",
         )}
       >
         <label
@@ -661,7 +668,7 @@ function TagRow({
             onClick={onDrill}
             aria-label={openLabel}
             className={cn(
-              "flex shrink-0 items-center rounded-md px-2 transition-colors duration-(--motion-fast) ease-out-muvuca hover:bg-secondary hover:text-foreground",
+              "flex shrink-0 items-center rounded-md px-2 transition-colors duration-(--motion-fast) ease-out-muvuca hover:bg-hover hover:text-foreground",
               height,
               FOCUS_RING,
             )}
@@ -691,12 +698,12 @@ function TagRow({
         height,
         FOCUS_RING,
         selected
-          ? "bg-secondary font-medium text-foreground"
+          ? "bg-selected font-medium text-foreground"
           : onPath
-            ? "bg-secondary/60 text-foreground"
+            ? "bg-hover text-foreground"
             : emphasis
-              ? "text-foreground hover:bg-secondary/60"
-              : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+              ? "text-foreground hover:bg-hover"
+              : "text-muted-foreground hover:bg-hover hover:text-foreground",
       )}
     >
       {/* Selection is weight + background + this marker, never hue alone. */}
