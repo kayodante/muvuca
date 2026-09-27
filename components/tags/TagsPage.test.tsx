@@ -74,9 +74,19 @@ afterEach(async () => {
   vi.resetAllMocks();
 });
 
-async function render(flatTags: FlatTag[], initial: TagsPageInitial = NONE) {
+async function render(
+  flatTags: FlatTag[],
+  initial: TagsPageInitial = NONE,
+  itemCounts: Record<string, number> = {},
+) {
   await act(async () =>
-    root?.render(<TagsPage flatTags={flatTags} initial={initial} />),
+    root?.render(
+      <TagsPage
+        flatTags={flatTags}
+        itemCounts={itemCounts}
+        initial={initial}
+      />,
+    ),
   );
 }
 
@@ -273,7 +283,7 @@ describe("TagsPage", () => {
     expect(row("design")).toBeNull();
   });
 
-  it("with nothing selected the inspector points at tags worth curating", async () => {
+  it("with nothing selected the inspector groups tags that share a name by where each lives", async () => {
     await render([
       ...TAGS,
       {
@@ -291,9 +301,18 @@ describe("TagsPage", () => {
     );
     expect(inspector?.textContent).toContain("4 tags · 2 raízes · 2 níveis");
     expect(inspector?.textContent).toContain("Nomes repetidos");
-    const chip = [...(inspector?.querySelectorAll("button") ?? [])].find(
-      (button) => button.textContent === "Dev / Ícones",
+
+    // Each duplicate's chip shows *where* it lives (its ancestor path),
+    // not its own name again -- the group heading already carries the
+    // shared name once.
+    const repeatedSection = [...(inspector?.querySelectorAll("h3") ?? [])]
+      .find((h3) => h3.textContent?.startsWith("Nomes repetidos"))
+      ?.closest("section");
+    const chip = [...(repeatedSection?.querySelectorAll("button") ?? [])].find(
+      (button) => button.textContent === "Dev",
     );
+    expect(chip?.getAttribute("aria-label")).toBe("Ícones — Dev");
+
     await act(async () => chip?.click());
     expect(heading()).toBe("Ícones");
   });

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { getTagList } from "@/lib/database/queries/tags";
+import { getTagItemCounts, getTagList } from "@/lib/database/queries/tags";
 import { getDictionary } from "@/lib/i18n/server";
 import { TagsPage } from "@/components/tags/TagsPage";
 
@@ -27,11 +27,16 @@ export default async function TagsRootPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const [flatTags, params] = await Promise.all([getTagList(), searchParams]);
+  const [flatTags, itemCounts, params] = await Promise.all([
+    getTagList(),
+    getTagItemCounts(),
+    searchParams,
+  ]);
 
   return (
     <TagsPage
       flatTags={flatTags}
+      itemCounts={itemCounts}
       initial={{
         tagPath: singlePath(params.tag),
         create: params.new === "1",

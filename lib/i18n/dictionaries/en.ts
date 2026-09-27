@@ -141,8 +141,18 @@ export const en: Dictionary = {
     },
     deleteDialog: {
       title: (name: string) => `Delete “${name}”?`,
-      description: (name: string) =>
-        `Direct child tags move under “${name}”'s own parent (or become root tags, if “${name}” was already a root). Associated items aren't deleted -- they only lose the association with this tag.`,
+      childrenToParent: (n: number, parentName: string) =>
+        n === 1
+          ? `The child tag moves under “${parentName}”.`
+          : `The ${n} child tags move under “${parentName}”.`,
+      childrenToRoot: (n: number) =>
+        n === 1
+          ? "The child tag becomes a root tag."
+          : `The ${n} child tags become root tags.`,
+      itemsNone: "No item uses this tag.",
+      itemsOne: "1 item loses this tag. The item is not deleted.",
+      itemsMany: (n: number) =>
+        `${n} items lose this tag. The items are not deleted.`,
       confirm: "Delete tag",
       deleting: "Deleting...",
       deleted: "Tag deleted.",
@@ -199,10 +209,22 @@ export const en: Dictionary = {
         ].join(" · "),
       repeatedNames: "Repeated names",
       repeatedNamesHint: "The same name in more than one branch.",
-      withoutDescription: "No description",
+      repeatedNameChipLabel: (name: string, location: string) =>
+        `${name} — ${location}`,
+      rootLabel: "Root",
+      emptyTags: "Empty",
+      emptyTagsHint: "No items in it or its children.",
+      singleItemTags: "With 1 item",
+      singleItemTagsHint: "Candidates to merge into another tag or delete.",
       showAll: (n: number) => `Show all (${n})`,
       showLess: "Show less",
-      allTidy: "Every tag has a description and no name repeats.",
+      allTidy: "No tag is empty, none has just 1 item, and no name repeats.",
+      itemCount: (n: number) =>
+        n === 0
+          ? "No items with this tag"
+          : n === 1
+            ? "1 item with this tag"
+            : `${n} items with this tag`,
       pathLabel: "Path",
       children: "Child tags",
       noChildren: "No child tags.",
@@ -244,6 +266,7 @@ export const en: Dictionary = {
       deleting: "Deleting...",
       deleted: (n: number) =>
         n === 1 ? "1 tag deleted." : `${n} tags deleted.`,
+      itemCount: (n: number) => (n === 1 ? "1 item" : `${n} items`),
     },
   },
   bookmarks: {

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 
-import { createRootTag, signIn } from "./helpers";
+import { createRootTag, selectTag, signIn } from "./helpers";
 
 test("header 'Criar item' opens the create dialog while already on /library", async ({
   page,
@@ -118,6 +118,15 @@ test("associa tags a um item na criação", async ({ page }) => {
     .filter({ hasText: "Manual de estilo" });
   await expect(card.getByText("Estudos")).toBeVisible();
   await expect(card.getByText("Ferramentas")).toBeVisible();
+
+  // Proves `getTagItemCounts` (a real embedded PostgREST count, which no
+  // mocked test can catch) against the local database: the inspector's
+  // direct-count line must reflect the item just tagged.
+  await page.goto("/tags");
+  await selectTag(page, "Estudos");
+  await expect(
+    page.getByRole("region", { name: "Estudos" }).getByText("1 item com esta tag"),
+  ).toBeVisible();
 });
 
 test("edita o título de um item existente", async ({ page }) => {

@@ -48,11 +48,13 @@ const ROOT = "";
 export function TagBulkPanel({
   selectedIds,
   flatTags,
+  itemCounts,
   onDone,
   onCancel,
 }: {
   selectedIds: string[];
   flatTags: FlatTag[];
+  itemCounts: Record<string, number>;
   onDone: () => void;
   onCancel: () => void;
 }) {
@@ -117,6 +119,7 @@ export function TagBulkPanel({
         <DeleteTagsAlertDialog
           selectedIds={selectedIds}
           flatTags={flatTags}
+          itemCounts={itemCounts}
           onOpenChange={setDeleteOpen}
           onDeleted={onDone}
         />
@@ -190,7 +193,7 @@ function MoveTagsDialog({
             <DialogDescription>{t.tags.bulk.moveDescription}</DialogDescription>
           </DialogHeader>
 
-          <ul className="text-body-sm flex max-h-40 flex-col gap-1.5 overflow-y-auto">
+          <ul className="text-body-sm flex max-h-40 flex-col gap-1.5 overflow-y-auto overscroll-contain">
             {movingTags.map((tag) => (
               <li
                 key={tag.id}
@@ -270,11 +273,13 @@ function MoveTagsDialog({
 function DeleteTagsAlertDialog({
   selectedIds,
   flatTags,
+  itemCounts,
   onOpenChange,
   onDeleted,
 }: {
   selectedIds: string[];
   flatTags: FlatTag[];
+  itemCounts: Record<string, number>;
   onOpenChange: (open: boolean) => void;
   onDeleted: () => void;
 }) {
@@ -317,19 +322,24 @@ function DeleteTagsAlertDialog({
             {t.tags.bulk.deleteDescription}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <ul className="text-body-sm flex max-h-64 flex-col gap-1.5 overflow-y-auto">
+        <ul className="text-body-sm flex max-h-64 flex-col gap-1.5 overflow-y-auto overscroll-contain">
           {selected.map((tag) => (
             <li
               key={tag.id}
               dir="auto"
-              className="flex flex-col [overflow-wrap:anywhere]"
+              className="flex items-baseline justify-between gap-3 [overflow-wrap:anywhere]"
             >
-              <span>{tag.name}</span>
-              {tag.parentId && (
-                <span className="text-body-sm text-muted-foreground">
-                  {getNamePath(tag, byId).slice(0, -1).join(" / ")}
-                </span>
-              )}
+              <span className="flex min-w-0 flex-col">
+                <span>{tag.name}</span>
+                {tag.parentId && (
+                  <span className="text-body-sm text-muted-foreground">
+                    {getNamePath(tag, byId).slice(0, -1).join(" / ")}
+                  </span>
+                )}
+              </span>
+              <span className="text-metadata shrink-0 font-mono text-muted-foreground tabular-nums">
+                {t.tags.bulk.itemCount(itemCounts[tag.id] ?? 0)}
+              </span>
             </li>
           ))}
         </ul>

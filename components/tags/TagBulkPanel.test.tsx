@@ -73,6 +73,7 @@ describe("TagBulkPanel", () => {
         <TagBulkPanel
           selectedIds={[]}
           flatTags={TAGS}
+          itemCounts={{}}
           onDone={vi.fn()}
           onCancel={vi.fn()}
         />,
@@ -94,6 +95,7 @@ describe("TagBulkPanel", () => {
         <TagBulkPanel
           selectedIds={["a", "b"]}
           flatTags={TAGS}
+          itemCounts={{}}
           onDone={onDone}
           onCancel={vi.fn()}
         />,
@@ -116,6 +118,28 @@ describe("TagBulkPanel", () => {
     expect(onDone).toHaveBeenCalled();
   });
 
+  it("shows each tag's own item count in the delete confirmation, without summing them", async () => {
+    await act(async () =>
+      root?.render(
+        <TagBulkPanel
+          selectedIds={["a", "b"]}
+          flatTags={TAGS}
+          itemCounts={{ a: 12, b: 1 }}
+          onDone={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      ),
+    );
+
+    await act(async () => button("Excluir")?.click());
+    const alert = document.querySelector('[role="alertdialog"]');
+
+    // The same item could be tagged on both "a" and "b" -- each row shows
+    // its own count, never a combined total across the selection.
+    expect(alert?.textContent).toContain("12 itens");
+    expect(alert?.textContent).toContain("1 item");
+  });
+
   it("freezes the selection at open time: a revalidate racing the action doesn't zero the toast", async () => {
     // Mirrors the real race: `deleteTags`'s own revalidatePath refreshes the
     // parent's `flatTags` (and, in the real page, filters the deleted ids
@@ -134,6 +158,7 @@ describe("TagBulkPanel", () => {
         <TagBulkPanel
           selectedIds={["a", "b"]}
           flatTags={TAGS}
+          itemCounts={{}}
           onDone={onDone}
           onCancel={vi.fn()}
         />,
@@ -151,6 +176,7 @@ describe("TagBulkPanel", () => {
         <TagBulkPanel
           selectedIds={[]}
           flatTags={TAGS.filter((tag) => tag.id !== "a" && tag.id !== "b")}
+          itemCounts={{}}
           onDone={onDone}
           onCancel={vi.fn()}
         />,
@@ -176,6 +202,7 @@ describe("TagBulkPanel", () => {
         <TagBulkPanel
           selectedIds={["a", "b"]}
           flatTags={TAGS}
+          itemCounts={{}}
           onDone={onDone}
           onCancel={vi.fn()}
         />,
@@ -219,6 +246,7 @@ describe("TagBulkPanel", () => {
         <TagBulkPanel
           selectedIds={["a", "b"]}
           flatTags={TAGS}
+          itemCounts={{}}
           onDone={vi.fn()}
           onCancel={vi.fn()}
         />,
@@ -244,6 +272,7 @@ describe("TagBulkPanel", () => {
         <TagBulkPanel
           selectedIds={["a", "b"]}
           flatTags={TAGS}
+          itemCounts={{}}
           onDone={vi.fn()}
           onCancel={vi.fn()}
         />,
@@ -311,6 +340,7 @@ describe("TagBulkPanel", () => {
         <TagBulkPanel
           selectedIds={selectedIds}
           flatTags={manyTags}
+          itemCounts={{}}
           onDone={vi.fn()}
           onCancel={vi.fn()}
         />,
@@ -353,6 +383,7 @@ describe("TagBulkPanel", () => {
         <TagBulkPanel
           selectedIds={flat.map((tag) => tag.id)}
           flatTags={flat}
+          itemCounts={{}}
           onDone={vi.fn()}
           onCancel={vi.fn()}
         />,

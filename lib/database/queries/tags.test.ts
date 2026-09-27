@@ -11,6 +11,7 @@ vi.mock("@/lib/security/logging", () => ({ logEvent: logEventMock }));
 import {
   getChildTagCount,
   getTagByPath,
+  getTagItemCounts,
   getTagList,
   getTagsByIds,
 } from "@/lib/database/queries/tags";
@@ -254,6 +255,58 @@ describe("getChildTagCount", () => {
 
     await expect(getChildTagCount("tag-a")).rejects.toMatchObject({
       code: "42501",
+    });
+  });
+});
+
+describe("getTagItemCounts", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("maps each tag id to its direct item count", async () => {
+    const returns = vi.fn().mockResolvedValue({
+      data: [
+        { id: "design", item_tags: [{ count: 3 }] },
+        { id: "empty-tag", item_tags: [{ count: 0 }] },
+      ],
+      error: null,
+    });
+    const select = vi.fn().mockReturnValue({ returns });
+    const from = vi.fn().mockReturnValue({ select });
+    createClientMock.mockResolvedValue({ from });
+
+    await expect(getTagItemCounts()).resolves.toEqual({
+      design: 3,
+      "empty-tag": 0,
+    });
+    expect(select).toHaveBeenCalledWith("id, item_tags(count)");
+  });
+
+  it("resolves to {} when there are no tags", async () => {
+    const returns = vi.fn().mockResolvedValue({ data: [], error: null });
+    const select = vi.fn().mockReturnValue({ returns });
+    const from = vi.fn().mockReturnValue({ select });
+    createClientMock.mockResolvedValue({ from });
+
+    await expect(getTagItemCounts()).resolves.toEqual({});
+  });
+
+  it("logs a structured failure event before throwing when the query errors", async () => {
+    const returns = vi.fn().mockResolvedValue({
+      data: null,
+      error: { code: "42501", name: "PostgrestError", message: "denied" },
+    });
+    const select = vi.fn().mockReturnValue({ returns });
+    const from = vi.fn().mockReturnValue({ select });
+    createClientMock.mockResolvedValue({ from });
+
+    await expect(getTagItemCounts()).rejects.toMatchObject({ code: "42501" });
+
+    expect(logEventMock).toHaveBeenCalledWith({
+      event: "tags.item_counts_failed",
+      status: "failure",
+      errorClass: "42501",
     });
   });
 });

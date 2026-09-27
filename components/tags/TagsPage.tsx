@@ -157,9 +157,11 @@ function initialTarget(
  */
 export function TagsPage({
   flatTags,
+  itemCounts,
   initial,
 }: {
   flatTags: FlatTag[];
+  itemCounts: Record<string, number>;
   initial: TagsPageInitial;
 }) {
   const t = useDictionary();
@@ -280,6 +282,7 @@ export function TagsPage({
     <TagBulkPanel
       selectedIds={checkedIds}
       flatTags={flatTags}
+      itemCounts={itemCounts}
       onDone={endSelecting}
       onCancel={endSelecting}
     />
@@ -289,6 +292,7 @@ export function TagsPage({
     <TagInspector
       target={current}
       flatTags={flatTags}
+      itemCounts={itemCounts}
       headingRef={headingRef}
       onSelect={select}
       onSaved={(id) => apply({ kind: "edit", id })}

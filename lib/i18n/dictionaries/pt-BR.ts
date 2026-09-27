@@ -164,8 +164,18 @@ export const ptBR = {
     },
     deleteDialog: {
       title: (name: string) => `Excluir “${name}”?`,
-      description: (name: string) =>
-        `As tags filhas diretas passam a ficar sob a tag pai de “${name}” (ou viram tags raiz, se “${name}” já era raiz). Os itens associados não são excluídos -- apenas perdem a associação com esta tag.`,
+      childrenToParent: (n: number, parentName: string) =>
+        n === 1
+          ? `A tag filha passa para “${parentName}”.`
+          : `As ${n} tags filhas passam para “${parentName}”.`,
+      childrenToRoot: (n: number) =>
+        n === 1
+          ? "A tag filha passa a ser raiz."
+          : `As ${n} tags filhas passam a ser raiz.`,
+      itemsNone: "Nenhum item usa esta tag.",
+      itemsOne: "1 item perde esta tag. O item não é excluído.",
+      itemsMany: (n: number) =>
+        `${n} itens perdem esta tag. Os itens não são excluídos.`,
       confirm: "Excluir tag",
       deleting: "Excluindo...",
       deleted: "Tag excluída.",
@@ -222,10 +232,23 @@ export const ptBR = {
         ].join(" · "),
       repeatedNames: "Nomes repetidos",
       repeatedNamesHint: "O mesmo nome em mais de um ramo da hierarquia.",
-      withoutDescription: "Sem descrição",
+      repeatedNameChipLabel: (name: string, location: string) =>
+        `${name} — ${location}`,
+      rootLabel: "Raiz",
+      emptyTags: "Vazias",
+      emptyTagsHint: "Sem itens nela nem nas filhas.",
+      singleItemTags: "Com 1 item",
+      singleItemTagsHint: "Candidatas a juntar com outra tag ou excluir.",
       showAll: (n: number) => `Mostrar todas (${n})`,
       showLess: "Mostrar menos",
-      allTidy: "Toda tag tem descrição e nenhum nome se repete.",
+      allTidy:
+        "Nenhuma tag vazia, nenhuma com só 1 item e nenhum nome se repete.",
+      itemCount: (n: number) =>
+        n === 0
+          ? "Nenhum item com esta tag"
+          : n === 1
+            ? "1 item com esta tag"
+            : `${n} itens com esta tag`,
       pathLabel: "Caminho",
       children: "Tags filhas",
       noChildren: "Nenhuma tag filha.",
@@ -267,6 +290,7 @@ export const ptBR = {
       deleting: "Excluindo...",
       deleted: (n: number) =>
         n === 1 ? "1 tag excluída." : `${n} tags excluídas.`,
+      itemCount: (n: number) => (n === 1 ? "1 item" : `${n} itens`),
     },
   },
   bookmarks: {
