@@ -61,7 +61,9 @@ export function TagNavigation({ tags }: { tags: FlatTag[] }) {
         </div>
       </div>
       {visibleNodes.length > 0 ? (
-        <ul className="min-h-0 flex-1 overflow-y-auto">
+        // `-m-px p-px` here and on each subtree: both clip, and the active
+        // row's outer `shadow-light` edge needs 1px past the row to show.
+        <ul className="-m-px min-h-0 flex-1 overflow-y-auto p-px">
           {visibleNodes.map((node) => (
             <TagNavigationRow
               key={node.id}
@@ -107,20 +109,14 @@ function TagNavigationRow({
     <li className="t-acc" data-open={open}>
       <div
         className={cn(
-          "relative flex h-8 min-w-0 items-center rounded-md pr-1 transition-colors duration-(--motion-fast) ease-out-muvuca",
+          // Same states as NavLink (Figma `all-button`): selection is the
+          // raised fill, never hue alone.
+          "flex h-8 min-w-0 items-center rounded-sm pr-1 transition-[background-color,box-shadow,color] duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none",
           active
-            ? "bg-selected text-foreground"
-            : "text-muted-foreground focus-within:bg-hover hover:bg-hover",
+            ? "bg-secondary text-foreground shadow-light inset-shadow-[0_0_0_999px] inset-shadow-light-1"
+            : "text-muted-foreground focus-within:bg-light-2 focus-within:shadow-[inset_0_0_0_0.5px_var(--color-light-4),inset_0_1px_0_0_var(--color-light-2)] hover:bg-light-2 hover:shadow-[inset_0_0_0_0.5px_var(--color-light-4),inset_0_1px_0_0_var(--color-light-2)]",
         )}
       >
-        {/* Selection is fill + weight + this marker, as in NavLink and
-            TagColumns, never hue alone. */}
-        {active && (
-          <span
-            aria-hidden="true"
-            className="absolute top-1/2 left-0.5 h-4 w-1 -translate-y-1/2 rounded-full bg-primary"
-          />
-        )}
         {/* One 28px guide column per ancestor level, each with a 1px line
             centered on where that ancestor's chevron sits. The item's own
             chevron slot never gets a guide. Decorative and out of the tab
@@ -165,9 +161,7 @@ function TagNavigationRow({
             // overflow while expanding, and an offset ring on the first or
             // last row would be shaved by that clip.
             "group/taglink text-body-lg flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 transition-[scale,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.97] motion-reduce:active:scale-100",
-            active
-              ? "font-medium text-foreground"
-              : "text-muted-foreground hover:text-foreground",
+            active ? "text-foreground" : "text-muted-foreground",
           )}
         >
           <span
@@ -188,7 +182,7 @@ function TagNavigationRow({
         // something to animate, and `inert` keeps the collapsed rows out of
         // the tab order and the accessibility tree.
         <div className="t-acc-panel">
-          <ul className="t-acc-panel-inner" inert={!open}>
+          <ul className="t-acc-panel-inner -m-px p-px" inert={!open}>
             {node.children.map((child) => (
               <TagNavigationRow
                 key={child.id}
