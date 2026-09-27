@@ -166,6 +166,19 @@ export function MuvucaSpotlight({
     (index: number) => `${listboxId}-option-${index}`,
     [listboxId],
   );
+  // Option name/description come from these ids, not from the option's full
+  // textContent -- otherwise a code item's ~2k-char snippet becomes its
+  // accessible name.
+  const optionTitleId = useCallback(
+    (index: number) => `${listboxId}-option-${index}-title`,
+    [listboxId],
+  );
+  const optionMetaId = useCallback(
+    (index: number) => `${listboxId}-option-${index}-meta`,
+    [listboxId],
+  );
+  const tagFilterLabelId = useId();
+  const footerLegendId = useId();
 
   if (open !== prevOpen) {
     setPrevOpen(open);
@@ -339,6 +352,14 @@ export function MuvucaSpotlight({
     setRetryNonce((n) => n + 1);
   }
 
+  function handleClearSearch() {
+    setQuery("");
+    setSelectedTagFilter(null);
+    setSelectedIndex(0);
+    pendingEnterRef.current = false;
+    inputRef.current?.focus();
+  }
+
   // System quick actions
   const quickActions: QuickAction[] = useMemo(
     () => [
@@ -431,6 +452,31 @@ export function MuvucaSpotlight({
   // `results?.items ?? []` would otherwise be a fresh array every render.
   const currentItems = useMemo(() => results?.items ?? [], [results]);
   const freshHasMore = !stale && (results?.hasMore ?? false);
+  // Fresh, no error, and (a query or a tag filter) but zero items: the
+  // listbox stays mounted (the Ações group may still show keyword matches)
+  // but the actual "no items" feedback renders above it, in the same slot
+  // commit 1 uses for the load error.
+  const showEmptyState =
+    !loadError && !stale && !isEmptySearch && currentItems.length === 0;
+  // The empty message quotes the query, or -- when filtering by tag alone --
+  // the tag name, so it never reads as `Nenhum item encontrado para "".`
+  const emptyStateSubject =
+    trimmedQuery ||
+    tags.find((tag) => tag.id === selectedTagFilter)?.name ||
+    "";
+  // Single source for the always-mounted live region: priority is error,
+  // then in-flight/stale, then (for an active query/filter) count or
+  // no-items, and finally silence for the empty-query recents so opening
+  // the spotlight doesn't chatter.
+  const statusText = loadError
+    ? t.spotlight.loadFailed
+    : isSearching || stale
+      ? t.spotlight.searching
+      : isEmptySearch
+        ? ""
+        : currentItems.length === 0
+          ? t.spotlight.noItems(emptyStateSubject)
+          : t.spotlight.itemCount(currentItems.length, freshHasMore);
 
   // Dynamic "Ver todos na biblioteca" option: only once there is a query or
   // tag filter and the server said there is more than this page.
@@ -614,14 +660,33 @@ export function MuvucaSpotlight({
         return;
       }
       void handleAction(option);
-    } else if (
-      (e.key === " " && query === "") ||
-      (e.key === " " && (e.ctrlKey || e.metaKey || e.altKey))
-    ) {
-      // Spacebar toggles Quick Look preview when not actively typing query
+    } else if (e.key === " " && query === "") {
+      // Spacebar toggles Quick Look when there's no query typed yet (macOS
+      // Quick Look habit). Ctrl/Alt/Meta+Space is gone: it collided with OS
+      // input-source switching and window-menu shortcuts.
       if (currentItem) {
         e.preventDefault();
         setQuickLookOpen((prev) => !prev);
+      }
+    } else if (e.key === "ArrowRight") {
+      // → opens the preview, but only from the caret at the end of the text
+      // -- otherwise it can never be used to move the caret right.
+      const input = e.currentTarget;
+      const atEnd =
+        input.selectionStart === input.selectionEnd &&
+        input.selectionStart === input.value.length;
+      if (atEnd && currentItem) {
+        e.preventDefault();
+        setQuickLookOpen(true);
+      }
+    } else if (e.key === "ArrowLeft") {
+      const input = e.currentTarget;
+      const atEnd =
+        input.selectionStart === input.selectionEnd &&
+        input.selectionStart === input.value.length;
+      if (atEnd && quickLookOpen) {
+        e.preventDefault();
+        setQuickLookOpen(false);
       }
     }
   }
@@ -639,6 +704,8 @@ export function MuvucaSpotlight({
           id={optionId(idx)}
           role="option"
           aria-selected={isSelected}
+          aria-labelledby={optionTitleId(idx)}
+          aria-describedby={optionMetaId(idx)}
           onMouseEnter={() => setSelectedIndex(idx)}
           onClick={() => handleAction(option)}
           className={`group flex cursor-pointer items-center justify-between rounded-lg p-2.5 transition-colors duration-(--motion-fast) ease-out-muvuca ${
@@ -658,10 +725,16 @@ export function MuvucaSpotlight({
               <Icon className="size-3.5" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <span className="text-body-sm truncate font-medium text-foreground">
+              <span
+                id={optionTitleId(idx)}
+                className="text-body-sm truncate font-medium text-foreground"
+              >
                 {action.title}
               </span>
-              <p className="text-metadata truncate text-muted-foreground">
+              <p
+                id={optionMetaId(idx)}
+                className="text-metadata truncate text-muted-foreground"
+              >
                 {action.description}
               </p>
             </div>
@@ -706,6 +779,8 @@ export function MuvucaSpotlight({
         id={optionId(idx)}
         role="option"
         aria-selected={isSelected}
+        aria-labelledby={optionTitleId(idx)}
+        aria-describedby={optionMetaId(idx)}
         onMouseEnter={() => setSelectedIndex(idx)}
         onClick={() => handleAction(option)}
         className={`group flex cursor-pointer items-center justify-between rounded-lg p-2.5 transition-colors duration-(--motion-fast) ease-out-muvuca ${
@@ -729,10 +804,16 @@ export function MuvucaSpotlight({
 
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-body-sm truncate font-medium text-foreground">
+              <span
+                id={optionTitleId(idx)}
+                className="text-body-sm truncate font-medium text-foreground"
+              >
                 {item.title}
               </span>
-              <span className="text-metadata shrink-0 font-mono text-muted-foreground uppercase">
+              <span
+                id={optionMetaId(idx)}
+                className="text-metadata shrink-0 font-mono text-muted-foreground uppercase"
+              >
                 {isLink
                   ? domain
                   : isPrompt
@@ -749,9 +830,14 @@ export function MuvucaSpotlight({
         </div>
 
         <div className="flex shrink-0 items-center gap-2 pl-3">
-          {/* Quick Look peek button */}
-          <button
-            type="button"
+          {/* Quick Look peek affordance: pointer-only. Keyboard already
+              reaches the preview via → on the option itself (see
+              handleInputKeyDown), so this is aria-hidden rather than a
+              second Tab stop with an inflated option name. No aria-label
+              here: aria-hidden discards it, Rams correctly flagged it as
+              dead. */}
+          <span
+            aria-hidden="true"
             onClick={(e) => {
               e.stopPropagation();
               setSelectedIndex(idx);
@@ -761,11 +847,10 @@ export function MuvucaSpotlight({
               "rounded p-1 text-muted-foreground transition-colors hover:text-foreground",
               quickLookOpen && isSelected && "text-primary",
             )}
-            aria-label={t.spotlight.quickLookAria}
             title={t.spotlight.quickLookTitle}
           >
             <EyeIcon className="size-3.5" />
-          </button>
+          </span>
 
           {isLink ? (
             <span className="text-metadata hidden items-center gap-1 text-muted-foreground group-hover:text-foreground sm:inline-flex">
@@ -773,16 +858,15 @@ export function MuvucaSpotlight({
               <ExternalLinkIcon className="size-3" />
             </span>
           ) : (
-            <button
-              type="button"
+            // Same pointer-only rationale as the eye above: Enter on the
+            // option copies, so this doesn't need its own Tab stop or name.
+            <span
+              aria-hidden="true"
               onClick={(e) => {
                 e.stopPropagation();
                 handleAction(option);
               }}
               className="text-metadata inline-flex items-center gap-1 rounded-md bg-muted/60 px-2 py-1 text-foreground transition-colors duration-(--motion-fast) ease-out-muvuca group-hover:bg-primary group-hover:text-primary-foreground motion-reduce:transition-none"
-              aria-label={
-                isPrompt ? t.items.card.copyPrompt : t.items.card.copyCode
-              }
             >
               {copiedId === item.id ? (
                 <>
@@ -795,7 +879,7 @@ export function MuvucaSpotlight({
                   <span>{t.spotlight.copyShort}</span>
                 </>
               )}
-            </button>
+            </span>
           )}
           {isSelected && (
             <CornerDownLeftIcon
@@ -868,6 +952,7 @@ export function MuvucaSpotlight({
               placeholder={t.spotlight.searchPlaceholder}
               className="text-body-md w-full bg-transparent text-foreground outline-none placeholder:text-muted-foreground"
               aria-label={t.spotlight.searchInputLabel}
+              aria-describedby={footerLegendId}
             />
 
             <div className="flex items-center gap-2">
@@ -885,53 +970,72 @@ export function MuvucaSpotlight({
             </div>
           </div>
 
+          {/* Always mounted: a live region inserted together with its text is
+              not announced, only a change to one that already exists. */}
+          <span role="status" className="sr-only">
+            {statusText}
+          </span>
+
           {/* Tag quick filters */}
           {tags.length > 0 && (
             <div className="text-metadata flex items-center gap-1.5 overflow-x-auto border-b border-border bg-muted/10 px-4 py-2">
-              <span className="mr-1 shrink-0 text-muted-foreground">
+              <span
+                id={tagFilterLabelId}
+                className="mr-1 shrink-0 text-muted-foreground"
+              >
                 {t.spotlight.filterByTag}
               </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedTagFilter(null);
-                  setSelectedIndex(0);
-                }}
-                className={`shrink-0 rounded-md px-2 py-0.5 transition-colors duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none ${
-                  selectedTagFilter === null
-                    ? "bg-primary font-medium text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted"
-                }`}
+              <div
+                role="group"
+                aria-labelledby={tagFilterLabelId}
+                className="contents"
               >
-                {t.spotlight.allTag}
-              </button>
-              {tags.slice(0, 8).map((tag) => {
-                const isSelected = selectedTagFilter === tag.id;
-                return (
-                  <button
-                    key={tag.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedTagFilter(isSelected ? null : tag.id);
-                      setSelectedIndex(0);
-                    }}
-                    className={`flex shrink-0 items-center gap-1.5 rounded-md px-2 py-0.5 transition-colors duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none ${
-                      isSelected
-                        ? "bg-primary font-medium text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted"
-                    }`}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        "size-1.5 shrink-0 rounded-full",
-                        swatchClassFor(tag.colorToken),
-                      )}
-                    />
-                    <span>{tag.name}</span>
-                  </button>
-                );
-              })}
+                <button
+                  type="button"
+                  aria-pressed={selectedTagFilter === null}
+                  onClick={() => {
+                    setSelectedTagFilter(null);
+                    setSelectedIndex(0);
+                    inputRef.current?.focus();
+                  }}
+                  className={`shrink-0 rounded-md px-2 py-0.5 transition-colors duration-(--motion-fast) ease-out-muvuca outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none ${
+                    selectedTagFilter === null
+                      ? "bg-primary font-medium text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {t.spotlight.allTag}
+                </button>
+                {tags.slice(0, 8).map((tag) => {
+                  const isSelected = selectedTagFilter === tag.id;
+                  return (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      aria-pressed={isSelected}
+                      onClick={() => {
+                        setSelectedTagFilter(isSelected ? null : tag.id);
+                        setSelectedIndex(0);
+                        inputRef.current?.focus();
+                      }}
+                      className={`flex shrink-0 items-center gap-1.5 rounded-md px-2 py-0.5 transition-colors duration-(--motion-fast) ease-out-muvuca outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none ${
+                        isSelected
+                          ? "bg-primary font-medium text-primary-foreground"
+                          : "text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          "size-1.5 shrink-0 rounded-full",
+                          swatchClassFor(tag.colorToken),
+                        )}
+                      />
+                      <span>{tag.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -953,6 +1057,37 @@ export function MuvucaSpotlight({
             </div>
           )}
 
+          {/* Empty state: same slot as the error above, never inside the
+              listbox -- the listbox stays mounted since the Ações group can
+              still hold keyword matches even with zero items. */}
+          {showEmptyState && (
+            <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/10 px-4 py-3">
+              <p className="text-body-sm text-muted-foreground">
+                {t.spotlight.noItems(emptyStateSubject)}
+              </p>
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="text-body-sm rounded-md border border-border px-2.5 py-1 font-medium text-foreground transition-colors duration-(--motion-fast) ease-out-muvuca outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+                >
+                  {t.spotlight.clearSearch}
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    quickActions
+                      .find((action) => action.id === "action-create-item")
+                      ?.run()
+                  }
+                  className="text-body-sm rounded-md bg-primary px-2.5 py-1 font-medium text-primary-foreground transition-colors duration-(--motion-fast) ease-out-muvuca outline-none hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+                >
+                  {t.spotlight.quickActions.createItem.title}
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Results List */}
           <div
             ref={listRef}
@@ -960,42 +1095,39 @@ export function MuvucaSpotlight({
             role="listbox"
             id={listboxId}
           >
-            {flatOptions.length === 0 ? (
-              <div className="text-body-sm py-12 text-center text-muted-foreground">
-                {t.spotlight.noResults(query)}
-              </div>
-            ) : (
-              optionBlocks.map((block, blockIdx) => {
-                const headingId = `${listboxId}-heading-${blockIdx}`;
-                const groupLabel =
-                  block.group === "actions"
-                    ? t.spotlight.groups.actions
-                    : block.group === "recent"
-                      ? t.spotlight.groups.recent
-                      : t.spotlight.groups.items;
-                return (
-                  <div role="presentation" key={`${block.group}-${blockIdx}`}>
-                    <div
-                      id={headingId}
-                      aria-hidden="true"
-                      className="text-body-sm px-2.5 pt-2 pb-1 text-muted-foreground"
-                    >
-                      {groupLabel}
-                    </div>
-                    <div role="group" aria-labelledby={headingId}>
-                      {block.entries.map(({ option, idx }) =>
-                        renderOption(option, idx),
-                      )}
-                    </div>
+            {optionBlocks.map((block, blockIdx) => {
+              const headingId = `${listboxId}-heading-${blockIdx}`;
+              const groupLabel =
+                block.group === "actions"
+                  ? t.spotlight.groups.actions
+                  : block.group === "recent"
+                    ? t.spotlight.groups.recent
+                    : t.spotlight.groups.items;
+              return (
+                <div role="presentation" key={`${block.group}-${blockIdx}`}>
+                  <div
+                    id={headingId}
+                    aria-hidden="true"
+                    className="text-body-sm px-2.5 pt-2 pb-1 text-muted-foreground"
+                  >
+                    {groupLabel}
                   </div>
-                );
-              })
-            )}
+                  <div role="group" aria-labelledby={headingId}>
+                    {block.entries.map(({ option, idx }) =>
+                      renderOption(option, idx),
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Footer shortcuts hint */}
           <div className="text-metadata flex items-center justify-between border-t border-border bg-muted/30 px-4 py-2.5 text-muted-foreground">
-            <div className="flex flex-wrap items-center gap-3">
+            <div
+              id={footerLegendId}
+              className="flex flex-wrap items-center gap-3"
+            >
               <span>
                 <kbd className="rounded border border-border bg-background px-1.5 py-0.5 font-mono">
                   ↑
@@ -1013,7 +1145,7 @@ export function MuvucaSpotlight({
               </span>
               <span className="hidden sm:inline">
                 <kbd className="rounded border border-border bg-background px-1.5 py-0.5 font-mono">
-                  {t.spotlight.spaceKey}
+                  →
                 </kbd>{" "}
                 {t.spotlight.peek}
               </span>

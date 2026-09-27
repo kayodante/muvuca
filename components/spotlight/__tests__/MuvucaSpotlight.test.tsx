@@ -167,7 +167,7 @@ describe("MuvucaSpotlight", () => {
     expect(markup).toContain("Ir para Biblioteca");
     expect(markup).toContain("navegar");
     expect(markup).toContain("selecionar");
-    expect(markup).toContain("espiar");
+    expect(markup).toContain("prévia");
     expect(markup).toContain("fechar");
     expect(markup).toContain("t-modal");
     expect(markup).not.toContain("is-open");
@@ -238,9 +238,7 @@ describe("MuvucaSpotlight", () => {
 
     expect(dialogMatch).toContain('aria-modal="true"');
     expect(dialogMatch).toContain("t-modal");
-    expect(dialogMatch).toContain(
-      'aria-label="Muvuca Spotlight — Busca rápida"',
-    );
+    expect(dialogMatch).toContain('aria-label="Busca rápida"');
     expect(dialogMatch).not.toContain("inset-0");
   });
 
@@ -269,7 +267,7 @@ describe("MuvucaSpotlight", () => {
     container.remove();
   });
 
-  it("abre e fecha o painel de Quick Look via botão de espiar", async () => {
+  it("ArrowRight com o caret no fim abre a prévia; ArrowLeft fecha", async () => {
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
     const container = document.createElement("div");
     document.body.append(container);
@@ -290,38 +288,166 @@ describe("MuvucaSpotlight", () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
     });
 
-    // Procura o botão de espiar do item
-    const eyeButtons = container.querySelectorAll(
-      'button[aria-label="Espiar item (Quick Look)"]',
-    );
-    expect(eyeButtons.length).toBeGreaterThan(0);
+    const input = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
 
-    // Clica no primeiro botão de espiar
+    // Busca vazia: as 5 ações vêm antes dos "Recentes" -- desce até o
+    // primeiro item para ter um `currentItem` real.
     await act(async () => {
-      (eyeButtons[0] as HTMLButtonElement).click();
+      for (let i = 0; i < 5; i++) {
+        input.dispatchEvent(
+          new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+        );
+      }
     });
 
-    // Verifica se a região de Quick Look foi montada
+    // Caret no fim de um valor vazio: trivialmente 0 === 0 === length.
+    await act(async () => {
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
+      );
+    });
+
     const quickLookRegion = container.querySelector(
-      '[aria-label="Pré-visualização do item (Quick Look)"]',
+      '[aria-label="Pré-visualização do item"]',
     );
     expect(quickLookRegion).not.toBeNull();
 
-    // Fecha a região de Quick Look com botão de fechar interno
-    const closeBtn = quickLookRegion?.querySelector(
-      'button[aria-label="Fechar pré-visualização"]',
-    ) as HTMLButtonElement;
-    expect(closeBtn).not.toBeNull();
-
     await act(async () => {
-      closeBtn.click();
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }),
+      );
     });
 
     expect(
-      container.querySelector(
-        '[aria-label="Pré-visualização do item (Quick Look)"]',
-      ),
+      container.querySelector('[aria-label="Pré-visualização do item"]'),
     ).toBeNull();
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("ArrowRight com o caret no meio do texto não abre a prévia", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<MuvucaSpotlight open={true} onOpenChange={vi.fn()} />);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    const input = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
+
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      setter?.call(input, "abc");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+
+    input.setSelectionRange(1, 1);
+
+    await act(async () => {
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
+      );
+    });
+
+    expect(
+      container.querySelector('[aria-label="Pré-visualização do item"]'),
+    ).toBeNull();
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("nenhuma [role='option'] tem button, a ou [tabindex] descendente", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <MuvucaSpotlight
+          open={true}
+          onOpenChange={vi.fn()}
+          initialTags={mockTags}
+        />,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    const options = [...container.querySelectorAll("[role='option']")];
+    expect(options.length).toBeGreaterThan(0);
+    for (const option of options) {
+      expect(option.querySelectorAll("button, a, [tabindex]").length).toBe(0);
+    }
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("nome acessível da opção é o título do item, não o snippet de código", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<MuvucaSpotlight open={true} onOpenChange={vi.fn()} />);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    searchSpotlightItemsMock.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        items: [
+          {
+            id: "item-long-code",
+            type: "code_component",
+            title: "Util de formatação",
+            language: "typescript",
+            contentPreview: "x".repeat(2000),
+            tagIds: [],
+          },
+        ],
+        tags: [],
+        hasMore: false,
+      },
+    });
+
+    const input = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
+
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      setter?.call(input, "util");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+
+    const option = [...container.querySelectorAll("[role='option']")].find(
+      (el) => el.textContent?.includes("Util de formatação"),
+    );
+    expect(option).toBeDefined();
+
+    const titleId = option?.getAttribute("aria-labelledby");
+    expect(titleId).toBeTruthy();
+    const titleEl = document.getElementById(titleId!);
+    expect(titleEl?.textContent).toBe("Util de formatação");
 
     await act(async () => root.unmount());
     container.remove();
@@ -621,22 +747,21 @@ describe("MuvucaSpotlight", () => {
     ) as HTMLInputElement;
     expect(input).not.toBeNull();
 
-    // Navega com ArrowDown para selecionar o segundo item (Prompt Code Reviewer)
-    // O primeiro item da lista é a primeira ação ("Criar novo item") ou item
-    // Procura o id do item de prompt nas opções
-    const promptOption = container.querySelector(
-      "[role='option']:has([aria-label='Copiar prompt'])",
-    );
-    expect(promptOption).not.toBeNull();
+    // Procura a opção do item de prompt pelo título (o botão de copiar virou
+    // um span aria-hidden -- ver "no interactive descendants" no commit 2).
+    const promptOption = [
+      ...container.querySelectorAll("[role='option']"),
+    ].find((el) => el.textContent?.includes("Prompt Code Reviewer"));
+    expect(promptOption).toBeDefined();
 
-    // Dispara clique no botão copiar do item
-    const copyBtn = promptOption?.querySelector(
-      "button[aria-label='Copiar prompt']",
-    ) as HTMLButtonElement;
-    expect(copyBtn).not.toBeNull();
+    // Clica no pill de copiar (aria-hidden, pointer-only) dentro da opção
+    const copySpan = [
+      ...promptOption!.querySelectorAll('span[aria-hidden="true"]'),
+    ].find((el) => el.textContent?.includes("Copiar"));
+    expect(copySpan).toBeDefined();
 
     await act(async () => {
-      copyBtn.click();
+      (copySpan as HTMLElement).click();
     });
 
     expect(getItemDetailsMock).toHaveBeenCalledWith("item-2");
@@ -1179,6 +1304,220 @@ describe("MuvucaSpotlight", () => {
 
     expect(optionTitles[0]).toContain("Revisão de código");
     expect(optionTitles[1]).toContain("Anotações Diversas");
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("region role='status' diz 'Buscando…' enquanto a busca está pendente", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<MuvucaSpotlight open={true} onOpenChange={vi.fn()} />);
+    });
+
+    vi.useFakeTimers();
+    try {
+      let resolveSearch!: (value: unknown) => void;
+      searchSpotlightItemsMock.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveSearch = resolve;
+          }),
+      );
+
+      const input = container.querySelector(
+        "input[type='text']",
+      ) as HTMLInputElement;
+
+      await act(async () => {
+        const setter = Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype,
+          "value",
+        )?.set;
+        setter?.call(input, "zzz");
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+
+      await act(async () => {
+        vi.advanceTimersByTime(250);
+      });
+
+      const status = container.querySelector("[role='status']");
+      expect(status?.textContent).toBe("Buscando…");
+
+      // Resolve before switching back to real timers -- an unmount with the
+      // async transition still stuck pending leaks a scheduled callback
+      // into React's (module-global) Scheduler that surfaces as flakiness
+      // in whichever test happens to run next.
+      await act(async () => {
+        resolveSearch({
+          ok: true,
+          data: { items: [], tags: [], hasMore: false },
+        });
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("region role='status' mostra a contagem, ou a mensagem de nenhum item, quando os resultados chegam frescos", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<MuvucaSpotlight open={true} onOpenChange={vi.fn()} />);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    const input = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
+    const status = () => container.querySelector("[role='status']");
+
+    searchSpotlightItemsMock.mockResolvedValueOnce({
+      ok: true,
+      data: { items: [], tags: [], hasMore: false },
+    });
+
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      setter?.call(input, "zzz");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+
+    expect(status()?.textContent).toBe('Nenhum item encontrado para "zzz".');
+
+    searchSpotlightItemsMock.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        items: [
+          {
+            id: "item-x",
+            type: "prompt",
+            title: "Item X",
+            contentPreview: "",
+            tagIds: [],
+          },
+        ],
+        tags: [],
+        hasMore: false,
+      },
+    });
+
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      setter?.call(input, "zzza");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+
+    expect(status()?.textContent).toBe("1 item");
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("estado vazio fica fora do listbox; 'Limpar busca' limpa o input e foca nele", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<MuvucaSpotlight open={true} onOpenChange={vi.fn()} />);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    searchSpotlightItemsMock.mockResolvedValueOnce({
+      ok: true,
+      data: { items: [], tags: [], hasMore: false },
+    });
+
+    const input = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
+
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      setter?.call(input, "nada");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+
+    const listbox = container.querySelector("[role='listbox']");
+    const clearButton = [...container.querySelectorAll("button")].find(
+      (btn) => btn.textContent === "Limpar busca",
+    );
+    expect(clearButton).toBeDefined();
+    expect(listbox?.contains(clearButton!)).toBe(false);
+
+    await act(async () => {
+      clearButton!.click();
+    });
+
+    expect(input.value).toBe("");
+    expect(document.activeElement).toBe(input);
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("chips de tag expõem aria-pressed e devolvem o foco ao input ao clicar", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <MuvucaSpotlight
+          open={true}
+          onOpenChange={vi.fn()}
+          initialTags={mockTags}
+        />,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    const input = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
+    const allChip = [...container.querySelectorAll("button")].find(
+      (btn) => btn.textContent === "Todas",
+    );
+    const devChip = [...container.querySelectorAll("button")].find(
+      (btn) => btn.textContent === "Dev",
+    );
+
+    expect(allChip?.getAttribute("aria-pressed")).toBe("true");
+    expect(devChip?.getAttribute("aria-pressed")).toBe("false");
+
+    await act(async () => {
+      devChip!.click();
+    });
+
+    expect(devChip?.getAttribute("aria-pressed")).toBe("true");
+    expect(allChip?.getAttribute("aria-pressed")).toBe("false");
+    expect(document.activeElement).toBe(input);
 
     await act(async () => root.unmount());
     container.remove();
