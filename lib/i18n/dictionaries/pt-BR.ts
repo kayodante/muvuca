@@ -646,7 +646,7 @@ export const ptBR = {
         keywords: ["configurações", "ajustes", "backup", "exportar", "conta"],
       },
       toggleTheme: {
-        title: "Alternar tema (Claro / Escuro / Sistema)",
+        title: "Alternar tema claro/escuro",
         description: "Mudar a aparência da interface",
         keywords: [
           "tema",
@@ -675,7 +675,17 @@ export const ptBR = {
     peek: "espiar",
     close: "fechar",
     spaceKey: "espaço",
-    resultCount: (n: number) => `${n} ${n === 1 ? "resultado" : "resultados"}`,
+    groups: {
+      actions: "Ações",
+      recent: "Recentes",
+      items: "Itens",
+    },
+    loadFailed: "Não foi possível carregar os itens.",
+    retry: "Tentar de novo",
+    itemCount: (n: number, hasMore: boolean) =>
+      hasMore ? `${n}+ itens` : `${n} ${n === 1 ? "item" : "itens"}`,
+    seeAll: "Ver todos na biblioteca",
+    seeAllDescription: "Abrir a busca completa com este filtro",
     quickLookAria: "Espiar item (Quick Look)",
     quickLookTitle: "Espiar item (Espaço)",
     open: "Abrir",

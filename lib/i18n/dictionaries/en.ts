@@ -609,7 +609,7 @@ export const en: Dictionary = {
         keywords: ["settings", "preferences", "backup", "export", "account"],
       },
       toggleTheme: {
-        title: "Toggle theme (Light / Dark / System)",
+        title: "Toggle light/dark theme",
         description: "Change the interface appearance",
         keywords: ["theme", "dark", "light", "appearance", "mode"],
       },
@@ -629,7 +629,17 @@ export const en: Dictionary = {
     peek: "peek",
     close: "close",
     spaceKey: "space",
-    resultCount: (n: number) => `${n} ${n === 1 ? "result" : "results"}`,
+    groups: {
+      actions: "Actions",
+      recent: "Recent",
+      items: "Items",
+    },
+    loadFailed: "Couldn't load the items.",
+    retry: "Try again",
+    itemCount: (n: number, hasMore: boolean) =>
+      hasMore ? `${n}+ items` : `${n} ${n === 1 ? "item" : "items"}`,
+    seeAll: "See all in library",
+    seeAllDescription: "Open full search with this filter",
     quickLookAria: "Peek item (Quick Look)",
     quickLookTitle: "Peek item (Space)",
     open: "Open",

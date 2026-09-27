@@ -31,6 +31,7 @@ import {
 
 import type { LibraryItemSummary } from "@/lib/database/queries/items";
 import type { FlatTag } from "@/lib/tags/tree";
+import { normalizeForSearch } from "@/lib/tags/tree";
 import type { Tag } from "@/lib/database/queries/tags";
 import { swatchClassFor } from "@/lib/tags/colors";
 import { copyToClipboard } from "@/lib/clipboard";
@@ -40,7 +41,9 @@ import { cssDurationToMs } from "@/lib/motion/duration";
 import {
   getSpotlightInitialData,
   searchSpotlightItems,
+  type SpotlightData,
 } from "@/lib/actions/spotlight";
+import type { ActionResult } from "@/lib/utils/result";
 import { setTheme } from "@/lib/actions/theme";
 import { useDictionary } from "@/lib/i18n/client";
 import { useSpotlight } from "./SpotlightContext";
@@ -58,14 +61,54 @@ type QuickAction = {
   run: () => void;
 };
 
+type OptionGroup = "actions" | "recent" | "items";
+
 type OptionItem =
-  | { kind: "action"; action: QuickAction }
-  | { kind: "item"; item: LibraryItemSummary };
+  | { kind: "action"; group: OptionGroup; action: QuickAction }
+  | { kind: "item"; group: OptionGroup; item: LibraryItemSummary };
+
+/** Last fetch that landed, tagged with the query/tag key it answers. */
+type SpotlightResults = {
+  key: string;
+  items: LibraryItemSummary[];
+  hasMore: boolean;
+};
 
 interface MuvucaSpotlightProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   initialTags?: (FlatTag | Tag)[];
+}
+
+function actionMatchesQuery(action: QuickAction, q: string): boolean {
+  return (
+    action.title.toLowerCase().includes(q) ||
+    action.description.toLowerCase().includes(q) ||
+    action.keywords.some((kw) => kw.includes(q))
+  );
+}
+
+/**
+ * ponytail: reorders only the newest-PAGE_SIZE page `search_library` already
+ * returned for this key; it never filters. Real relevance ranking (title vs
+ * body match) needs a sort inside `search_library`, not a client partition.
+ */
+function partitionTitleMatchesFirst(
+  items: LibraryItemSummary[],
+  query: string,
+): LibraryItemSummary[] {
+  if (!query) return items;
+  const q = normalizeForSearch(query);
+  const titleMatches: LibraryItemSummary[] = [];
+  const rest: LibraryItemSummary[] = [];
+  for (const item of items) {
+    if (normalizeForSearch(item.title).includes(q)) {
+      titleMatches.push(item);
+    } else {
+      rest.push(item);
+    }
+  }
+  return [...titleMatches, ...rest];
 }
 
 export function MuvucaSpotlight({
@@ -99,8 +142,10 @@ export function MuvucaSpotlight({
   const [quickLookOpen, setQuickLookOpen] = useState(false);
 
   // Data states
-  const [items, setItems] = useState<LibraryItemSummary[]>([]);
+  const [results, setResults] = useState<SpotlightResults | null>(null);
   const [tags, setTags] = useState<(FlatTag | Tag)[]>(initialTags);
+  const [loadError, setLoadError] = useState(false);
+  const [retryNonce, setRetryNonce] = useState(0);
   const [isSearching, startSearchTransition] = useTransition();
 
   // Animation lifecycle
@@ -112,6 +157,9 @@ export function MuvucaSpotlight({
   const dialogRef = useRef<HTMLDivElement>(null);
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
   const latestRequestIdRef = useRef(0);
+  // Enter pressed on an item while its query/tag key was still loading:
+  // resolved by the pending-Enter effect once fresh results for that key land.
+  const pendingEnterRef = useRef(false);
 
   const listboxId = useId();
   const optionId = useCallback(
@@ -123,11 +171,25 @@ export function MuvucaSpotlight({
     setPrevOpen(open);
     if (open && !mounted) setMounted(true);
     if (!open && entered) setEntered(false);
+    if (open) {
+      // Reopening starts clean: a query/tag filter or error from the last
+      // session must not survive. `results` is kept on purpose -- reopening
+      // with an empty query can show the cached recents immediately while
+      // the effect below revalidates them.
+      setQuery("");
+      setSelectedTagFilter(null);
+      setSelectedIndex(0);
+      setQuickLookOpen(false);
+      setLoadError(false);
+    }
   }
   const closing = !open && mounted;
 
   useEffect(() => {
     if (!open || !mounted) return;
+    // A ref write is a side effect, not a render-time state adjustment, so
+    // it belongs here rather than in the `open !== prevOpen` block above.
+    pendingEnterRef.current = false;
     const frame = window.requestAnimationFrame(() => setEntered(true));
     return () => window.cancelAnimationFrame(frame);
   }, [open, mounted]);
@@ -224,40 +286,58 @@ export function MuvucaSpotlight({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, onOpenChange, quickLookOpen]);
 
-  // Load initial data and debounced search without race conditions
+  // Load initial data and debounced search without race conditions. Both
+  // paths run inside the transition (isSearching covers the very first
+  // load too) and both funnel through `run`, so a rejection or `res.ok ===
+  // false` always sets loadError and clears stale items -- never a silent
+  // empty catch.
   useEffect(() => {
     if (!open) return;
     const trimmed = query.trim();
+    const key = `${trimmed}\u0000${selectedTagFilter ?? ""}`;
     const requestId = ++latestRequestIdRef.current;
 
+    async function run(promise: Promise<ActionResult<SpotlightData>>) {
+      try {
+        const res = await promise;
+        if (requestId !== latestRequestIdRef.current) return;
+        if (res.ok) {
+          setLoadError(false);
+          setResults({
+            key,
+            items: res.data.items,
+            hasMore: res.data.hasMore,
+          });
+          if (res.data.tags.length > 0) setTags(res.data.tags);
+        } else {
+          setLoadError(true);
+          setResults(null);
+        }
+      } catch {
+        if (requestId !== latestRequestIdRef.current) return;
+        setLoadError(true);
+        setResults(null);
+      }
+    }
+
     if (!trimmed && !selectedTagFilter) {
-      getSpotlightInitialData()
-        .then((res) => {
-          if (requestId === latestRequestIdRef.current && res.ok) {
-            setItems(res.data.items);
-            if (res.data.tags.length > 0) {
-              setTags(res.data.tags);
-            }
-          }
-        })
-        .catch(() => {});
+      startSearchTransition(() => run(getSpotlightInitialData()));
       return;
     }
 
     const timeout = window.setTimeout(() => {
-      startSearchTransition(async () => {
-        const res = await searchSpotlightItems(trimmed, selectedTagFilter);
-        if (requestId === latestRequestIdRef.current && res.ok) {
-          setItems(res.data.items);
-          if (res.data.tags.length > 0) {
-            setTags(res.data.tags);
-          }
-        }
-      });
+      startSearchTransition(() =>
+        run(searchSpotlightItems(trimmed, selectedTagFilter)),
+      );
     }, 200);
 
     return () => window.clearTimeout(timeout);
-  }, [open, query, selectedTagFilter]);
+  }, [open, query, selectedTagFilter, retryNonce]);
+
+  function handleRetry() {
+    setLoadError(false);
+    setRetryNonce((n) => n + 1);
+  }
 
   // System quick actions
   const quickActions: QuickAction[] = useMemo(
@@ -318,9 +398,13 @@ export function MuvucaSpotlight({
         icon: SunMoonIcon,
         keywords: t.spotlight.quickActions.toggleTheme.keywords,
         run: () => {
+          // "system" sets no class on <html> (app/layout.tsx): effective
+          // dark also needs the media query, not just `.dark`/`.light`.
+          const root = document.documentElement;
           const isDark =
-            document.documentElement.classList.contains("dark") ||
-            document.documentElement.dataset.theme === "dark";
+            root.classList.contains("dark") ||
+            (!root.classList.contains("light") &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
           const next = isDark ? "light" : "dark";
           void setTheme(next).then((res) => {
             if (res.ok) {
@@ -338,34 +422,97 @@ export function MuvucaSpotlight({
     [router, onOpenChange, t],
   );
 
-  // Filter actions and items
+  const trimmedQuery = query.trim();
+  const hasTagFilter = selectedTagFilter !== null;
+  const isEmptySearch = !trimmedQuery && !hasTagFilter;
+  const currentKey = `${trimmedQuery}\u0000${selectedTagFilter ?? ""}`;
+  const stale = results?.key !== currentKey;
+  // Own useMemo so a stable reference reaches the flatOptions memo below --
+  // `results?.items ?? []` would otherwise be a fresh array every render.
+  const currentItems = useMemo(() => results?.items ?? [], [results]);
+  const freshHasMore = !stale && (results?.hasMore ?? false);
+
+  // Dynamic "Ver todos na biblioteca" option: only once there is a query or
+  // tag filter and the server said there is more than this page.
+  const seeAllAction: QuickAction | null = useMemo(() => {
+    if (isEmptySearch || !freshHasMore) return null;
+    return {
+      id: "action-see-all",
+      kind: "action",
+      title: t.spotlight.seeAll,
+      description: t.spotlight.seeAllDescription,
+      icon: LibraryIcon,
+      keywords: [],
+      run: () => {
+        const params = new URLSearchParams();
+        if (trimmedQuery) params.set("q", trimmedQuery);
+        if (selectedTagFilter) params.set("tag", selectedTagFilter);
+        onOpenChange(false);
+        router.push(`/library?${params.toString()}`);
+      },
+    };
+  }, [
+    isEmptySearch,
+    freshHasMore,
+    trimmedQuery,
+    selectedTagFilter,
+    onOpenChange,
+    router,
+    t,
+  ]);
+
+  // Filter actions and items, tagging each option with the group it renders
+  // under. Order matters: it IS the keyboard order.
   const flatOptions: OptionItem[] = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    if (isEmptySearch) {
+      const options: OptionItem[] = quickActions.map((action) => ({
+        kind: "action",
+        group: "actions",
+        action,
+      }));
+      for (const item of currentItems) {
+        options.push({ kind: "item", group: "recent", item });
+      }
+      return options;
+    }
 
-    // Match actions
-    const matchedActions = quickActions.filter((a) => {
-      if (!q) return true;
-      return (
-        a.title.toLowerCase().includes(q) ||
-        a.description.toLowerCase().includes(q) ||
-        a.keywords.some((kw) => kw.includes(q))
-      );
+    const options: OptionItem[] = partitionTitleMatchesFirst(
+      currentItems,
+      trimmedQuery,
+    ).map((item) => ({ kind: "item", group: "items", item }) as OptionItem);
+
+    if (seeAllAction) {
+      options.push({ kind: "action", group: "items", action: seeAllAction });
+    }
+
+    if (trimmedQuery) {
+      const q = trimmedQuery.toLowerCase();
+      for (const action of quickActions) {
+        if (actionMatchesQuery(action, q)) {
+          options.push({ kind: "action", group: "actions", action });
+        }
+      }
+    }
+
+    return options;
+  }, [isEmptySearch, quickActions, currentItems, trimmedQuery, seeAllAction]);
+
+  // Consecutive options of the same group, for the cmdk heading pattern.
+  const optionBlocks = useMemo(() => {
+    const blocks: {
+      group: OptionGroup;
+      entries: { option: OptionItem; idx: number }[];
+    }[] = [];
+    flatOptions.forEach((option, idx) => {
+      const last = blocks[blocks.length - 1];
+      if (last && last.group === option.group) {
+        last.entries.push({ option, idx });
+      } else {
+        blocks.push({ group: option.group, entries: [{ option, idx }] });
+      }
     });
-
-    const result: OptionItem[] = [];
-
-    // Include actions
-    for (const action of matchedActions) {
-      result.push({ kind: "action", action });
-    }
-
-    // Include library items (already searched/filtered on server via Postgres search_library)
-    for (const item of items) {
-      result.push({ kind: "item", item });
-    }
-
-    return result;
-  }, [query, quickActions, items]);
+    return blocks;
+  }, [flatOptions]);
 
   const safeSelectedIndex =
     flatOptions.length > 0
@@ -385,62 +532,88 @@ export function MuvucaSpotlight({
     }
   }, [safeSelectedIndex, flatOptions.length, optionId]);
 
-  async function handleAction(option: OptionItem) {
-    if (option.kind === "action") {
-      option.action.run();
-      return;
-    }
+  const handleAction = useCallback(
+    async (option: OptionItem) => {
+      if (option.kind === "action") {
+        option.action.run();
+        return;
+      }
 
-    const item = option.item;
-    if (item.type === "link" && item.url) {
-      const safeUrl = normalizeHttpUrl(item.url);
-      if (safeUrl) {
-        window.open(safeUrl, "_blank", "noopener,noreferrer");
-        onOpenChange(false);
-      } else {
-        toastError(t.spotlight.invalidUrl);
-      }
-    } else if (item.type === "prompt" || item.type === "code_component") {
-      const fallback = item.contentPreview ?? "";
-      const fullContentPromise = getItemDetails(item.id).then((res) => {
-        if (
-          res.ok &&
-          (res.data.type === "prompt" || res.data.type === "code_component")
-        ) {
-          return res.data.content;
+      const item = option.item;
+      if (item.type === "link" && item.url) {
+        const safeUrl = normalizeHttpUrl(item.url);
+        if (safeUrl) {
+          window.open(safeUrl, "_blank", "noopener,noreferrer");
+          onOpenChange(false);
+        } else {
+          toastError(t.spotlight.invalidUrl);
         }
-        return fallback;
-      });
-      const ok = await copyToClipboard(fullContentPromise);
-      if (ok) {
-        setCopiedId(item.id);
-        toastSuccess(
-          item.type === "prompt"
-            ? t.spotlight.promptCopiedMessage
-            : t.spotlight.codeCopiedMessage,
-        );
-        setTimeout(() => setCopiedId(null), 2000);
-      } else {
-        toastError(t.spotlight.copyContentFailed);
+      } else if (item.type === "prompt" || item.type === "code_component") {
+        const fallback = item.contentPreview ?? "";
+        const fullContentPromise = getItemDetails(item.id).then((res) => {
+          if (
+            res.ok &&
+            (res.data.type === "prompt" || res.data.type === "code_component")
+          ) {
+            return res.data.content;
+          }
+          return fallback;
+        });
+        const ok = await copyToClipboard(fullContentPromise);
+        if (ok) {
+          setCopiedId(item.id);
+          toastSuccess(
+            item.type === "prompt"
+              ? t.spotlight.promptCopiedMessage
+              : t.spotlight.codeCopiedMessage,
+          );
+          setTimeout(() => setCopiedId(null), 2000);
+        } else {
+          toastError(t.spotlight.copyContentFailed);
+        }
       }
-    }
-  }
+    },
+    [onOpenChange, t],
+  );
+
+  // Resolves an Enter pressed while results for the current key were still
+  // loading: acts on the option at the current index only once fresh results
+  // for THIS key land, never on the stale items that were on screen.
+  useEffect(() => {
+    if (!pendingEnterRef.current || stale) return;
+    pendingEnterRef.current = false;
+    const option = flatOptions[safeSelectedIndex];
+    if (!option) return;
+    // Deferred to a microtask: `handleAction` is a real external side effect
+    // (open/copy/navigate), not state synchronization, so it belongs outside
+    // the effect's own commit rather than running inside it.
+    queueMicrotask(() => void handleAction(option));
+  }, [stale, flatOptions, safeSelectedIndex, handleAction]);
 
   // Keyboard navigation within list
   function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "ArrowDown") {
       e.preventDefault();
+      pendingEnterRef.current = false;
       setSelectedIndex((prev) =>
         prev < flatOptions.length - 1 ? prev + 1 : 0,
       );
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
+      pendingEnterRef.current = false;
       setSelectedIndex((prev) =>
         prev > 0 ? prev - 1 : flatOptions.length - 1,
       );
     } else if (e.key === "Enter" && flatOptions[safeSelectedIndex]) {
       e.preventDefault();
-      handleAction(flatOptions[safeSelectedIndex]);
+      const option = flatOptions[safeSelectedIndex];
+      if (option.kind === "item" && stale) {
+        // Results for the current query/tag key haven't landed yet -- wait
+        // for them instead of acting on the still-visible stale items.
+        pendingEnterRef.current = true;
+        return;
+      }
+      void handleAction(option);
     } else if (
       (e.key === " " && query === "") ||
       (e.key === " " && (e.ctrlKey || e.metaKey || e.altKey))
@@ -451,6 +624,188 @@ export function MuvucaSpotlight({
         setQuickLookOpen((prev) => !prev);
       }
     }
+  }
+
+  function renderOption(option: OptionItem, idx: number) {
+    const isSelected = idx === safeSelectedIndex;
+
+    if (option.kind === "action") {
+      const action = option.action;
+      const Icon = action.icon;
+      return (
+        // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus
+        <div
+          key={action.id}
+          id={optionId(idx)}
+          role="option"
+          aria-selected={isSelected}
+          onMouseEnter={() => setSelectedIndex(idx)}
+          onClick={() => handleAction(option)}
+          className={`group flex cursor-pointer items-center justify-between rounded-lg p-2.5 transition-colors duration-(--motion-fast) ease-out-muvuca ${
+            isSelected
+              ? "bg-secondary text-foreground"
+              : "text-muted-foreground hover:bg-muted/50"
+          }`}
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            <div
+              className={`flex size-7 shrink-0 items-center justify-center rounded-md border ${
+                isSelected
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border bg-card text-muted-foreground"
+              }`}
+            >
+              <Icon className="size-3.5" aria-hidden="true" />
+            </div>
+            <div className="min-w-0">
+              <span className="text-body-sm truncate font-medium text-foreground">
+                {action.title}
+              </span>
+              <p className="text-metadata truncate text-muted-foreground">
+                {action.description}
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2 pl-3">
+            <span className="text-metadata hidden text-muted-foreground group-hover:text-foreground sm:inline">
+              {t.spotlight.execute}
+            </span>
+            {isSelected && (
+              <CornerDownLeftIcon
+                className="hidden size-3.5 text-primary sm:block"
+                aria-hidden="true"
+              />
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Library Item option
+    const item = option.item;
+    const isLink = item.type === "link";
+    const isPrompt = item.type === "prompt";
+    const isCode = item.type === "code_component";
+
+    let domain: string | null = null;
+    if (isLink && item.url) {
+      try {
+        domain = new URL(item.url).hostname;
+      } catch {
+        domain = item.url;
+      }
+    }
+
+    const snippet =
+      item.description || ("contentPreview" in item ? item.contentPreview : "");
+
+    return (
+      // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus
+      <div
+        key={item.id}
+        id={optionId(idx)}
+        role="option"
+        aria-selected={isSelected}
+        onMouseEnter={() => setSelectedIndex(idx)}
+        onClick={() => handleAction(option)}
+        className={`group flex cursor-pointer items-center justify-between rounded-lg p-2.5 transition-colors duration-(--motion-fast) ease-out-muvuca ${
+          isSelected
+            ? "bg-secondary text-foreground"
+            : "text-muted-foreground hover:bg-muted/50"
+        }`}
+      >
+        <div className="flex min-w-0 items-center gap-3">
+          <div
+            className={`flex size-8 shrink-0 items-center justify-center rounded-md border ${
+              isSelected
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-border bg-card text-muted-foreground"
+            }`}
+          >
+            {isLink && <LinkIcon className="size-4" aria-hidden="true" />}
+            {isPrompt && <FileTextIcon className="size-4" aria-hidden="true" />}
+            {isCode && <Code2Icon className="size-4" aria-hidden="true" />}
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-body-sm truncate font-medium text-foreground">
+                {item.title}
+              </span>
+              <span className="text-metadata shrink-0 font-mono text-muted-foreground uppercase">
+                {isLink
+                  ? domain
+                  : isPrompt
+                    ? t.spotlight.badges.prompt
+                    : item.language || "CODE"}
+              </span>
+            </div>
+            {snippet && (
+              <p className="text-metadata truncate text-muted-foreground">
+                {snippet}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2 pl-3">
+          {/* Quick Look peek button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedIndex(idx);
+              setQuickLookOpen((prev) => !prev);
+            }}
+            className={cn(
+              "rounded p-1 text-muted-foreground transition-colors hover:text-foreground",
+              quickLookOpen && isSelected && "text-primary",
+            )}
+            aria-label={t.spotlight.quickLookAria}
+            title={t.spotlight.quickLookTitle}
+          >
+            <EyeIcon className="size-3.5" />
+          </button>
+
+          {isLink ? (
+            <span className="text-metadata hidden items-center gap-1 text-muted-foreground group-hover:text-foreground sm:inline-flex">
+              <span>{t.spotlight.open}</span>
+              <ExternalLinkIcon className="size-3" />
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAction(option);
+              }}
+              className="text-metadata inline-flex items-center gap-1 rounded-md bg-muted/60 px-2 py-1 text-foreground transition-colors duration-(--motion-fast) ease-out-muvuca group-hover:bg-primary group-hover:text-primary-foreground motion-reduce:transition-none"
+              aria-label={
+                isPrompt ? t.items.card.copyPrompt : t.items.card.copyCode
+              }
+            >
+              {copiedId === item.id ? (
+                <>
+                  <CheckIcon className="size-3" />
+                  <span>{t.spotlight.copiedShort}</span>
+                </>
+              ) : (
+                <>
+                  <CopyIcon className="size-3" />
+                  <span>{t.spotlight.copyShort}</span>
+                </>
+              )}
+            </button>
+          )}
+          {isSelected && (
+            <CornerDownLeftIcon
+              className="hidden size-3.5 text-primary sm:block"
+              aria-hidden="true"
+            />
+          )}
+        </div>
+      </div>
+    );
   }
 
   if (!mounted) return null;
@@ -507,6 +862,7 @@ export function MuvucaSpotlight({
               onChange={(e) => {
                 setQuery(e.target.value);
                 setSelectedIndex(0);
+                pendingEnterRef.current = false;
               }}
               onKeyDown={handleInputKeyDown}
               placeholder={t.spotlight.searchPlaceholder}
@@ -579,6 +935,24 @@ export function MuvucaSpotlight({
             </div>
           )}
 
+          {/* Load error: between the tag row and the listbox, never inside
+              it -- the listbox stays mounted so the Ações group can still
+              show matches. */}
+          {loadError && (
+            <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/10 px-4 py-3">
+              <p className="text-body-sm text-muted-foreground">
+                {t.spotlight.loadFailed}
+              </p>
+              <button
+                type="button"
+                onClick={handleRetry}
+                className="text-body-sm shrink-0 rounded-md border border-border px-2.5 py-1 font-medium text-foreground transition-colors duration-(--motion-fast) ease-out-muvuca outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none"
+              >
+                {t.spotlight.retry}
+              </button>
+            </div>
+          )}
+
           {/* Results List */}
           <div
             ref={listRef}
@@ -591,191 +965,26 @@ export function MuvucaSpotlight({
                 {t.spotlight.noResults(query)}
               </div>
             ) : (
-              flatOptions.map((option, idx) => {
-                const isSelected = idx === safeSelectedIndex;
-
-                if (option.kind === "action") {
-                  const action = option.action;
-                  const Icon = action.icon;
-                  return (
-                    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus
-                    <div
-                      key={action.id}
-                      id={optionId(idx)}
-                      role="option"
-                      aria-selected={isSelected}
-                      onMouseEnter={() => setSelectedIndex(idx)}
-                      onClick={() => handleAction(option)}
-                      className={`group flex cursor-pointer items-center justify-between rounded-lg p-2.5 transition-colors duration-(--motion-fast) ease-out-muvuca ${
-                        isSelected
-                          ? "bg-secondary text-foreground"
-                          : "text-muted-foreground hover:bg-muted/50"
-                      }`}
-                    >
-                      <div className="flex min-w-0 items-center gap-3">
-                        <div
-                          className={`flex size-7 shrink-0 items-center justify-center rounded-md border ${
-                            isSelected
-                              ? "border-primary/40 bg-primary/10 text-primary"
-                              : "border-border bg-card text-muted-foreground"
-                          }`}
-                        >
-                          <Icon className="size-3.5" aria-hidden="true" />
-                        </div>
-                        <div className="min-w-0">
-                          <span className="text-body-sm truncate font-medium text-foreground">
-                            {action.title}
-                          </span>
-                          <p className="text-metadata truncate text-muted-foreground">
-                            {action.description}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-2 pl-3">
-                        <span className="text-metadata hidden text-muted-foreground group-hover:text-foreground sm:inline">
-                          {t.spotlight.execute}
-                        </span>
-                        {isSelected && (
-                          <CornerDownLeftIcon
-                            className="hidden size-3.5 text-primary sm:block"
-                            aria-hidden="true"
-                          />
-                        )}
-                      </div>
-                    </div>
-                  );
-                }
-
-                // Library Item option
-                const item = option.item;
-                const isLink = item.type === "link";
-                const isPrompt = item.type === "prompt";
-                const isCode = item.type === "code_component";
-
-                let domain: string | null = null;
-                if (isLink && item.url) {
-                  try {
-                    domain = new URL(item.url).hostname;
-                  } catch {
-                    domain = item.url;
-                  }
-                }
-
-                const snippet =
-                  item.description ||
-                  ("contentPreview" in item ? item.contentPreview : "");
-
+              optionBlocks.map((block, blockIdx) => {
+                const headingId = `${listboxId}-heading-${blockIdx}`;
+                const groupLabel =
+                  block.group === "actions"
+                    ? t.spotlight.groups.actions
+                    : block.group === "recent"
+                      ? t.spotlight.groups.recent
+                      : t.spotlight.groups.items;
                 return (
-                  // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus
-                  <div
-                    key={item.id}
-                    id={optionId(idx)}
-                    role="option"
-                    aria-selected={isSelected}
-                    onMouseEnter={() => setSelectedIndex(idx)}
-                    onClick={() => handleAction(option)}
-                    className={`group flex cursor-pointer items-center justify-between rounded-lg p-2.5 transition-colors duration-(--motion-fast) ease-out-muvuca ${
-                      isSelected
-                        ? "bg-secondary text-foreground"
-                        : "text-muted-foreground hover:bg-muted/50"
-                    }`}
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div
-                        className={`flex size-8 shrink-0 items-center justify-center rounded-md border ${
-                          isSelected
-                            ? "border-primary/40 bg-primary/10 text-primary"
-                            : "border-border bg-card text-muted-foreground"
-                        }`}
-                      >
-                        {isLink && (
-                          <LinkIcon className="size-4" aria-hidden="true" />
-                        )}
-                        {isPrompt && (
-                          <FileTextIcon className="size-4" aria-hidden="true" />
-                        )}
-                        {isCode && (
-                          <Code2Icon className="size-4" aria-hidden="true" />
-                        )}
-                      </div>
-
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-body-sm truncate font-medium text-foreground">
-                            {item.title}
-                          </span>
-                          <span className="text-metadata shrink-0 font-mono text-muted-foreground uppercase">
-                            {isLink
-                              ? domain
-                              : isPrompt
-                                ? t.spotlight.badges.prompt
-                                : item.language || "CODE"}
-                          </span>
-                        </div>
-                        {snippet && (
-                          <p className="text-metadata truncate text-muted-foreground">
-                            {snippet}
-                          </p>
-                        )}
-                      </div>
+                  <div role="presentation" key={`${block.group}-${blockIdx}`}>
+                    <div
+                      id={headingId}
+                      aria-hidden="true"
+                      className="text-body-sm px-2.5 pt-2 pb-1 text-muted-foreground"
+                    >
+                      {groupLabel}
                     </div>
-
-                    <div className="flex shrink-0 items-center gap-2 pl-3">
-                      {/* Quick Look peek button */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedIndex(idx);
-                          setQuickLookOpen((prev) => !prev);
-                        }}
-                        className={cn(
-                          "rounded p-1 text-muted-foreground transition-colors hover:text-foreground",
-                          quickLookOpen && isSelected && "text-primary",
-                        )}
-                        aria-label={t.spotlight.quickLookAria}
-                        title={t.spotlight.quickLookTitle}
-                      >
-                        <EyeIcon className="size-3.5" />
-                      </button>
-
-                      {isLink ? (
-                        <span className="text-metadata hidden items-center gap-1 text-muted-foreground group-hover:text-foreground sm:inline-flex">
-                          <span>{t.spotlight.open}</span>
-                          <ExternalLinkIcon className="size-3" />
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAction(option);
-                          }}
-                          className="text-metadata inline-flex items-center gap-1 rounded-md bg-muted/60 px-2 py-1 text-foreground transition-colors duration-(--motion-fast) ease-out-muvuca group-hover:bg-primary group-hover:text-primary-foreground motion-reduce:transition-none"
-                          aria-label={
-                            isPrompt
-                              ? t.items.card.copyPrompt
-                              : t.items.card.copyCode
-                          }
-                        >
-                          {copiedId === item.id ? (
-                            <>
-                              <CheckIcon className="size-3" />
-                              <span>{t.spotlight.copiedShort}</span>
-                            </>
-                          ) : (
-                            <>
-                              <CopyIcon className="size-3" />
-                              <span>{t.spotlight.copyShort}</span>
-                            </>
-                          )}
-                        </button>
-                      )}
-                      {isSelected && (
-                        <CornerDownLeftIcon
-                          className="hidden size-3.5 text-primary sm:block"
-                          aria-hidden="true"
-                        />
+                    <div role="group" aria-labelledby={headingId}>
+                      {block.entries.map(({ option, idx }) =>
+                        renderOption(option, idx),
                       )}
                     </div>
                   </div>
@@ -816,9 +1025,11 @@ export function MuvucaSpotlight({
               </span>
             </div>
 
-            <span className="font-mono">
-              {t.spotlight.resultCount(flatOptions.length)}
-            </span>
+            {!stale && !isSearching && !loadError && (
+              <span className="font-mono">
+                {t.spotlight.itemCount(currentItems.length, freshHasMore)}
+              </span>
+            )}
           </div>
         </div>
 

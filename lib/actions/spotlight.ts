@@ -12,6 +12,7 @@ import { fail, ok, type ActionResult } from "@/lib/utils/result";
 export type SpotlightData = {
   items: LibraryItemSummary[];
   tags: Tag[];
+  hasMore: boolean;
 };
 
 /**
@@ -32,6 +33,7 @@ export async function getSpotlightInitialData(): Promise<
     return ok({
       items: libraryPage.items,
       tags,
+      hasMore: libraryPage.nextCursor !== null,
     });
   } catch {
     return fail("UNKNOWN", t.errors.spotlightLoadFailed);
@@ -62,6 +64,7 @@ export async function searchSpotlightItems(
     return ok({
       items: libraryPage.items,
       tags,
+      hasMore: libraryPage.nextCursor !== null,
     });
   } catch {
     return fail("UNKNOWN", t.errors.spotlightSearchFailed);

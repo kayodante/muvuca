@@ -5,10 +5,14 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MuvucaSpotlight } from "@/components/spotlight/MuvucaSpotlight";
 import type { Tag } from "@/lib/database/queries/tags";
 
-// Mock next/navigation
+const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }));
+
+// Mock next/navigation. `push` is hoisted (not a fresh `vi.fn()` per render)
+// so tests can assert on the "Ver todos na biblioteca" / quick-action
+// navigation calls.
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
-    push: vi.fn(),
+    push: pushMock,
     replace: vi.fn(),
   }),
 }));
@@ -56,6 +60,7 @@ const initialMockData = {
       updatedAt: "2026-01-01",
     },
   ],
+  hasMore: false,
 };
 
 const {
@@ -63,11 +68,13 @@ const {
   searchSpotlightItemsMock,
   getItemDetailsMock,
   copyToClipboardMock,
+  setThemeMock,
 } = vi.hoisted(() => ({
   getSpotlightInitialDataMock: vi.fn(),
   searchSpotlightItemsMock: vi.fn(),
   getItemDetailsMock: vi.fn(),
   copyToClipboardMock: vi.fn().mockResolvedValue(true),
+  setThemeMock: vi.fn(),
 }));
 
 vi.mock("@/lib/clipboard", () => ({
@@ -82,6 +89,10 @@ vi.mock("@/lib/actions/items", () => ({
 vi.mock("@/lib/actions/spotlight", () => ({
   getSpotlightInitialData: getSpotlightInitialDataMock,
   searchSpotlightItems: searchSpotlightItemsMock,
+}));
+
+vi.mock("@/lib/actions/theme", () => ({
+  setTheme: setThemeMock,
 }));
 
 const mockTags: Tag[] = [
@@ -119,6 +130,7 @@ describe("MuvucaSpotlight", () => {
       data: {
         items: [],
         tags: [],
+        hasMore: false,
       },
     });
     getItemDetailsMock.mockResolvedValue({
@@ -135,6 +147,7 @@ describe("MuvucaSpotlight", () => {
       },
     });
     copyToClipboardMock.mockResolvedValue(true);
+    setThemeMock.mockResolvedValue({ ok: true, data: "light" });
   });
 
   it("renderiza o input de busca, badge de marca, ações e atalhos quando aberto", () => {
@@ -495,6 +508,7 @@ describe("MuvucaSpotlight", () => {
             },
           ],
           tags: [],
+          hasMore: false,
         },
       });
     });
@@ -513,6 +527,7 @@ describe("MuvucaSpotlight", () => {
             },
           ],
           tags: [],
+          hasMore: false,
         },
       });
     });
@@ -546,6 +561,7 @@ describe("MuvucaSpotlight", () => {
           },
         ],
         tags: [],
+        hasMore: false,
       },
     });
 
@@ -625,6 +641,544 @@ describe("MuvucaSpotlight", () => {
 
     expect(getItemDetailsMock).toHaveBeenCalledWith("item-2");
     expect(copyToClipboardMock).toHaveBeenCalled();
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("mostra o item primeiro e as ações depois para uma busca digitada; Enter age no item, não em 'Criar novo item'", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<MuvucaSpotlight open={true} onOpenChange={vi.fn()} />);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    searchSpotlightItemsMock.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        items: [
+          {
+            id: "item-prompt-match",
+            type: "prompt",
+            title: "Prompt de Revisão",
+            contentPreview: "conteúdo completo do prompt",
+            tagIds: [],
+          },
+        ],
+        tags: [],
+        hasMore: false,
+      },
+    });
+
+    const input = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
+
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      setter?.call(input, "prompt");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+
+    const options = [...container.querySelectorAll("[role='option']")];
+    expect(options[0]?.textContent).toContain("Prompt de Revisão");
+    const createItemIndex = options.findIndex((el) =>
+      el.textContent?.includes("Criar novo item"),
+    );
+    expect(createItemIndex).toBeGreaterThan(0);
+
+    await act(async () => {
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Enter",
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+
+    // Age no item (copia via getItemDetails), não na ação "Criar novo item".
+    expect(getItemDetailsMock).toHaveBeenCalledWith("item-prompt-match");
+    expect(pushMock).not.toHaveBeenCalledWith("/library?create=1");
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("Enter durante busca pendente não age no item antigo; ao chegar o resultado fresco, age nele", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <MuvucaSpotlight
+          open={true}
+          onOpenChange={vi.fn()}
+          initialTags={mockTags}
+        />,
+      );
+      // Espera o carregamento inicial ("Recentes") resolver com timer real.
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    // `finally` garante que os fake timers voltem ao normal mesmo se uma
+    // asserção falhar aqui -- do contrário todo teste seguinte no arquivo
+    // trava esperando um setTimeout real que nunca dispara.
+    vi.useFakeTimers();
+    try {
+      let resolveSearch!: (value: unknown) => void;
+      searchSpotlightItemsMock.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveSearch = resolve;
+          }),
+      );
+
+      const input = container.querySelector(
+        "input[type='text']",
+      ) as HTMLInputElement;
+
+      await act(async () => {
+        const setter = Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype,
+          "value",
+        )?.set;
+        setter?.call(input, "xyz");
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+
+      await act(async () => {
+        vi.advanceTimersByTime(250);
+      });
+
+      expect(searchSpotlightItemsMock).toHaveBeenCalledWith("xyz", null);
+
+      // Enter enquanto a busca de "xyz" ainda está pendente: os itens
+      // visíveis são os do carregamento inicial (chave antiga) -- não deve
+      // agir neles.
+      await act(async () => {
+        input.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "Enter",
+            bubbles: true,
+            cancelable: true,
+          }),
+        );
+      });
+
+      expect(copyToClipboardMock).not.toHaveBeenCalled();
+      expect(getItemDetailsMock).not.toHaveBeenCalled();
+
+      // Resultado fresco chega para a chave atual ("xyz").
+      await act(async () => {
+        resolveSearch({
+          ok: true,
+          data: {
+            items: [
+              {
+                id: "item-fresh",
+                type: "prompt",
+                title: "Item Fresco",
+                contentPreview: "conteúdo",
+                tagIds: [],
+              },
+            ],
+            tags: [],
+            hasMore: false,
+          },
+        });
+      });
+
+      // A ação em si é adiada para uma macrotask (ver comentário no efeito
+      // de pending-Enter); libera esse `setTimeout(0)`.
+      await act(async () => {
+        vi.advanceTimersByTime(0);
+      });
+
+      expect(getItemDetailsMock).toHaveBeenCalledWith("item-fresh");
+      expect(copyToClipboardMock).toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("mostra erro com retry quando res.ok é false e limpa os itens anteriores", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <MuvucaSpotlight
+          open={true}
+          onOpenChange={vi.fn()}
+          initialTags={mockTags}
+        />,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    expect(container.textContent).toContain("Supabase Documentation");
+
+    searchSpotlightItemsMock.mockResolvedValueOnce({
+      ok: false,
+      code: "UNKNOWN",
+      message: "Erro genérico.",
+    });
+
+    const input = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
+
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      setter?.call(input, "err");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+
+    expect(container.textContent).toContain(
+      "Não foi possível carregar os itens.",
+    );
+    expect(container.textContent).not.toContain("Supabase Documentation");
+    expect(container.textContent).not.toContain("Prompt Code Reviewer");
+
+    const retryButton = [...container.querySelectorAll("button")].find(
+      (btn) => btn.textContent === "Tentar de novo",
+    );
+    expect(retryButton).toBeDefined();
+
+    searchSpotlightItemsMock.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        items: [
+          {
+            id: "item-retry",
+            type: "prompt",
+            title: "Recuperado Após Retry",
+            contentPreview: "",
+            tagIds: [],
+          },
+        ],
+        tags: [],
+        hasMore: false,
+      },
+    });
+
+    await act(async () => {
+      retryButton?.click();
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+
+    expect(searchSpotlightItemsMock).toHaveBeenCalledWith("err", null);
+    expect(container.textContent).not.toContain(
+      "Não foi possível carregar os itens.",
+    );
+    expect(container.textContent).toContain("Recuperado Após Retry");
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("também mostra erro quando a promise de busca rejeita, sem unhandled rejection", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<MuvucaSpotlight open={true} onOpenChange={vi.fn()} />);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    searchSpotlightItemsMock.mockRejectedValueOnce(new Error("network down"));
+
+    const input = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
+
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      setter?.call(input, "boom");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+
+    expect(container.textContent).toContain(
+      "Não foi possível carregar os itens.",
+    );
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("no modo escuro do sistema (sem classe em <html>), alternar tema chama setTheme('light')", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    document.documentElement.classList.remove("dark", "light");
+    Object.defineProperty(window, "matchMedia", {
+      configurable: true,
+      value: (query: string) => ({
+        matches: query.includes("dark"),
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      }),
+    });
+
+    getSpotlightInitialDataMock.mockResolvedValueOnce({
+      ok: true,
+      data: { items: [], tags: [], hasMore: false },
+    });
+
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<MuvucaSpotlight open={true} onOpenChange={vi.fn()} />);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    const input = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
+
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      setter?.call(input, "tema");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+
+    await act(async () => {
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Enter",
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+
+    expect(setThemeMock).toHaveBeenCalledWith("light");
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("fecha e reabre: input volta vazio e filtro de tag é limpo", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <MuvucaSpotlight
+          open={true}
+          onOpenChange={vi.fn()}
+          initialTags={mockTags}
+        />,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    const input = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
+
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      setter?.call(input, "algo");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    const tagButton = [...container.querySelectorAll("button")].find(
+      (btn) => btn.textContent === "Dev",
+    );
+
+    await act(async () => {
+      tagButton?.click();
+    });
+
+    expect(
+      (container.querySelector("input[type='text']") as HTMLInputElement).value,
+    ).toBe("algo");
+
+    await act(async () => {
+      root.render(
+        <MuvucaSpotlight
+          open={false}
+          onOpenChange={vi.fn()}
+          initialTags={mockTags}
+        />,
+      );
+    });
+
+    await act(async () => {
+      root.render(
+        <MuvucaSpotlight
+          open={true}
+          onOpenChange={vi.fn()}
+          initialTags={mockTags}
+        />,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    const reopenedInput = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
+    expect(reopenedInput.value).toBe("");
+
+    const allChip = [...container.querySelectorAll("button")].find(
+      (btn) => btn.textContent === "Todas",
+    );
+    expect(allChip?.className).toContain("bg-primary");
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("com hasMore, mostra contagem '48+ itens' e 'Ver todos na biblioteca' navega com o filtro", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<MuvucaSpotlight open={true} onOpenChange={vi.fn()} />);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    const items48 = Array.from({ length: 48 }, (_, i) => ({
+      id: `item-${i}`,
+      type: "prompt" as const,
+      title: `Item ${i}`,
+      contentPreview: "",
+      tagIds: [],
+    }));
+
+    searchSpotlightItemsMock.mockResolvedValueOnce({
+      ok: true,
+      data: { items: items48, tags: [], hasMore: true },
+    });
+
+    const input = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
+
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      setter?.call(input, "item");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+
+    expect(container.textContent).toContain("48+ itens");
+
+    const seeAllOption = [
+      ...container.querySelectorAll("[role='option']"),
+    ].find((el) => el.textContent?.includes("Ver todos na biblioteca"));
+    expect(seeAllOption).toBeDefined();
+
+    await act(async () => {
+      (seeAllOption as HTMLElement).click();
+    });
+
+    expect(pushMock).toHaveBeenCalledWith("/library?q=item");
+
+    await act(async () => root.unmount());
+    container.remove();
+  });
+
+  it("ordena item com match no título antes de item com match só no conteúdo", async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<MuvucaSpotlight open={true} onOpenChange={vi.fn()} />);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    // O RPC devolve os itens newest-first: o match só no conteúdo aparece
+    // primeiro na resposta do servidor, mas o título deve vencer no cliente.
+    searchSpotlightItemsMock.mockResolvedValueOnce({
+      ok: true,
+      data: {
+        items: [
+          {
+            id: "item-body-only",
+            type: "prompt",
+            title: "Anotações Diversas",
+            description: "Fala sobre revisão de código aqui",
+            contentPreview: "",
+            tagIds: [],
+          },
+          {
+            id: "item-title-match",
+            type: "prompt",
+            title: "Revisão de código",
+            contentPreview: "",
+            tagIds: [],
+          },
+        ],
+        tags: [],
+        hasMore: false,
+      },
+    });
+
+    const input = container.querySelector(
+      "input[type='text']",
+    ) as HTMLInputElement;
+
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      setter?.call(input, "revisão");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+
+    const optionTitles = [...container.querySelectorAll("[role='option']")]
+      .map((el) => el.textContent ?? "")
+      .filter((text) => text.includes("Revisão") || text.includes("Anotações"));
+
+    expect(optionTitles[0]).toContain("Revisão de código");
+    expect(optionTitles[1]).toContain("Anotações Diversas");
 
     await act(async () => root.unmount());
     container.remove();
