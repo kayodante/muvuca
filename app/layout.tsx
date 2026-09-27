@@ -16,8 +16,22 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: { default: t.metadata.title, template: `%s · ${t.metadata.title}` },
     description: t.metadata.description,
-    // Ícones vêm das convenções de arquivo do App Router (app/icon.svg,
-    // app/icon.png, app/apple-icon.png) e do app/manifest.ts.
+    // O favicon segue o tema do navegador (`media`), não a preferência salva
+    // no app: é a barra de abas que ele precisa contrastar. Com `icons`
+    // declarado, o Next descarta os ícones por convenção de arquivo
+    // (app/icon.png, app/apple-icon.png), então o apple-icon entra aqui
+    // também. Ele e o app/manifest.ts não aceitam `media`: um arquivo só.
+    icons: {
+      apple: "/apple-icon.png",
+      icon: (["light", "dark"] as const).flatMap((scheme) =>
+        [16, 32].map((size) => ({
+          url: `/brand/favicon-${scheme}-${size}.png`,
+          sizes: `${size}x${size}`,
+          type: "image/png",
+          media: `(prefers-color-scheme: ${scheme})`,
+        })),
+      ),
+    },
   };
 }
 
