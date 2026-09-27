@@ -504,6 +504,12 @@ describe("MuvucaSpotlight", () => {
     const dialog = container.querySelector("[role='dialog']");
     expect(dialog).not.toBeNull();
 
+    // O efeito de abertura foca o input num setTimeout de 30ms. Os 50ms acima
+    // não garantem que ele já disparou num runner lento, e o foco atrasado cai
+    // no meio do Tab/Shift+Tab e puxa o foco de volta para o input.
+    const input = container.querySelector("input[type='text']");
+    await vi.waitFor(() => expect(document.activeElement).toBe(input));
+
     const focusable = dialog!.querySelectorAll<HTMLElement>(
       'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
     );
@@ -1561,6 +1567,9 @@ describe("MuvucaSpotlight", () => {
     const input = container.querySelector(
       "input[type='text']",
     ) as HTMLInputElement;
+    // Mesmo foco atrasado da abertura do teste do Tab: sem esperar por ele,
+    // pode cair depois da prévia abrir e roubar o foco do botão de fechar.
+    await vi.waitFor(() => expect(document.activeElement).toBe(input));
 
     // Busca vazia: as 5 ações vêm antes dos "Recentes" -- desce até o
     // primeiro item para ter um `currentItem` real.
