@@ -60,7 +60,7 @@ export function ErrorState({
         {message}
       </p>
       {onRetry && (
-        <Button variant="outline" size="sm" onClick={onRetry}>
+        <Button variant="outline" onClick={onRetry}>
           <RefreshCwIcon aria-hidden="true" data-icon="inline-start" />
           {resolvedRetryLabel}
         </Button>

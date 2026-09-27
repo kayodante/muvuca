@@ -181,7 +181,6 @@ export function LibraryToolbar({
       {canRefreshPreviews && (
         <Button
           variant="ghost"
-          size="sm"
           onClick={onRefreshPreviews}
           disabled={refreshState === "refreshing"}
           aria-busy={refreshState === "refreshing" || undefined}
@@ -228,9 +227,8 @@ export function LibraryToolbar({
           render={
             <Button
               variant="outline"
-              size="sm"
               aria-label={t.items.toolbar.sortAriaLabel}
-              className="h-8 rounded-md border-0 bg-surface px-3 py-1.5 shadow-light"
+              className="border-0 bg-surface shadow-light"
             />
           }
         >

@@ -39,11 +39,7 @@ export function Topbar({
       </div>
 
       <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          nativeButton={false}
-          render={<Link href="/library?create=1" />}
-        >
+        <Button nativeButton={false} render={<Link href="/library?create=1" />}>
           <PlusIcon aria-hidden="true" data-icon="inline-start" />
           {/* `sr-only` below `sm`, not `hidden`: an icon-only button still
               needs a discernible name at every viewport. */}

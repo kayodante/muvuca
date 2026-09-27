@@ -1039,7 +1039,9 @@ body {
   appearance: none;
   border: 0;
   background: transparent;
-  height: 26px;
+  /* 34px + 3px de padding da barra em cima e embaixo = 40px, a altura de
+     todo controle do app (DESIGN.md -> Altura de controle). */
+  height: 34px;
   padding: 2px 12px;
   color: var(--tabs-text-muted);
   font-size: 14px;
@@ -1074,7 +1076,7 @@ body {
   position: absolute;
   top: 3px;
   left: 0;
-  height: 26px;
+  height: 34px;
   width: 0;
   background: var(--tabs-pill-bg);
   border-radius: 9999px;
@@ -1082,7 +1084,7 @@ body {
   transform: translateX(0);
   /* Exceção documentada a "animar apenas transform e opacity" (DESIGN.md ->
      Motion): a receita `scaleX` + `origin-left` vale para barra de progresso,
-     mas esta pill é um stadium (26px de altura, raio 9999px) e escalar em X
+     mas esta pill é um stadium (34px de altura, raio 9999px) e escalar em X
      achata as tampas redondas em elipses a cada quadro. São 4 alvos num
      clique pontual, não um loop -- o custo de layout cabe. */
   transition:

@@ -88,7 +88,6 @@ export function TagBulkPanel({
       <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
-          size="sm"
           disabled={count === 0 || moveOverCap}
           onClick={() => setMoveOpen(true)}
         >
@@ -96,7 +95,6 @@ export function TagBulkPanel({
         </Button>
         <Button
           variant="destructive"
-          size="sm"
           disabled={count === 0 || deleteOverCap}
           onClick={() => setDeleteOpen(true)}
         >
@@ -105,12 +103,7 @@ export function TagBulkPanel({
         {/* xl duplicates this with the header toggle (TagsPage.tsx), which
             stays visible there; below xl the header can be scrolled out of
             view, so this fixed-bar copy is the one still reachable. */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="xl:hidden"
-          onClick={onCancel}
-        >
+        <Button variant="ghost" className="xl:hidden" onClick={onCancel}>
           {t.tags.page.cancelSelection}
         </Button>
       </div>

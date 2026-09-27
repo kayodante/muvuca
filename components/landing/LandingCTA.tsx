@@ -29,8 +29,8 @@ export function LandingCTA() {
             <Link
               href="/login"
               className={cn(
-                buttonVariants({ variant: "default", size: "lg" }),
-                "gap-2 px-8 py-6 text-base font-semibold shadow-md transition-transform duration-(--motion-fast) ease-out-muvuca hover:scale-[1.02]",
+                buttonVariants({ variant: "default" }),
+                "gap-2 px-8 text-base font-semibold shadow-md transition-transform duration-(--motion-fast) ease-out-muvuca hover:scale-[1.02]",
               )}
             >
               {t.landing.common.getStarted}

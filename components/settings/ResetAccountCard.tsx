@@ -64,9 +64,7 @@ export function ResetAccountCard() {
 
       <AlertDialog open={open} onOpenChange={close}>
         <AlertDialogTrigger
-          render={
-            <Button variant="destructive" size="sm" className="self-start" />
-          }
+          render={<Button variant="destructive" className="self-start" />}
         >
           {t.settings.danger.resetAccount.cardHeading}
         </AlertDialogTrigger>

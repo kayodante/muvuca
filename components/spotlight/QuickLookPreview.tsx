@@ -227,7 +227,6 @@ export function QuickLookPreview({
         {isLink && url && (
           <>
             <Button
-              size="sm"
               className="w-full justify-center gap-2"
               onClick={() => {
                 const safeUrl = normalizeHttpUrl(url);
@@ -243,7 +242,6 @@ export function QuickLookPreview({
               <ExternalLinkIcon className="size-3.5" />
             </Button>
             <Button
-              size="sm"
               variant="secondary"
               className="w-full justify-center gap-2"
               onClick={() =>
@@ -266,7 +264,6 @@ export function QuickLookPreview({
 
         {(isPrompt || isCode) && (
           <Button
-            size="sm"
             className="w-full justify-center gap-2"
             onClick={() =>
               handleCopyContent(

@@ -97,7 +97,7 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
             <Link
               href="/login"
               className={cn(
-                buttonVariants({ variant: "default", size: "lg" }),
+                buttonVariants({ variant: "default" }),
                 "gap-2 px-6 shadow-sm",
               )}
             >
@@ -107,7 +107,7 @@ export function LandingHero({ onOpenSearch }: LandingHeroProps) {
             <a
               href="#demo"
               className={cn(
-                buttonVariants({ variant: "secondary", size: "lg" }),
+                buttonVariants({ variant: "secondary" }),
                 "gap-2 px-6",
               )}
             >

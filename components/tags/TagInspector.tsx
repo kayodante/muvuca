@@ -282,7 +282,6 @@ export function TagInspector({
             </p>
             <Button
               variant="outline"
-              size="sm"
               onClick={() => onSelect({ kind: "create", parentId: null })}
             >
               <PlusIcon aria-hidden="true" data-icon="inline-start" />
@@ -484,7 +483,6 @@ function CurationPreviewSection({
       {tags.length > CURATION_PREVIEW && (
         <Button
           variant="ghost"
-          size="sm"
           className="self-start"
           aria-expanded={showAll}
           onClick={() => setShowAll((value) => !value)}
@@ -544,7 +542,6 @@ function TagChildren({
       ) : (
         <Button
           variant="ghost"
-          size="sm"
           className="self-start"
           onClick={() => onSelect({ kind: "create", parentId: tag.id })}
         >

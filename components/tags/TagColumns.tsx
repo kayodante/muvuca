@@ -355,7 +355,6 @@ function ColumnView({
               {!rowProps.checked && (
                 <Button
                   variant="ghost"
-                  size="sm"
                   onClick={() => rowProps.onSelect(owner)}
                   aria-label={t.tags.columns.editTag(owner.name)}
                 >
@@ -546,7 +545,7 @@ export function TagSearchResults({
         >
           {t.tags.page.noneFound(query)}
         </p>
-        <Button variant="ghost" size="sm" onClick={onClear}>
+        <Button variant="ghost" onClick={onClear}>
           {t.tags.page.clearSearch}
         </Button>
       </div>
