@@ -262,15 +262,23 @@ export function TagInspector({
               variant inline), so this stays a plain breakpoint instead of
               introducing one for a single, low-stakes hint.
             */}
-            <p className="text-metadata hidden flex-wrap items-center gap-x-1.5 gap-y-1 text-muted-foreground sm:flex">
-              <kbd className={KBD_CLASS}>/</kbd>{" "}
-              {t.tags.inspector.shortcutFilter}
-              <kbd className={KBD_CLASS}>↑↓</kbd>{" "}
-              {t.tags.inspector.shortcutNavigate}
-              <kbd className={KBD_CLASS}>Enter</kbd>{" "}
-              {t.tags.inspector.shortcutSelect}
-              <kbd className={KBD_CLASS}>Esc</kbd>{" "}
-              {t.tags.inspector.shortcutBack}
+            <p className="text-body-sm hidden flex-wrap items-center gap-x-3 gap-y-1.5 text-muted-foreground sm:flex">
+              {(
+                [
+                  ["/", t.tags.inspector.shortcutFilter],
+                  ["↑↓", t.tags.inspector.shortcutNavigate],
+                  ["Enter", t.tags.inspector.shortcutSelect],
+                  ["Esc", t.tags.inspector.shortcutBack],
+                ] as const
+              ).map(([key, label]) => (
+                <span
+                  key={key}
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap"
+                >
+                  <kbd className={KBD_CLASS}>{key}</kbd>
+                  {label}
+                </span>
+              ))}
             </p>
             <Button
               variant="outline"
