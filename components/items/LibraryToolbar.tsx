@@ -181,7 +181,6 @@ export function LibraryToolbar({
       {canRefreshPreviews && (
         <Button
           variant="ghost"
-          size="sm"
           onClick={onRefreshPreviews}
           disabled={refreshState === "refreshing"}
           aria-busy={refreshState === "refreshing" || undefined}
@@ -228,9 +227,8 @@ export function LibraryToolbar({
           render={
             <Button
               variant="outline"
-              size="sm"
               aria-label={t.items.toolbar.sortAriaLabel}
-              className="h-8 rounded-md border-0 bg-surface px-3 py-1.5 shadow-light dark:bg-surface"
+              className="border-0 bg-surface shadow-light"
             />
           }
         >
@@ -248,7 +246,7 @@ export function LibraryToolbar({
             >
               <span className="flex-1">{labels[option]}</span>
               {option === sort && (
-                <CheckIcon aria-hidden="true" className="text-primary" />
+                <CheckIcon aria-hidden="true" className="text-brand-accent" />
               )}
             </DropdownMenuItem>
           ))}

@@ -99,7 +99,6 @@ export function ProfileCard({
 
       <Button
         type="submit"
-        size="sm"
         className="self-start"
         pending={isPending}
         pendingLabel={t.settings.profile.saving}

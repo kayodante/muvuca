@@ -21,8 +21,10 @@ import { toastSuccess } from "@/components/states/Toast";
  * Destructive confirmation, focus kept away from the destructive action
  * until the user has read the context. Explains the two real consequences
  * of deleting a tag up front -- children are promoted to this tag's own
- * parent, items keep existing but lose only this one association -- so
- * "excluir" never reads as "excluir os itens".
+ * parent (or become roots), items keep existing but lose only this one
+ * association -- so "excluir" never reads as "excluir os itens". The exact
+ * sentence depends on the tag's shape: whether it has children, whether it
+ * has a parent, and how many items it carries directly.
  * Controlled: its trigger lives inside the inspector's DropdownMenu.
  */
 export function DeleteTagAlertDialog({
@@ -33,7 +35,13 @@ export function DeleteTagAlertDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  tag: { id: string; name: string } | null;
+  tag: {
+    id: string;
+    name: string;
+    itemCount: number;
+    childCount: number;
+    parentName: string | null;
+  } | null;
   onDeleted?: () => void;
 }) {
   const t = useDictionary();
@@ -52,6 +60,19 @@ export function DeleteTagAlertDialog({
     return null;
   }
 
+  const childrenSentence =
+    tag.childCount === 0
+      ? null
+      : tag.parentName
+        ? t.tags.deleteDialog.childrenToParent(tag.childCount, tag.parentName)
+        : t.tags.deleteDialog.childrenToRoot(tag.childCount);
+  const itemsSentence =
+    tag.itemCount === 0
+      ? t.tags.deleteDialog.itemsNone
+      : tag.itemCount === 1
+        ? t.tags.deleteDialog.itemsOne
+        : t.tags.deleteDialog.itemsMany(tag.itemCount);
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -66,7 +87,7 @@ export function DeleteTagAlertDialog({
             dir="auto"
             className="[overflow-wrap:anywhere] break-words"
           >
-            {t.tags.deleteDialog.description(tag.name)}
+            {[childrenSentence, itemsSentence].filter(Boolean).join(" ")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {state?.ok === false && (

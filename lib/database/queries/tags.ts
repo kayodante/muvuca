@@ -174,6 +174,40 @@ export async function getTagByPath(
   };
 }
 
+/** One row of the `tags` + embedded `item_tags` aggregate select below. */
+type TagItemCountRow = { id: string; item_tags: { count: number }[] };
+
+/**
+ * Direct item count per tag, keyed by tag id -- tags with no association at
+ * all are simply absent from the object (0 either way). One round trip via
+ * PostgREST's embedded `count()` aggregate instead of N queries. RLS scopes
+ * this to the caller automatically (0007_rls.sql, both on `tags` and on the
+ * `item_tags` it counts through); no explicit `user_id` filter is needed or
+ * added, matching every other query in this codebase.
+ */
+export async function getTagItemCounts(): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("tags")
+    .select("id, item_tags(count)")
+    .returns<TagItemCountRow[]>();
+
+  if (error) {
+    logEvent({
+      event: "tags.item_counts_failed",
+      status: "failure",
+      errorClass: error.code ?? error.name,
+    });
+    throw error;
+  }
+
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    counts[row.id] = row.item_tags[0]?.count ?? 0;
+  }
+  return counts;
+}
+
 /**
  * Number of direct children of a tag, without fetching the whole tree.
  * Covered by the `tags_user_id_parent_id_idx` index (migration 0006). RLS

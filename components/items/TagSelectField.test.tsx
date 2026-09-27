@@ -177,6 +177,8 @@ describe("TagSelectField", () => {
       'input[type="text"][placeholder*="Buscar"]',
     ) as HTMLInputElement;
     expect(searchInput).not.toBeNull();
+    // Placeholder não é nome acessível; o filtro precisa de label próprio.
+    expect(searchInput.getAttribute("aria-label")).toBe("Buscar tags");
 
     await act(async () => {
       setInputValue(searchInput, "React");
@@ -186,6 +188,50 @@ describe("TagSelectField", () => {
     const visibleTexts = Array.from(options).map((opt) => opt.textContent);
     expect(visibleTexts.some((t) => t?.includes("React"))).toBe(true);
     expect(visibleTexts.some((t) => t?.includes("Design"))).toBe(false);
+  });
+
+  it("navega entre as opções por setas, fora da ordem de Tab", async () => {
+    await renderField();
+
+    const trigger = document.querySelector(
+      'button[aria-haspopup="listbox"]',
+    ) as HTMLButtonElement;
+    await act(async () => {
+      trigger.click();
+    });
+
+    const searchInput = document.querySelector(
+      'input[aria-label="Buscar tags"]',
+    ) as HTMLInputElement;
+    const options = Array.from(
+      document.querySelectorAll<HTMLElement>('[role="option"]'),
+    );
+    expect(options).toHaveLength(3);
+    const [first, second, last] = options as [
+      HTMLElement,
+      HTMLElement,
+      HTMLElement,
+    ];
+    // Uma parada de Tab para o popup inteiro, não uma por tag.
+    expect(options.every((option) => option.tabIndex === -1)).toBe(true);
+
+    const press = (target: HTMLElement, key: string) =>
+      act(async () => {
+        target.dispatchEvent(
+          new KeyboardEvent("keydown", { key, bubbles: true }),
+        );
+      });
+
+    await press(searchInput, "ArrowDown");
+    expect(document.activeElement).toBe(first);
+    await press(first, "ArrowDown");
+    expect(document.activeElement).toBe(second);
+    await press(second, "End");
+    expect(document.activeElement).toBe(last);
+    await press(last, "Home");
+    expect(document.activeElement).toBe(first);
+    await press(first, "ArrowUp");
+    expect(document.activeElement).toBe(searchInput);
   });
 
   it("fecha o dropdown com a tecla Escape", async () => {

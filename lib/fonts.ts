@@ -21,6 +21,9 @@ const geistPixel = Geist_Pixel({
   subsets: ["latin"],
   axes: ["ELSH"],
   display: "swap",
+  // Next has no precomputed fallback metrics for Geist Pixel; opting out
+  // silences the per-compile warning without changing the emitted CSS.
+  adjustFontFallback: false,
 });
 
 export const fontVariables = `${geistSans.variable} ${geistMono.variable} ${geistPixel.variable}`;

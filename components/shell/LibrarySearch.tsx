@@ -194,9 +194,14 @@ export function LibrarySearch() {
   }
 
   return (
+    // The focus ring lives on the wrapper, not the input: `.t-clear` clips
+    // its overflow so the clear animation's flying text stays inside the
+    // field, and that clip would cut an input ring down to its corners.
+    // Solid, not `ring-ring/50`: the field is borderless, so this ring is the
+    // whole focus indicator, and at 50% it read 1.77:1 on the light topbar.
     <div
       ref={wrapperRef}
-      className={`t-clear w-full max-w-lg ${query ? "has-value" : ""} ${isClearing ? "is-clearing" : ""}`}
+      className={`t-clear w-full max-w-lg rounded-md transition-shadow duration-(--motion-fast) ease-out-muvuca has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-ring motion-reduce:transition-none ${query ? "has-value" : ""} ${isClearing ? "is-clearing" : ""}`}
       aria-busy={isPending}
     >
       <SearchIcon
@@ -221,7 +226,7 @@ export function LibrarySearch() {
         }}
         placeholder={t.shell.search.placeholder}
         aria-label={t.shell.search.placeholder}
-        className="border-0 bg-background pr-14 pl-9 shadow-light dark:bg-background [&::-webkit-search-cancel-button]:hidden"
+        className="border-0 bg-background pr-14 pl-9 shadow-light focus-visible:ring-0 dark:bg-background [&::-webkit-search-cancel-button]:hidden"
       />
       <div
         ref={mirrorRef}
@@ -249,7 +254,7 @@ export function LibrarySearch() {
           }}
           onClick={handleClear}
           aria-label={t.shell.search.clear}
-          className="t-clear-btn absolute top-1/2 right-2.5 -translate-y-1/2 rounded p-1 text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none"
+          className="t-clear-btn absolute top-1/2 right-2.5 flex size-6 -translate-y-1/2 items-center justify-center rounded text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca outline-none after:absolute after:-inset-2.5 after:content-[''] hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none"
         >
           <XIcon aria-hidden="true" className="size-3.5" />
         </button>
@@ -258,7 +263,7 @@ export function LibrarySearch() {
           type="button"
           onClick={() => openSpotlight()}
           aria-label={t.shell.search.openSpotlight}
-          className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer outline-none after:absolute after:-inset-y-3 after:left-1/2 after:w-11 after:-translate-x-1/2 after:content-[''] focus-visible:ring-2 focus-visible:ring-ring"
         >
           <kbd
             aria-hidden="true"
@@ -268,18 +273,20 @@ export function LibrarySearch() {
           </kbd>
         </button>
       )}
+      {/* A hairline under the field, not a spinner: search runs on every
+          keystroke, so the indicator has to stay out of the way while still
+          saying the results are catching up. */}
       {isPending && (
-        <>
-          {/* A hairline under the field, not a spinner: search runs on every
-              keystroke, so the indicator has to stay out of the way while
-              still saying the results are catching up. */}
-          <span
-            aria-hidden="true"
-            className="absolute inset-x-0 bottom-0 h-px rounded-full bg-primary motion-safe:animate-search-sweep"
-          />
-          <span className="sr-only">{t.shell.search.searching}</span>
-        </>
+        <span
+          aria-hidden="true"
+          className="absolute inset-x-0 bottom-0 h-px rounded-full bg-primary motion-safe:animate-search-sweep"
+        />
       )}
+      {/* Always mounted: a live region inserted together with its text is
+          not announced, only a change to one that already exists. */}
+      <span role="status" className="sr-only">
+        {isPending ? t.shell.search.searching : ""}
+      </span>
     </div>
   );
 }

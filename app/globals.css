@@ -2,7 +2,20 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+/* Same two switches the color tokens use: an explicit `.dark` pick, or the OS
+   preference when no theme was picked (`app/layout.tsx` sets no class for
+   "system"). Matching only `.dark` left every `dark:` utility inert for
+   system-dark users while the tokens around it had already flipped. */
+@custom-variant dark {
+  &:is(.dark *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:not(.light *) {
+      @slot;
+    }
+  }
+}
 
 /**
  * Design tokens. Every color/radius/spacing value consumed by a component
@@ -29,6 +42,8 @@
   --color-focus: var(--focus);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
+  --color-hover: var(--hover);
+  --color-selected: var(--selected);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -200,6 +215,14 @@ body {
   /* Translúcida (Figma): 8% de ink, lida igual sobre canvas, surface e
      thumbnail, em vez de um cinza opaco calibrado para uma superfície só. */
   --border: #14141514;
+  /* Estados de interação de controles neutros. Tinta translúcida pelo mesmo
+     motivo da --border: o mesmo degrau lê igual sobre canvas, surface e
+     popover, em vez de um cinza opaco calibrado para uma superfície só.
+     Medido em OKLCH sobre surface: hover ΔL −0,035, selected ΔL −0,060 (no
+     escuro, +0,050 e +0,083). Onde o repouso já tem fundo, o hover entra
+     como camada (inset-shadow, igual ao TagChip), não como troca de fundo. */
+  --hover: #100f110d;
+  --selected: #100f1116;
   --focus: #0da321;
   --success: #15803d;
   --warning: #b45309;
@@ -256,7 +279,7 @@ body {
   --secondary-foreground: var(--ink);
   --muted: var(--surface-subtle);
   --muted-foreground: var(--ink-muted);
-  --accent: var(--surface-subtle);
+  --accent: var(--hover);
   --accent-foreground: var(--ink);
   --destructive: var(--error);
   --input: var(--border);
@@ -300,7 +323,9 @@ body {
   /* Layout. */
   --layout-sidebar-width: 272px;
   --layout-content-max: 1600px;
-  --layout-topbar-min-height: 64px;
+  /* The Topbar's rendered height (40px controls + 2x12px padding + 1px
+     border); /tags subtracts it to fit the viewport exactly. */
+  --layout-topbar-min-height: 65px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -313,6 +338,8 @@ body {
     --surface: #121113;
     --surface-subtle: #171618;
     --border: #fafafa14;
+    --hover: #f1eff50d;
+    --selected: #f1eff516;
     --ink: #f1eff5;
     --ink-muted: #a2a0a6;
     --error: #f87171;
@@ -357,6 +384,8 @@ body {
   --surface: #121113;
   --surface-subtle: #171618;
   --border: #fafafa14;
+  --hover: #f1eff50d;
+  --selected: #f1eff516;
   --ink: #f1eff5;
   --ink-muted: #a2a0a6;
   --error: #f87171;
@@ -403,7 +432,7 @@ body {
   --secondary-foreground: var(--ink);
   --muted: var(--surface-subtle);
   --muted-foreground: var(--ink-muted);
-  --accent: var(--surface-subtle);
+  --accent: var(--hover);
   --accent-foreground: var(--ink);
   --destructive: var(--error);
   --input: var(--border);
@@ -431,6 +460,8 @@ body {
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-hover: var(--hover);
+  --color-selected: var(--selected);
   --color-destructive: var(--destructive);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -1008,7 +1039,9 @@ body {
   appearance: none;
   border: 0;
   background: transparent;
-  height: 26px;
+  /* 34px + 3px de padding da barra em cima e embaixo = 40px, a altura de
+     todo controle do app (DESIGN.md -> Altura de controle). */
+  height: 34px;
   padding: 2px 12px;
   color: var(--tabs-text-muted);
   font-size: 14px;
@@ -1043,7 +1076,7 @@ body {
   position: absolute;
   top: 3px;
   left: 0;
-  height: 26px;
+  height: 34px;
   width: 0;
   background: var(--tabs-pill-bg);
   border-radius: 9999px;
@@ -1051,13 +1084,13 @@ body {
   transform: translateX(0);
   /* Exceção documentada a "animar apenas transform e opacity" (DESIGN.md ->
      Motion): a receita `scaleX` + `origin-left` vale para barra de progresso,
-     mas esta pill é um stadium (26px de altura, raio 9999px) e escalar em X
+     mas esta pill é um stadium (34px de altura, raio 9999px) e escalar em X
      achata as tampas redondas em elipses a cada quadro. São 4 alvos num
      clique pontual, não um loop -- o custo de layout cabe. */
   transition:
     transform var(--motion-base) var(--ease-out-muvuca),
     width var(--motion-base) var(--ease-out-muvuca);
-  will-change: transform, width;
+  will-change: transform;
   z-index: 0;
   pointer-events: none;
 }

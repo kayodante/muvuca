@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import Link from "next/link";
-import { EllipsisVerticalIcon } from "lucide-react";
+import { MoreHorizontalIcon } from "lucide-react";
 
 import { exportTagLibrary } from "@/lib/actions/export";
 import { toastError, toastSuccess } from "@/components/states/Toast";
@@ -66,7 +66,7 @@ export function TagDetailActions({
       <DropdownMenuTrigger
         render={<Button variant="ghost" size="icon-sm" aria-busy={pending} />}
       >
-        <EllipsisVerticalIcon aria-hidden="true" className="size-4" />
+        <MoreHorizontalIcon aria-hidden="true" className="size-4" />
         <span className="sr-only">{t.tags.inspector.moreActions(tagName)}</span>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

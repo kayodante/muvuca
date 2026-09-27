@@ -2,11 +2,8 @@
 
 import { useState } from "react";
 import {
-  CheckIcon,
-  CodeXmlIcon,
   CopyIcon,
   ExternalLinkIcon,
-  FileTextIcon,
   InfoIcon,
   LinkIcon,
   MaximizeIcon,
@@ -19,7 +16,6 @@ import { copyToClipboard } from "@/lib/clipboard";
 import { normalizeHttpUrl } from "@/lib/validation/item";
 import { MORPH_CLASS, MORPH_TITLE_CLASS } from "@/lib/motion/view-transition";
 import { useDictionary } from "@/lib/i18n/client";
-import type { Dictionary } from "@/lib/i18n/dictionaries/pt-BR";
 import { cn } from "@/lib/utils";
 import { TagChip } from "@/components/tags/TagChip";
 import { Button } from "@/components/ui/button";
@@ -43,42 +39,8 @@ import { CodeSnippetPreview } from "./CodeSnippetPreview";
 import { PromptMarkdownPreview } from "./PromptMarkdownPreview";
 import { SiteIdentity } from "./SiteIdentity";
 import { useTransientFlag } from "./useTransientFlag";
-
-/**
- * Type badge (Figma "Meta"): lowercase Geist Pixel label in the type's own
- * hue, always visible. The colors are theme-aware tokens (`--type-*`), not
- * the raw tag palette -- emerald/orange at their mockup shade reprove AA on
- * the light surface at this size, and the mockup is dark-only.
- *
- * `hint` is the accessible name of the trailing info button and the text of
- * its tooltip: the pixel face plus a 3-letter word is a weak label on its
- * own, so the type is also available as plain prose to anyone hovering,
- * focusing, or using a screen reader. Icon/hue are locale-independent, so
- * only `label`/`hint` come from the dictionary -- built inside the
- * component (not a module constant) since they depend on `t`.
- */
-function typeMetaFor(t: Dictionary) {
-  return {
-    link: {
-      label: t.items.card.types.link.label,
-      hue: "text-type-link",
-      Icon: LinkIcon,
-      hint: t.items.card.types.link.hint,
-    },
-    prompt: {
-      label: t.items.card.types.prompt.label,
-      hue: "text-type-prompt",
-      Icon: FileTextIcon,
-      hint: t.items.card.types.prompt.hint,
-    },
-    code_component: {
-      label: t.items.card.types.code_component.label,
-      hue: "text-type-code",
-      Icon: CodeXmlIcon,
-      hint: t.items.card.types.code_component.hint,
-    },
-  } as const;
-}
+import { typeMetaFor } from "./typeMeta";
+import { CopyStateIcon } from "./CopyStateIcon";
 
 /**
  * Shared by every quick action: only the badge stays visible at rest.
@@ -123,34 +85,6 @@ const HOVER_LIGHT =
  * `surface-subtle` under the same `shadow-1` layer (PREVIEW_PANEL).
  */
 const PREVIEW_HOVER = "group-hover:bg-secondary";
-
-/**
- * Crossfade entre o ícone de "copiar" e o Check de confirmação: os dois
- * ficam empilhados na mesma célula (não teleporta, e o botão não muda de
- * largura) e só opacidade/blur/escala trocam. Nunca anima a partir de
- * scale(0) -- nada no mundo real aparece do nada, 0.8 é o piso
- * (`--icon-swap-start-scale`). O ícone que está saindo leva
- * pointer-events-none: o Button (não o svg) continua sendo o único alvo de
- * clique, e o aria-label dele já dá o nome acessível.
- */
-function CopyStateIcon({
-  copied,
-  Icon,
-}: {
-  copied: boolean;
-  Icon: typeof CopyIcon;
-}) {
-  return (
-    <span className="t-icon-swap size-4" data-state={copied ? "b" : "a"}>
-      <Icon aria-hidden="true" data-icon="a" className="t-icon size-4" />
-      <CheckIcon
-        aria-hidden="true"
-        data-icon="b"
-        className="t-icon size-4 text-brand-accent"
-      />
-    </span>
-  );
-}
 
 export function ItemCard({
   item,

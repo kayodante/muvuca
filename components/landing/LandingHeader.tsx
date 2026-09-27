@@ -70,7 +70,7 @@ export function LandingHeader({ onOpenSearch }: LandingHeaderProps) {
             <button
               type="button"
               onClick={onOpenSearch}
-              className="text-metadata flex items-center gap-2 rounded-lg border border-border bg-muted/20 px-2.5 py-1.5 text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca hover:bg-muted/50 hover:text-foreground motion-reduce:transition-none"
+              className="text-metadata flex h-10 items-center gap-2 rounded-lg border border-border bg-muted/20 px-3 text-muted-foreground transition-colors duration-(--motion-fast) ease-out-muvuca hover:bg-muted/50 hover:text-foreground motion-reduce:transition-none"
               aria-label={t.landing.header.openSpotlight}
             >
               <SearchIcon className="size-3.5" />
@@ -83,13 +83,13 @@ export function LandingHeader({ onOpenSearch }: LandingHeaderProps) {
 
           <Link
             href="/login"
-            className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
+            className={cn(buttonVariants({ variant: "ghost" }))}
           >
             {t.landing.common.login}
           </Link>
           <Link
             href="/login"
-            className={cn(buttonVariants({ variant: "default", size: "sm" }))}
+            className={cn(buttonVariants({ variant: "default" }))}
           >
             {t.landing.common.getStarted}
           </Link>
@@ -100,7 +100,7 @@ export function LandingHeader({ onOpenSearch }: LandingHeaderProps) {
           {onOpenSearch && (
             <Button
               variant="ghost"
-              size="icon-sm"
+              size="icon"
               onClick={onOpenSearch}
               aria-label={t.landing.header.openSearchMobile}
             >
@@ -110,7 +110,7 @@ export function LandingHeader({ onOpenSearch }: LandingHeaderProps) {
 
           <Link
             href="/login"
-            className={cn(buttonVariants({ variant: "default", size: "sm" }))}
+            className={cn(buttonVariants({ variant: "default" }))}
           >
             {t.landing.common.getStarted}
           </Link>
@@ -119,7 +119,7 @@ export function LandingHeader({ onOpenSearch }: LandingHeaderProps) {
               render={
                 <Button
                   variant="ghost"
-                  size="icon-sm"
+                  size="icon"
                   aria-label={t.landing.header.openMenu}
                 />
               }

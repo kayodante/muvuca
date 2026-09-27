@@ -41,7 +41,8 @@ export function Sidebar({
       aria-label={t.shell.nav.ariaLabel}
       className="flex h-full flex-col overflow-hidden"
     >
-      <div className="flex shrink-0 items-center justify-between gap-2 border-r border-b border-border bg-secondary p-2">
+      {/* Same height as the Topbar so both bottom borders form one line. */}
+      <div className="flex min-h-[var(--layout-topbar-min-height)] shrink-0 items-center justify-between gap-2 border-r border-b border-border bg-secondary py-2 pr-4 pl-2">
         {/* Official Muvuca brand mark */}
         <Link
           href="/library"

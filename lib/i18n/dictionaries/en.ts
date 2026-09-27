@@ -135,10 +135,24 @@ export const en: Dictionary = {
       created: "Tag created.",
       updated: "Tag updated.",
     },
+    parentPicker: {
+      noResults: "No tags found.",
+      toggleOptions: "Open options",
+    },
     deleteDialog: {
       title: (name: string) => `Delete “${name}”?`,
-      description: (name: string) =>
-        `Direct child tags move under “${name}”'s own parent (or become root tags, if “${name}” was already a root). Associated items aren't deleted -- they only lose the association with this tag.`,
+      childrenToParent: (n: number, parentName: string) =>
+        n === 1
+          ? `The child tag moves under “${parentName}”.`
+          : `The ${n} child tags move under “${parentName}”.`,
+      childrenToRoot: (n: number) =>
+        n === 1
+          ? "The child tag becomes a root tag."
+          : `The ${n} child tags become root tags.`,
+      itemsNone: "No item uses this tag.",
+      itemsOne: "1 item loses this tag. The item is not deleted.",
+      itemsMany: (n: number) =>
+        `${n} items lose this tag. The items are not deleted.`,
       confirm: "Delete tag",
       deleting: "Deleting...",
       deleted: "Tag deleted.",
@@ -183,6 +197,10 @@ export const en: Dictionary = {
       emptyTitle: "No tag selected",
       emptyDescription:
         "Pick a tag in the columns to edit its name, color, parent and description.",
+      shortcutFilter: "filters",
+      shortcutNavigate: "navigates the columns",
+      shortcutSelect: "selects",
+      shortcutBack: "goes back",
       summary: (total: number, roots: number, levels: number) =>
         [
           total === 1 ? "1 tag" : `${total} tags`,
@@ -191,10 +209,22 @@ export const en: Dictionary = {
         ].join(" · "),
       repeatedNames: "Repeated names",
       repeatedNamesHint: "The same name in more than one branch.",
-      withoutDescription: "No description",
+      repeatedNameChipLabel: (name: string, location: string) =>
+        `${name} — ${location}`,
+      rootLabel: "Root",
+      emptyTags: "Empty",
+      emptyTagsHint: "No items in it or its children.",
+      singleItemTags: "With 1 item",
+      singleItemTagsHint: "Candidates to merge into another tag or delete.",
       showAll: (n: number) => `Show all (${n})`,
       showLess: "Show less",
-      allTidy: "Every tag has a description and no name repeats.",
+      allTidy: "No tag is empty, none has just 1 item, and no name repeats.",
+      itemCount: (n: number) =>
+        n === 0
+          ? "No items with this tag"
+          : n === 1
+            ? "1 item with this tag"
+            : `${n} items with this tag`,
       pathLabel: "Path",
       children: "Child tags",
       noChildren: "No child tags.",
@@ -236,6 +266,7 @@ export const en: Dictionary = {
       deleting: "Deleting...",
       deleted: (n: number) =>
         n === 1 ? "1 tag deleted." : `${n} tags deleted.`,
+      itemCount: (n: number) => (n === 1 ? "1 item" : `${n} items`),
     },
   },
   bookmarks: {
@@ -432,6 +463,7 @@ export const en: Dictionary = {
     },
     codeSnippetEmbed: {
       copyCode: "Copy code",
+      codeRegion: "Code",
       codeCopied: "Code copied to clipboard.",
       codeCopyFailed: "Couldn't copy the code.",
       lineCount: (n: number) =>
@@ -542,6 +574,7 @@ export const en: Dictionary = {
       removeTag: (name: string) => `Remove tag ${name}`,
       availableTagsLabel: "Available tags",
       searchPlaceholder: "Search tags...",
+      searchLabel: "Search tags",
       noTagsFound: "No tags found.",
       selectedCount: (count: number) =>
         `${count} tag${count > 1 ? "s" : ""} selected`,
@@ -577,29 +610,37 @@ export const en: Dictionary = {
         keywords: ["settings", "preferences", "backup", "export", "account"],
       },
       toggleTheme: {
-        title: "Toggle theme (Light / Dark / System)",
+        title: "Toggle light/dark theme",
         description: "Change the interface appearance",
         keywords: ["theme", "dark", "light", "appearance", "mode"],
       },
     },
     themeChangedDark: "Theme changed to dark.",
     themeChangedLight: "Theme changed to light.",
-    searchPlaceholder: "Search links, prompts, code, or actions...",
+    searchPlaceholder: "Search items or actions…",
     searchInputLabel: "Type to search",
-    dialogLabel: "Muvuca Spotlight — Quick search",
+    dialogLabel: "Quick search",
     closeSpotlight: "Close quick search",
     filterByTag: "Filter by tag:",
-    allTag: "All",
-    noResults: (query: string) => `No results found for "${query}".`,
-    execute: "Run",
     navigate: "navigate",
     select: "select",
-    peek: "peek",
+    peek: "preview",
     close: "close",
-    spaceKey: "space",
-    resultCount: (n: number) => `${n} ${n === 1 ? "result" : "results"}`,
-    quickLookAria: "Peek item (Quick Look)",
-    quickLookTitle: "Peek item (Space)",
+    groups: {
+      actions: "Actions",
+      recent: "Recent",
+      items: "Items",
+    },
+    loadFailed: "Couldn't load the items.",
+    retry: "Try again",
+    itemCount: (n: number, hasMore: boolean) =>
+      hasMore ? `${n}+ items` : `${n} ${n === 1 ? "item" : "items"}`,
+    searching: "Searching…",
+    noItems: (query: string) => `No items found for "${query}".`,
+    clearSearch: "Clear search",
+    seeAll: "See all in library",
+    seeAllDescription: "Open full search with this filter",
+    quickLookTitle: "Preview (→)",
     open: "Open",
     copyShort: "Copy",
     copiedShort: "Copied",
@@ -607,13 +648,8 @@ export const en: Dictionary = {
     promptCopiedMessage: "Prompt copied to clipboard.",
     codeCopiedMessage: "Code copied to clipboard.",
     copyContentFailed: "Couldn't copy the content.",
-    badges: {
-      link: "LINK",
-      prompt: "PROMPT",
-      code: "CODE",
-    },
     quickLook: {
-      regionLabel: "Item preview (Quick Look)",
+      regionLabel: "Item preview",
       close: "Close preview",
       openPage: "Open page",
       linkCopiedShort: "Link copied",

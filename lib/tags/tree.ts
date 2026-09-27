@@ -214,6 +214,26 @@ export function getTagColumns(
   return { columns, path: new Set(chain.map((tag) => tag.id)), childCounts };
 }
 
+/** Case- and accent-insensitive key for name matching/typeahead. */
+export function normalizeForSearch(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+}
+
+/**
+ * Flat name matches for the `/tags` filter: used both by `TagSearchResults`
+ * (the list) and the filter input's own Enter/ArrowDown shortcuts, so the
+ * two can never disagree on what "the first match" is.
+ */
+export function matchTagsByName(flat: FlatTag[], query: string): FlatTag[] {
+  const q = normalizeForSearch(query);
+  if (!q) return [];
+  return flat.filter((tag) => normalizeForSearch(tag.name).includes(q));
+}
+
 /**
  * Display names root-first ("Design", "Recursos"), for showing where a tag
  * lives when its slug path would be less readable.
@@ -235,7 +255,10 @@ export type TagSummary = {
   total: number;
   roots: number;
   levels: number;
-  withoutDescription: FlatTag[];
+  /** Tags whose whole subtree (themselves + every descendant) has 0 items. */
+  empty: FlatTag[];
+  /** Tags whose whole subtree has exactly 1 item. */
+  single: FlatTag[];
   /** Tags sharing a name in different branches, one group per name. */
   repeatedNames: FlatTag[][];
 };
@@ -243,9 +266,15 @@ export type TagSummary = {
 /**
  * What the `/tags` inspector shows while nothing is selected: the shape of
  * the hierarchy and the tags worth a curation pass. Names compare like the
- * `name_normalized` column (lower(btrim(name))).
+ * `name_normalized` column (lower(btrim(name))). `itemCounts` holds each
+ * tag's *direct* item count (`getTagItemCounts`); a subtree's total is that
+ * count plus every descendant's, via the same `getDescendantIds` the parent
+ * picker uses.
  */
-export function summarizeTags(flat: FlatTag[]): TagSummary {
+export function summarizeTags(
+  flat: FlatTag[],
+  itemCounts: Record<string, number>,
+): TagSummary {
   const depths = getDepths(flat);
   const byName = new Map<string, FlatTag[]>();
 
@@ -256,11 +285,36 @@ export function summarizeTags(flat: FlatTag[]): TagSummary {
     else byName.set(key, [tag]);
   }
 
+  const subtreeTotal = (tag: FlatTag): number => {
+    let total = itemCounts[tag.id] ?? 0;
+    for (const id of getDescendantIds(tag.id, flat)) {
+      total += itemCounts[id] ?? 0;
+    }
+    return total;
+  };
+
+  const empty: FlatTag[] = [];
+  const single: FlatTag[] = [];
+  for (const tag of flat) {
+    const total = subtreeTotal(tag);
+    if (total === 0) empty.push(tag);
+    // ponytail: an item tagged on both a tag and one of its descendants is
+    // counted once per tag in that chain, so this sum can overcount a
+    // subtree's real (deduplicated) item total -- a tag can fall out of
+    // `single` when it should stay in. It never falls the other way: the
+    // sum can only inflate, so it never turns a genuinely empty subtree
+    // (0 rows in item_tags for the whole chain) into a false "single".
+    // Upgrade path: a distinct-item-id rollup query if this ever needs to
+    // be exact instead of a fast client-side estimate.
+    else if (total === 1) single.push(tag);
+  }
+
   return {
     total: flat.length,
     roots: [...depths.values()].filter((depth) => depth === 1).length,
     levels: Math.max(0, ...depths.values()),
-    withoutDescription: flat.filter((tag) => !tag.description?.trim()),
+    empty,
+    single,
     repeatedNames: [...byName.values()].filter((group) => group.length > 1),
   };
 }

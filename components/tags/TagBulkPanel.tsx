@@ -4,10 +4,9 @@ import { useActionState, useEffect, useState } from "react";
 
 import { deleteTags, moveTags } from "@/lib/actions/tags";
 import {
-  buildTagTree,
   findMoveNameCollisions,
-  flattenTreeWithDepth,
   getInvalidMoveTargets,
+  getNamePath,
   normalizeMoveSelection,
   type FlatTag,
 } from "@/lib/tags/tree";
@@ -33,14 +32,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toastSuccess } from "@/components/states/Toast";
+import { TagParentPicker } from "./TagParentPicker";
 
 /** Select value for "move to root"; `parentId=""` is root for the action's Zod too. */
 const ROOT = "";
@@ -55,11 +48,13 @@ const ROOT = "";
 export function TagBulkPanel({
   selectedIds,
   flatTags,
+  itemCounts,
   onDone,
   onCancel,
 }: {
   selectedIds: string[];
   flatTags: FlatTag[];
+  itemCounts: Record<string, number>;
   onDone: () => void;
   onCancel: () => void;
 }) {
@@ -93,7 +88,6 @@ export function TagBulkPanel({
       <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
-          size="sm"
           disabled={count === 0 || moveOverCap}
           onClick={() => setMoveOpen(true)}
         >
@@ -101,13 +95,15 @@ export function TagBulkPanel({
         </Button>
         <Button
           variant="destructive"
-          size="sm"
           disabled={count === 0 || deleteOverCap}
           onClick={() => setDeleteOpen(true)}
         >
           {t.tags.bulk.delete}
         </Button>
-        <Button variant="ghost" size="sm" onClick={onCancel}>
+        {/* xl duplicates this with the header toggle (TagsPage.tsx), which
+            stays visible there; below xl the header can be scrolled out of
+            view, so this fixed-bar copy is the one still reachable. */}
+        <Button variant="ghost" className="xl:hidden" onClick={onCancel}>
           {t.tags.page.cancelSelection}
         </Button>
       </div>
@@ -124,6 +120,7 @@ export function TagBulkPanel({
         <DeleteTagsAlertDialog
           selectedIds={selectedIds}
           flatTags={flatTags}
+          itemCounts={itemCounts}
           onOpenChange={setDeleteOpen}
           onDeleted={onDone}
         />
@@ -152,11 +149,13 @@ function MoveTagsDialog({
   // already read differently by the time render/the success effect run.
   const [ids] = useState(selectedIds);
 
+  const byId = new Map(flatTags.map((tag) => [tag.id, tag]));
   const moving = normalizeMoveSelection(ids, flatTags);
+  const movingTags = moving.flatMap((id) => {
+    const tag = byId.get(id);
+    return tag ? [tag] : [];
+  });
   const invalid = getInvalidMoveTargets(ids, flatTags);
-  const options = flattenTreeWithDepth(buildTagTree(flatTags)).filter(
-    (tag) => !invalid.has(tag.id),
-  );
   const collisions =
     destination === null
       ? []
@@ -195,39 +194,35 @@ function MoveTagsDialog({
             <DialogDescription>{t.tags.bulk.moveDescription}</DialogDescription>
           </DialogHeader>
 
+          <ul className="text-body-sm flex max-h-40 flex-col gap-1.5 overflow-y-auto overscroll-contain">
+            {movingTags.map((tag) => (
+              <li
+                key={tag.id}
+                dir="auto"
+                className="flex flex-col [overflow-wrap:anywhere]"
+              >
+                <span>{tag.name}</span>
+                {tag.parentId && (
+                  <span className="text-body-sm text-muted-foreground">
+                    {getNamePath(tag, byId).slice(0, -1).join(" / ")}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+
           <div className="flex flex-col gap-1.5">
             <span id="bulk-destination-label" className="text-label-md">
               {t.tags.bulk.destinationLabel}
             </span>
-            <Select
+            <TagParentPicker
+              aria-labelledby="bulk-destination-label"
+              flatTags={flatTags}
+              excludedIds={invalid}
               value={destination}
               onValueChange={(value) => setDestination(value)}
-            >
-              <SelectTrigger
-                aria-labelledby="bulk-destination-label"
-                className="w-full"
-              >
-                <SelectValue placeholder={t.tags.bulk.chooseDestination}>
-                  {(value: string | null) =>
-                    value === null
-                      ? t.tags.bulk.chooseDestination
-                      : value === ROOT
-                        ? t.tags.editor.noParent
-                        : (options.find((tag) => tag.id === value)?.name ??
-                          value)
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ROOT}>{t.tags.editor.noParent}</SelectItem>
-                {options.map((tag) => (
-                  <SelectItem key={tag.id} value={tag.id}>
-                    {"　".repeat(tag.depth)}
-                    {tag.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder={t.tags.bulk.chooseDestination}
+            />
           </div>
 
           {carried > 0 && (
@@ -279,11 +274,13 @@ function MoveTagsDialog({
 function DeleteTagsAlertDialog({
   selectedIds,
   flatTags,
+  itemCounts,
   onOpenChange,
   onDeleted,
 }: {
   selectedIds: string[];
   flatTags: FlatTag[];
+  itemCounts: Record<string, number>;
   onOpenChange: (open: boolean) => void;
   onDeleted: () => void;
 }) {
@@ -326,16 +323,23 @@ function DeleteTagsAlertDialog({
             {t.tags.bulk.deleteDescription}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <ul className="text-body-sm flex max-h-64 flex-col gap-1.5 overflow-y-auto">
+        <ul className="text-body-sm flex max-h-64 flex-col gap-1.5 overflow-y-auto overscroll-contain">
           {selected.map((tag) => (
             <li
               key={tag.id}
               dir="auto"
-              className="flex flex-col [overflow-wrap:anywhere]"
+              className="flex items-baseline justify-between gap-3 [overflow-wrap:anywhere]"
             >
-              <span>{tag.name}</span>
-              <span className="font-mono text-muted-foreground">
-                {tag.path.split("/").join(" / ")}
+              <span className="flex min-w-0 flex-col">
+                <span>{tag.name}</span>
+                {tag.parentId && (
+                  <span className="text-body-sm text-muted-foreground">
+                    {getNamePath(tag, byId).slice(0, -1).join(" / ")}
+                  </span>
+                )}
+              </span>
+              <span className="text-metadata shrink-0 font-mono text-muted-foreground tabular-nums">
+                {t.tags.bulk.itemCount(itemCounts[tag.id] ?? 0)}
               </span>
             </li>
           ))}

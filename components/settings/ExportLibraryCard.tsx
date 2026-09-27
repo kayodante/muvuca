@@ -71,7 +71,6 @@ export function ExportLibraryCard() {
       <div className="flex flex-wrap gap-2 pt-2">
         <Button
           variant="outline"
-          size="sm"
           pending={isJsonPending}
           pendingLabel={t.export.exporting}
           onClick={() => handleExport("json")}
@@ -81,7 +80,6 @@ export function ExportLibraryCard() {
         </Button>
         <Button
           variant="outline"
-          size="sm"
           pending={isHtmlPending}
           pendingLabel={t.export.exporting}
           onClick={() => handleExport("html")}

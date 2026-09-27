@@ -73,6 +73,7 @@ describe("TagBulkPanel", () => {
         <TagBulkPanel
           selectedIds={[]}
           flatTags={TAGS}
+          itemCounts={{}}
           onDone={vi.fn()}
           onCancel={vi.fn()}
         />,
@@ -86,6 +87,22 @@ describe("TagBulkPanel", () => {
     expect(button("Excluir")?.disabled).toBe(true);
   });
 
+  it("hides the panel's own cancel above xl, where the header toggle already covers it", async () => {
+    await act(async () =>
+      root?.render(
+        <TagBulkPanel
+          selectedIds={[]}
+          flatTags={TAGS}
+          itemCounts={{}}
+          onDone={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      ),
+    );
+
+    expect(button("Cancelar seleção")?.className).toContain("xl:hidden");
+  });
+
   it("deletes every selected tag, then reports done", async () => {
     deleteTagsMock.mockResolvedValue({ ok: true, data: null });
     const onDone = vi.fn();
@@ -94,6 +111,7 @@ describe("TagBulkPanel", () => {
         <TagBulkPanel
           selectedIds={["a", "b"]}
           flatTags={TAGS}
+          itemCounts={{}}
           onDone={onDone}
           onCancel={vi.fn()}
         />,
@@ -116,6 +134,28 @@ describe("TagBulkPanel", () => {
     expect(onDone).toHaveBeenCalled();
   });
 
+  it("shows each tag's own item count in the delete confirmation, without summing them", async () => {
+    await act(async () =>
+      root?.render(
+        <TagBulkPanel
+          selectedIds={["a", "b"]}
+          flatTags={TAGS}
+          itemCounts={{ a: 12, b: 1 }}
+          onDone={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      ),
+    );
+
+    await act(async () => button("Excluir")?.click());
+    const alert = document.querySelector('[role="alertdialog"]');
+
+    // The same item could be tagged on both "a" and "b" -- each row shows
+    // its own count, never a combined total across the selection.
+    expect(alert?.textContent).toContain("12 itens");
+    expect(alert?.textContent).toContain("1 item");
+  });
+
   it("freezes the selection at open time: a revalidate racing the action doesn't zero the toast", async () => {
     // Mirrors the real race: `deleteTags`'s own revalidatePath refreshes the
     // parent's `flatTags` (and, in the real page, filters the deleted ids
@@ -134,6 +174,7 @@ describe("TagBulkPanel", () => {
         <TagBulkPanel
           selectedIds={["a", "b"]}
           flatTags={TAGS}
+          itemCounts={{}}
           onDone={onDone}
           onCancel={vi.fn()}
         />,
@@ -151,6 +192,7 @@ describe("TagBulkPanel", () => {
         <TagBulkPanel
           selectedIds={[]}
           flatTags={TAGS.filter((tag) => tag.id !== "a" && tag.id !== "b")}
+          itemCounts={{}}
           onDone={onDone}
           onCancel={vi.fn()}
         />,
@@ -176,6 +218,7 @@ describe("TagBulkPanel", () => {
         <TagBulkPanel
           selectedIds={["a", "b"]}
           flatTags={TAGS}
+          itemCounts={{}}
           onDone={onDone}
           onCancel={vi.fn()}
         />,
@@ -219,6 +262,7 @@ describe("TagBulkPanel", () => {
         <TagBulkPanel
           selectedIds={["a", "b"]}
           flatTags={TAGS}
+          itemCounts={{}}
           onDone={vi.fn()}
           onCancel={vi.fn()}
         />,
@@ -229,13 +273,68 @@ describe("TagBulkPanel", () => {
 
     const dialog = document.querySelector('[role="dialog"]');
     expect(dialog?.textContent).toContain("Mover 2 tags");
-    expect(dialog?.textContent).toContain("1 tag já vai junto com a tag mãe.");
+    expect(dialog?.textContent).toContain("1 tag já vai junto com a tag pai.");
     expect(button("Mover")?.disabled).toBe(true);
     expect(
       [...(dialog?.querySelectorAll('input[name="ids"]') ?? [])].map(
         (input) => (input as HTMLInputElement).value,
       ),
     ).toEqual(["a"]);
+  });
+
+  it("lists the tags being moved with their ancestors, and excludes invalid destinations", async () => {
+    await act(async () =>
+      root?.render(
+        <TagBulkPanel
+          selectedIds={["a", "b"]}
+          flatTags={TAGS}
+          itemCounts={{}}
+          onDone={vi.fn()}
+          onCancel={vi.fn()}
+        />,
+      ),
+    );
+
+    await act(async () => button("Mover para…")?.click());
+    const dialog = document.querySelector('[role="dialog"]') as HTMLElement;
+
+    // "b" (Beta) rides along under its selected parent "a" -- only the tag
+    // actually being moved explicitly (Alfa) is listed; the ride-along
+    // count is what "1 tag já vai junto com a tag pai." already covers.
+    expect(dialog.textContent).toContain("Alfa");
+
+    const destinationInput = dialog.querySelector(
+      'input[aria-labelledby="bulk-destination-label"]',
+    ) as HTMLInputElement;
+    const trigger = destinationInput.parentElement?.querySelector(
+      "button",
+    ) as HTMLButtonElement;
+    await act(async () => trigger.click());
+
+    const optionTexts = [...document.querySelectorAll('[role="option"]')].map(
+      (node) => node.textContent?.trim() ?? "",
+    );
+    // "a" (Alfa) and its child "b" (Beta) can't be their own destination.
+    expect(optionTexts.some((text) => text.includes("Alfa"))).toBe(false);
+    expect(optionTexts.some((text) => text.includes("Beta"))).toBe(false);
+    expect(optionTexts.some((text) => text.includes("Gama"))).toBe(true);
+    expect(optionTexts).toContain("Nenhuma (tag raiz)");
+
+    const gamaOption = [...document.querySelectorAll('[role="option"]')].find(
+      (node) => node.textContent?.includes("Gama"),
+    );
+    await act(async () =>
+      gamaOption?.dispatchEvent(new MouseEvent("click", { bubbles: true })),
+    );
+
+    expect(button("Mover")?.disabled).toBe(false);
+    expect(
+      (
+        dialog.querySelector(
+          'input[type="hidden"][name="parentId"]',
+        ) as HTMLInputElement
+      ).value,
+    ).toBe("c");
   });
 
   it("disables both actions and shows the cap message above 500 selected", async () => {
@@ -257,6 +356,7 @@ describe("TagBulkPanel", () => {
         <TagBulkPanel
           selectedIds={selectedIds}
           flatTags={manyTags}
+          itemCounts={{}}
           onDone={vi.fn()}
           onCancel={vi.fn()}
         />,
@@ -299,6 +399,7 @@ describe("TagBulkPanel", () => {
         <TagBulkPanel
           selectedIds={flat.map((tag) => tag.id)}
           flatTags={flat}
+          itemCounts={{}}
           onDone={vi.fn()}
           onCancel={vi.fn()}
         />,

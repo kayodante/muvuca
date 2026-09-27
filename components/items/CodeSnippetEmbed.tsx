@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckIcon, CopyIcon } from "lucide-react";
+import { CopyIcon } from "lucide-react";
 
 import { CODE_LANGUAGE_LABELS, type CodeLanguage } from "@/lib/code/languages";
 import { copyToClipboard } from "@/lib/clipboard";
@@ -11,6 +11,7 @@ import { toastError } from "@/components/states/Toast";
 
 import { useHighlightedLines } from "./useHighlightedLines";
 import { useTransientFlag } from "./useTransientFlag";
+import { CopyStateIcon } from "./CopyStateIcon";
 
 /**
  * Bloco de código completo do dialog de detalhe: header com a identidade do
@@ -28,31 +29,6 @@ import { useTransientFlag } from "./useTransientFlag";
  * `text-metadata` pela ordem de layers do Tailwind) — régua e código ficam
  * em fase a qualquer número de linhas.
  */
-/**
- * Crossfade do ícone de copiar para o check de confirmação, com o par
- * empilhado na mesma célula para o botão não mudar de largura. Mesma técnica
- * do `CopyStateIcon` de ItemCard — duplicado aqui de propósito: aquele é
- * privado do card e este arquivo não pode depender dele sem acoplar os dois.
- */
-function CopyStateIcon({
-  copied,
-  Icon,
-}: {
-  copied: boolean;
-  Icon: typeof CopyIcon;
-}) {
-  return (
-    <span className="t-icon-swap size-4" data-state={copied ? "b" : "a"}>
-      <Icon aria-hidden="true" data-icon="a" className="t-icon size-4" />
-      <CheckIcon
-        aria-hidden="true"
-        data-icon="b"
-        className="t-icon size-4 text-brand-accent"
-      />
-    </span>
-  );
-}
-
 export function CodeSnippetEmbed({
   content,
   language,
@@ -112,7 +88,17 @@ export function CodeSnippetEmbed({
           </Button>
         </div>
       </div>
-      <div className="max-h-[min(65dvh,44rem)] overflow-auto bg-secondary/30">
+      {/* Região focável: sem nada focável dentro, o Safari não alcança o
+          scroll pelo teclado (Chrome 130+ e Firefox já tornam o scroller
+          focável sozinhos). Anel inset porque o wrapper corta com
+          overflow-hidden. */}
+      <div
+        role="region"
+        aria-label={t.items.codeSnippetEmbed.codeRegion}
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- área de scroll precisa de parada de Tab (comentário acima)
+        tabIndex={0}
+        className="max-h-[min(65dvh,44rem)] overflow-auto bg-secondary/30 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+      >
         <div
           className="text-body-sm flex gap-4 px-4 py-3 font-mono leading-6"
           style={{ color: "var(--code-foreground)" }}

@@ -18,7 +18,6 @@ export function SignOutButton() {
       <Button
         type="submit"
         variant="outline"
-        size="sm"
         pending={pending}
         pendingLabel={t.auth.signOut.pending}
       >

@@ -82,6 +82,15 @@ describe("CodeSnippetEmbed", () => {
     expect(el.textContent).not.toContain("JavaScript");
   });
 
+  it("expõe o scroll do código como região nomeada, alcançável pelo teclado", async () => {
+    const el = await renderEmbed("const x = 1", "typescript");
+
+    const region = el.querySelector<HTMLElement>('[role="region"]');
+    expect(region?.getAttribute("aria-label")).toBe("Código");
+    expect(region?.tabIndex).toBe(0);
+    expect(region?.textContent).toContain("const x = 1");
+  });
+
   it("renderiza números de linha numa coluna própria, fora da árvore acessível", async () => {
     const el = await renderEmbed("a\nb\nc", null);
 

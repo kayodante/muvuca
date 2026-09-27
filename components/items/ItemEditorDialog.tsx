@@ -460,7 +460,6 @@ export function ItemEditorDialog({
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
                   className="self-start"
                   onClick={retryLoadTags}
                 >

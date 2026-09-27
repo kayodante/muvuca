@@ -54,12 +54,16 @@ export function TagNavigation({ tags }: { tags: FlatTag[] }) {
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t.shell.tagNav.searchPlaceholder}
             aria-label={t.shell.tagNav.searchAriaLabel}
-            className="border-0 bg-background pl-9 shadow-light dark:bg-background [&::-webkit-search-cancel-button]:hidden"
+            // Borderless, so Input's focus border never shows; the 50% halo
+            // alone reads 1.77:1. A solid ring keeps focus at 3:1.
+            className="border-0 bg-background pl-9 shadow-light focus-visible:ring-2 focus-visible:ring-ring dark:bg-background [&::-webkit-search-cancel-button]:hidden"
           />
         </div>
       </div>
       {visibleNodes.length > 0 ? (
-        <ul className="min-h-0 flex-1 overflow-y-auto">
+        // `-m-px p-px` here and on each subtree: both clip, and the active
+        // row's outer `shadow-light` edge needs 1px past the row to show.
+        <ul className="-m-px min-h-0 flex-1 overflow-y-auto p-px">
           {visibleNodes.map((node) => (
             <TagNavigationRow
               key={node.id}
@@ -105,10 +109,12 @@ function TagNavigationRow({
     <li className="t-acc" data-open={open}>
       <div
         className={cn(
-          "flex h-8 min-w-0 items-center rounded-md pr-1 transition-colors duration-(--motion-fast) ease-out-muvuca",
+          // Same states as NavLink (Figma `all-button`): selection is the
+          // raised fill, never hue alone.
+          "flex h-8 min-w-0 items-center rounded-sm pr-1 transition-[background-color,box-shadow,color] duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none",
           active
-            ? "bg-ink text-surface shadow-light"
-            : "text-muted-foreground focus-within:bg-secondary/60 hover:bg-secondary/60",
+            ? "bg-secondary text-foreground shadow-light inset-shadow-[0_0_0_999px] inset-shadow-light-1"
+            : "text-muted-foreground focus-within:bg-light-2 focus-within:shadow-[inset_0_0_0_0.5px_var(--color-light-4),inset_0_1px_0_0_var(--color-light-2)] hover:bg-light-2 hover:shadow-[inset_0_0_0_0.5px_var(--color-light-4),inset_0_1px_0_0_var(--color-light-2)]",
         )}
       >
         {/* One 28px guide column per ancestor level, each with a 1px line
@@ -122,12 +128,7 @@ function TagNavigationRow({
             aria-hidden="true"
             className="flex w-7 shrink-0 justify-center self-stretch"
           >
-            <span
-              className={cn(
-                "w-px self-stretch",
-                active ? "bg-surface/20" : "bg-border",
-              )}
-            />
+            <span className="w-px self-stretch bg-border" />
           </span>
         ))}
         {hasChildren ? (
@@ -143,12 +144,7 @@ function TagNavigationRow({
                 : t.tags.tree.expand(node.name)
             }
             onClick={() => setExpanded((value) => !value)}
-            className={cn(
-              "flex size-7 shrink-0 items-center justify-center rounded-md transition-[scale,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.97] motion-reduce:active:scale-100",
-              active
-                ? "text-surface hover:text-surface/80"
-                : "text-muted-foreground hover:text-foreground",
-            )}
+            className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-[scale,color] duration-(--motion-fast) ease-out-muvuca hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.97] motion-reduce:active:scale-100"
           >
             <span className="t-acc-chevron">
               <ChevronDownIcon aria-hidden="true" className="size-3.5" />
@@ -165,9 +161,7 @@ function TagNavigationRow({
             // overflow while expanding, and an offset ring on the first or
             // last row would be shaved by that clip.
             "group/taglink text-body-lg flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 transition-[scale,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.97] motion-reduce:active:scale-100",
-            active
-              ? "font-medium text-surface"
-              : "text-muted-foreground hover:text-foreground",
+            active ? "text-foreground" : "text-muted-foreground",
           )}
         >
           <span
@@ -188,7 +182,7 @@ function TagNavigationRow({
         // something to animate, and `inert` keeps the collapsed rows out of
         // the tab order and the accessibility tree.
         <div className="t-acc-panel">
-          <ul className="t-acc-panel-inner" inert={!open}>
+          <ul className="t-acc-panel-inner -m-px p-px" inert={!open}>
             {node.children.map((child) => (
               <TagNavigationRow
                 key={child.id}

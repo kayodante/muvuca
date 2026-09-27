@@ -9,6 +9,7 @@ import {
   getInvalidMoveTargets,
   getNamePath,
   getTagColumns,
+  matchTagsByName,
   normalizeMoveSelection,
   summarizeTags,
   type FlatTag,
@@ -154,6 +155,29 @@ describe("filterTagTree", () => {
   });
 });
 
+describe("matchTagsByName", () => {
+  const ACCENTED: FlatTag[] = [
+    tag("icones", null, "Ícones"),
+    tag("design", null, "Design"),
+  ];
+
+  it("matches ignoring accents and case", () => {
+    expect(matchTagsByName(ACCENTED, "icon").map((t) => t.id)).toEqual([
+      "icones",
+    ]);
+    expect(matchTagsByName(ACCENTED, "ÍCON").map((t) => t.id)).toEqual([
+      "icones",
+    ]);
+    expect(matchTagsByName(ACCENTED, "icones").map((t) => t.id)).toEqual([
+      "icones",
+    ]);
+  });
+
+  it("returns nothing for a blank query", () => {
+    expect(matchTagsByName(ACCENTED, "   ")).toEqual([]);
+  });
+});
+
 // Chain of `length` tags c1 -> c2 -> ... (c1 is root).
 function chain(length: number): FlatTag[] {
   return Array.from({ length }, (_, index) =>
@@ -237,28 +261,48 @@ describe("getNamePath", () => {
 });
 
 describe("summarizeTags", () => {
-  it("counts roots and levels and finds tags worth curating", () => {
+  it("counts roots and levels and groups repeated names", () => {
     const flat = [
       ...SKILLS_TREE,
-      { ...tag("notes", null, "Notes"), description: "Leituras" },
+      tag("notes", null, "Notes"),
       tag("figma-2", "notes", " figma "),
     ];
-    const summary = summarizeTags(flat);
+    const summary = summarizeTags(flat, {});
     expect(summary.total).toBe(6);
     expect(summary.roots).toBe(2);
     expect(summary.levels).toBe(3);
-    expect(summary.withoutDescription.map((t) => t.id)).not.toContain("notes");
     expect(summary.repeatedNames.map((g) => g.map((t) => t.id))).toEqual([
       ["figma", "figma-2"],
     ]);
   });
 
+  it("subtree total, not direct count, decides empty: a childless parent with a tagged child is not empty", () => {
+    // skills -> design -> figma (2 items); dev has no items anywhere.
+    const summary = summarizeTags(SKILLS_TREE, { figma: 2 });
+    expect(summary.empty.map((t) => t.id)).toEqual(["dev"]);
+    expect(summary.empty.map((t) => t.id)).not.toContain("design");
+    expect(summary.single).toEqual([]);
+  });
+
+  it("flags a subtree whose total is exactly 1 item, including an ancestor with no items of its own", () => {
+    const summary = summarizeTags(SKILLS_TREE, { figma: 1 });
+    // figma itself, and every ancestor whose whole subtree is just figma's
+    // one item, both count as "single".
+    expect(summary.single.map((t) => t.id).sort()).toEqual([
+      "design",
+      "figma",
+      "skills",
+    ]);
+    expect(summary.empty.map((t) => t.id)).toEqual(["dev"]);
+  });
+
   it("is empty for no tags", () => {
-    expect(summarizeTags([])).toEqual({
+    expect(summarizeTags([], {})).toEqual({
       total: 0,
       roots: 0,
       levels: 0,
-      withoutDescription: [],
+      empty: [],
+      single: [],
       repeatedNames: [],
     });
   });

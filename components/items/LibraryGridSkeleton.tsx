@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 export function LibraryToolbarSkeleton() {
   return (
     <div className="flex flex-wrap items-center gap-3">
-      <Skeleton className="h-8 w-64 rounded-lg" />
-      <Skeleton className="h-8 w-32 rounded-md" />
+      <Skeleton className="h-10 w-64 rounded-full" />
+      <Skeleton className="h-10 w-32 rounded-md" />
     </div>
   );
 }

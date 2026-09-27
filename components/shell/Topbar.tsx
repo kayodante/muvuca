@@ -28,7 +28,7 @@ export function Topbar({
     // Opaque, not a blurred scrim: glass is not part of this design
     // language, and the surface tone (not the canvas tone) is what lifts
     // the header off the page.
-    <header className="sticky top-0 z-30 flex min-h-[var(--layout-topbar-min-height)] items-center gap-3 border-b border-border bg-card px-4 py-3 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-30 flex min-h-[var(--layout-topbar-min-height)] items-center gap-3 border-b border-border bg-card py-3 pr-4 pl-4 sm:pr-6 lg:pr-8">
       <div className="flex items-center gap-3">
         <div className="md:hidden">{mobileNav}</div>
         <div className="hidden md:block">{sidebarToggle}</div>
@@ -39,11 +39,7 @@ export function Topbar({
       </div>
 
       <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          nativeButton={false}
-          render={<Link href="/library?create=1" />}
-        >
+        <Button nativeButton={false} render={<Link href="/library?create=1" />}>
           <PlusIcon aria-hidden="true" data-icon="inline-start" />
           {/* `sr-only` below `sm`, not `hidden`: an icon-only button still
               needs a discernible name at every viewport. */}

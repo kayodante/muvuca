@@ -16,11 +16,13 @@ type NavItem = {
 };
 
 /**
- * One Sidebar row (Figma node 199:5975 `nav-button`). Client-only because
+ * One Sidebar row (Figma node 199:5975 `all-button`). Client-only because
  * active-state detection needs the browser pathname (layouts don't receive
  * it as a prop in the App Router).
- * Selected state is the `bg-ink text-surface` inverted contrast of the Figma
- * node; the non-visual signal is `aria-current="page"`.
+ * Active is the raised `surface-subtle` + `shadow-light` block, never hue
+ * alone; the non-visual signal is `aria-current="page"`. Hover and Active
+ * stack a light wash over their fill (`light-2` and `light-1`); Hover adds
+ * only the inner rim, so it never competes with the active row.
  */
 export function NavLink({ item }: { item: NavItem }) {
   const pathname = usePathname();
@@ -33,43 +35,22 @@ export function NavLink({ item }: { item: NavItem }) {
       href={item.href}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "group flex h-10 items-center justify-between gap-2.5 rounded-md px-3 py-2 transition-[background-color,color,scale,box-shadow] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
+        "flex h-10 items-center gap-2 rounded-sm px-3 py-2 transition-[background-color,box-shadow,color,scale] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100",
         isActive
-          ? "bg-ink text-surface shadow-light"
-          : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
+          ? "bg-secondary text-foreground shadow-light inset-shadow-[0_0_0_999px] inset-shadow-light-1"
+          : "text-muted-foreground hover:bg-light-2 hover:shadow-[inset_0_0_0_0.5px_var(--color-light-4),inset_0_1px_0_0_var(--color-light-2)]",
       )}
     >
-      <span className="flex min-w-0 items-center gap-2.5">
-        {Icon && (
-          <Icon
-            aria-hidden="true"
-            className={cn(
-              "size-4 shrink-0",
-              isActive
-                ? "text-surface"
-                : "text-muted-foreground group-hover:text-foreground",
-            )}
-          />
-        )}
-        <span
-          className={cn(
-            "truncate text-[13px] leading-none font-medium",
-            isActive
-              ? "text-surface"
-              : "text-muted-foreground group-hover:text-foreground",
-          )}
-        >
-          {item.label}
-        </span>
+      <span className="flex min-w-0 flex-1 items-center gap-2">
+        {Icon && <Icon aria-hidden="true" className="size-4 shrink-0" />}
+        <span className="text-body-lg truncate">{item.label}</span>
       </span>
       {typeof item.count === "number" && (
         <span
           data-slot="nav-count"
           className={cn(
-            "flex h-[21px] shrink-0 items-center justify-center rounded-full px-2 py-0.5 text-[13px] leading-none font-medium tabular-nums shadow-light",
-            isActive
-              ? "bg-ink-muted text-surface"
-              : "bg-secondary text-muted-foreground group-hover:bg-border/60",
+            "text-metadata shrink-0 rounded-full px-2 py-1 leading-none shadow-light",
+            isActive ? "bg-border" : "bg-secondary",
           )}
         >
           {item.count}

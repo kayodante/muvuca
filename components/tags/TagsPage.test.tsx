@@ -74,9 +74,19 @@ afterEach(async () => {
   vi.resetAllMocks();
 });
 
-async function render(flatTags: FlatTag[], initial: TagsPageInitial = NONE) {
+async function render(
+  flatTags: FlatTag[],
+  initial: TagsPageInitial = NONE,
+  itemCounts: Record<string, number> = {},
+) {
   await act(async () =>
-    root?.render(<TagsPage flatTags={flatTags} initial={initial} />),
+    root?.render(
+      <TagsPage
+        flatTags={flatTags}
+        itemCounts={itemCounts}
+        initial={initial}
+      />,
+    ),
   );
 }
 
@@ -101,7 +111,7 @@ describe("TagsPage", () => {
     await render(TAGS, { ...NONE, tagPath: "design/icones" });
 
     expect(heading()).toBe("Ícones");
-    expect(row("icons").getAttribute("aria-pressed")).toBe("true");
+    expect(row("icons").getAttribute("aria-current")).toBe("true");
   });
 
   it("shows the empty inspector for an unknown path", async () => {
@@ -273,7 +283,7 @@ describe("TagsPage", () => {
     expect(row("design")).toBeNull();
   });
 
-  it("with nothing selected the inspector points at tags worth curating", async () => {
+  it("with nothing selected the inspector groups tags that share a name by where each lives", async () => {
     await render([
       ...TAGS,
       {
@@ -291,9 +301,18 @@ describe("TagsPage", () => {
     );
     expect(inspector?.textContent).toContain("4 tags · 2 raízes · 2 níveis");
     expect(inspector?.textContent).toContain("Nomes repetidos");
-    const chip = [...(inspector?.querySelectorAll("button") ?? [])].find(
-      (button) => button.textContent === "Dev / Ícones",
+
+    // Each duplicate's chip shows *where* it lives (its ancestor path),
+    // not its own name again -- the group heading already carries the
+    // shared name once.
+    const repeatedSection = [...(inspector?.querySelectorAll("h3") ?? [])]
+      .find((h3) => h3.textContent?.startsWith("Nomes repetidos"))
+      ?.closest("section");
+    const chip = [...(repeatedSection?.querySelectorAll("button") ?? [])].find(
+      (button) => button.textContent === "Dev",
     );
+    expect(chip?.getAttribute("aria-label")).toBe("Ícones — Dev");
+
     await act(async () => chip?.click());
     expect(heading()).toBe("Ícones");
   });
@@ -317,5 +336,117 @@ describe("TagsPage", () => {
     await act(async () => discard?.click());
 
     expect(pushMock).toHaveBeenCalledWith("/t/dev");
+  });
+
+  it("selecting a row keeps focus on the row instead of jumping to the inspector heading (desktop)", async () => {
+    await render(TAGS);
+    const design = row("design");
+
+    await act(async () => design.focus());
+    await act(async () => design.click());
+
+    expect(heading()).toBe("Design");
+    expect(document.activeElement).toBe(design);
+  });
+
+  it("↓ in the filter focuses the first result", async () => {
+    await render(TAGS);
+    const search = document.getElementById("tag-search") as HTMLInputElement;
+
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      )?.set?.call(search, "íco");
+      search.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      search.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }),
+      );
+    });
+
+    expect(document.activeElement).toBe(row("icons"));
+  });
+
+  it("Enter in the filter selects the first match and focuses its row", async () => {
+    await render(TAGS);
+    const search = document.getElementById("tag-search") as HTMLInputElement;
+
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value",
+      )?.set?.call(search, "íco");
+      search.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      search.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+      );
+    });
+
+    expect(heading()).toBe("Ícones");
+    expect(document.activeElement).toBe(row("icons"));
+  });
+
+  it("Escape exits selection mode and returns focus to the toggle", async () => {
+    await render(TAGS, { ...NONE, tagPath: "dev" });
+
+    const selectButton = [...document.querySelectorAll("button")].find(
+      (b) => b.textContent === "Selecionar",
+    );
+    await act(async () => selectButton?.click());
+    expect(document.body.textContent).toContain(
+      "Marque as tags que quer mover ou excluir.",
+    );
+
+    await act(async () => {
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+    });
+
+    expect(document.getElementById("tag-inspector-heading")).not.toBeNull();
+    expect(document.activeElement).toBe(selectButton);
+  });
+
+  it("Cancelar in create mode (with a parent) returns to editing the parent", async () => {
+    await render(TAGS, { tagPath: null, create: true, parentPath: "design" });
+    expect(heading()).toBe("Nova tag");
+
+    const cancel = [...document.querySelectorAll("button")].find(
+      (b) => b.textContent === "Cancelar",
+    );
+    await act(async () => cancel?.click());
+
+    expect(heading()).toBe("Design");
+  });
+
+  it("Cancelar in create mode (root) returns to no selection", async () => {
+    await render(TAGS, { tagPath: null, create: true, parentPath: null });
+    expect(heading()).toBe("Nova tag");
+
+    const cancel = [...document.querySelectorAll("button")].find(
+      (b) => b.textContent === "Cancelar",
+    );
+    await act(async () => cancel?.click());
+
+    expect(heading()).toBe("Nenhuma tag selecionada");
+  });
+
+  it("Escape in create mode does the same as Cancelar", async () => {
+    await render(TAGS, { tagPath: null, create: true, parentPath: "design" });
+
+    const section = document.querySelector(
+      'section[aria-labelledby="tag-inspector-heading"]',
+    ) as HTMLElement;
+    await act(async () => {
+      section.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+    });
+
+    expect(heading()).toBe("Design");
   });
 });

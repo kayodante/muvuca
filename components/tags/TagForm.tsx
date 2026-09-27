@@ -1,15 +1,10 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { CheckIcon } from "lucide-react";
 
 import { createTag, updateTag } from "@/lib/actions/tags";
-import {
-  buildTagTree,
-  flattenTreeWithDepth,
-  getDescendantIds,
-  type FlatTag,
-} from "@/lib/tags/tree";
+import { getDescendantIds, type FlatTag } from "@/lib/tags/tree";
 import { TAG_SWATCH_CLASS } from "@/lib/tags/colors";
 import { TAG_COLOR_TOKENS, type TagColorToken } from "@/lib/validation/tag";
 import { useDictionary } from "@/lib/i18n/client";
@@ -18,14 +13,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toastSuccess } from "@/components/states/Toast";
+import { TagParentPicker } from "./TagParentPicker";
 
 export type TagFormTarget =
   { mode: "create"; parentId: string | null } | { mode: "edit"; tag: FlatTag };
@@ -44,6 +33,7 @@ export function TagForm({
   flatTags,
   onSaved,
   onDirtyChange,
+  onCancel,
 }: {
   target: TagFormTarget;
   flatTags: FlatTag[];
@@ -51,6 +41,8 @@ export function TagForm({
   onSaved: (id: string) => void;
   /** `true` on the first edit, `false` once saved. */
   onDirtyChange?: (dirty: boolean) => void;
+  /** Create mode only: renders "Cancelar" beside the submit button. */
+  onCancel?: () => void;
 }) {
   const t = useDictionary();
   const [createState, createFormAction, createPending] = useActionState(
@@ -68,6 +60,24 @@ export function TagForm({
   const formAction = mode === "edit" ? updateFormAction : createFormAction;
   const pending = mode === "edit" ? updatePending : createPending;
 
+  // Edit mode's own copy of "has this changed": with direct edit (selecting
+  // a row opens its form, already saved) the lime "Salvar alterações" used
+  // to sit enabled next to "Criar item"/"Criar tag" with nothing pending --
+  // three lime CTAs at once, none saying which one actually does something.
+  // Outline until dirty, same signal `onDirtyChange` already gives the page
+  // for its own "Descartar alterações?" guard.
+  const [dirty, setDirty] = useState(false);
+
+  // Reset it the moment a save succeeds. Adjusted during render (React's
+  // documented alternative to calling a state setter from inside an effect
+  // body) instead of folding into the effect below, which stays reserved
+  // for the actual side effects (toast, `onSaved`) tied to the same event.
+  const [syncedState, setSyncedState] = useState(state);
+  if (state !== syncedState) {
+    setSyncedState(state);
+    if (state?.ok) setDirty(false);
+  }
+
   useEffect(() => {
     if (!state?.ok) return;
     toastSuccess(
@@ -84,7 +94,10 @@ export function TagForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
-  const markDirty = () => onDirtyChange?.(true);
+  const markDirty = () => {
+    setDirty(true);
+    onDirtyChange?.(true);
+  };
 
   // `colorToken` arrives from the database typed as plain `string`, and with
   // radios an unmatched value means nothing is checked -- the form would then
@@ -97,10 +110,6 @@ export function TagForm({
   const disabledParentIds = editingTag
     ? new Set([editingTag.id, ...getDescendantIds(editingTag.id, flatTags)])
     : new Set<string>();
-
-  const parentOptions = flattenTreeWithDepth(buildTagTree(flatTags)).filter(
-    (tag) => !disabledParentIds.has(tag.id),
-  );
 
   const defaultParentId =
     target.mode === "edit" ? target.tag.parentId : target.parentId;
@@ -210,31 +219,15 @@ export function TagForm({
         <span className="text-label-md" id="tag-parent-label">
           {t.tags.editor.parentLabel}
         </span>
-        <Select
+        <TagParentPicker
+          aria-labelledby="tag-parent-label"
           name="parentId"
+          flatTags={flatTags}
+          excludedIds={disabledParentIds}
           defaultValue={defaultParentId ?? ""}
           onValueChange={markDirty}
-        >
-          <SelectTrigger aria-labelledby="tag-parent-label" className="w-full">
-            <SelectValue placeholder={t.tags.editor.noParent}>
-              {(value: string) =>
-                value === ""
-                  ? t.tags.editor.noParent
-                  : (parentOptions.find((tag) => tag.id === value)?.name ??
-                    value)
-              }
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">{t.tags.editor.noParent}</SelectItem>
-            {parentOptions.map((tag) => (
-              <SelectItem key={tag.id} value={tag.id}>
-                {"　".repeat(tag.depth)}
-                {tag.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          placeholder={t.tags.editor.noParent}
+        />
       </div>
 
       {state?.ok === false && !state.fieldErrors && (
@@ -243,9 +236,15 @@ export function TagForm({
         </p>
       )}
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        {mode === "create" && onCancel && (
+          <Button type="button" variant="ghost" onClick={onCancel}>
+            {t.common.cancel}
+          </Button>
+        )}
         <Button
           type="submit"
+          variant={mode === "edit" && !dirty ? "outline" : "default"}
           pending={pending}
           pendingLabel={t.tags.editor.saving}
         >

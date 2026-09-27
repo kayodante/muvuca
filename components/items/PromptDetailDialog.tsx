@@ -103,12 +103,7 @@ export function PromptDetailDialog({
           t={t}
         />
         <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => onEdit(item)}
-          >
+          <Button type="button" variant="outline" onClick={() => onEdit(item)}>
             {item.type === "code_component"
               ? t.items.promptDetail.editComponent
               : t.items.promptDetail.editPrompt}

@@ -158,10 +158,24 @@ export const ptBR = {
       created: "Tag criada.",
       updated: "Tag atualizada.",
     },
+    parentPicker: {
+      noResults: "Nenhuma tag encontrada.",
+      toggleOptions: "Abrir opções",
+    },
     deleteDialog: {
       title: (name: string) => `Excluir “${name}”?`,
-      description: (name: string) =>
-        `As tags filhas diretas passam a ficar sob a tag pai de “${name}” (ou viram tags raiz, se “${name}” já era raiz). Os itens associados não são excluídos -- apenas perdem a associação com esta tag.`,
+      childrenToParent: (n: number, parentName: string) =>
+        n === 1
+          ? `A tag filha passa para “${parentName}”.`
+          : `As ${n} tags filhas passam para “${parentName}”.`,
+      childrenToRoot: (n: number) =>
+        n === 1
+          ? "A tag filha passa a ser raiz."
+          : `As ${n} tags filhas passam a ser raiz.`,
+      itemsNone: "Nenhum item usa esta tag.",
+      itemsOne: "1 item perde esta tag. O item não é excluído.",
+      itemsMany: (n: number) =>
+        `${n} itens perdem esta tag. Os itens não são excluídos.`,
       confirm: "Excluir tag",
       deleting: "Excluindo...",
       deleted: "Tag excluída.",
@@ -206,6 +220,10 @@ export const ptBR = {
       emptyTitle: "Nenhuma tag selecionada",
       emptyDescription:
         "Escolha uma tag nas colunas para editar nome, cor, tag pai e descrição.",
+      shortcutFilter: "filtra",
+      shortcutNavigate: "navega nas colunas",
+      shortcutSelect: "seleciona",
+      shortcutBack: "volta",
       summary: (total: number, roots: number, levels: number) =>
         [
           total === 1 ? "1 tag" : `${total} tags`,
@@ -214,10 +232,23 @@ export const ptBR = {
         ].join(" · "),
       repeatedNames: "Nomes repetidos",
       repeatedNamesHint: "O mesmo nome em mais de um ramo da hierarquia.",
-      withoutDescription: "Sem descrição",
+      repeatedNameChipLabel: (name: string, location: string) =>
+        `${name} — ${location}`,
+      rootLabel: "Raiz",
+      emptyTags: "Vazias",
+      emptyTagsHint: "Sem itens nela nem nas filhas.",
+      singleItemTags: "Com 1 item",
+      singleItemTagsHint: "Candidatas a juntar com outra tag ou excluir.",
       showAll: (n: number) => `Mostrar todas (${n})`,
       showLess: "Mostrar menos",
-      allTidy: "Toda tag tem descrição e nenhum nome se repete.",
+      allTidy:
+        "Nenhuma tag vazia, nenhuma com só 1 item e nenhum nome se repete.",
+      itemCount: (n: number) =>
+        n === 0
+          ? "Nenhum item com esta tag"
+          : n === 1
+            ? "1 item com esta tag"
+            : `${n} itens com esta tag`,
       pathLabel: "Caminho",
       children: "Tags filhas",
       noChildren: "Nenhuma tag filha.",
@@ -243,8 +274,8 @@ export const ptBR = {
       chooseDestination: "Escolha o destino",
       includedByParent: (n: number) =>
         n === 1
-          ? "1 tag já vai junto com a tag mãe."
-          : `${n} tags já vão junto com as tags mães.`,
+          ? "1 tag já vai junto com a tag pai."
+          : `${n} tags já vão junto com a tag pai delas.`,
       nameCollision: (names: string) =>
         `Já existe uma tag com o nome de ${names} nesse destino. Renomeie antes de mover.`,
       moveConfirm: "Mover",
@@ -259,6 +290,7 @@ export const ptBR = {
       deleting: "Excluindo...",
       deleted: (n: number) =>
         n === 1 ? "1 tag excluída." : `${n} tags excluídas.`,
+      itemCount: (n: number) => (n === 1 ? "1 item" : `${n} itens`),
     },
   },
   bookmarks: {
@@ -460,6 +492,7 @@ export const ptBR = {
     },
     codeSnippetEmbed: {
       copyCode: "Copiar código",
+      codeRegion: "Código",
       codeCopied: "Código copiado para a área de transferência.",
       codeCopyFailed: "Não foi possível copiar o código.",
       lineCount: (n: number) =>
@@ -570,6 +603,7 @@ export const ptBR = {
       removeTag: (name: string) => `Remover tag ${name}`,
       availableTagsLabel: "Tags disponíveis",
       searchPlaceholder: "Buscar tags...",
+      searchLabel: "Buscar tags",
       noTagsFound: "Nenhuma tag encontrada.",
       selectedCount: (count: number) =>
         `${count} tag${count > 1 ? "s" : ""} selecionada${count > 1 ? "s" : ""}`,
@@ -613,7 +647,7 @@ export const ptBR = {
         keywords: ["configurações", "ajustes", "backup", "exportar", "conta"],
       },
       toggleTheme: {
-        title: "Alternar tema (Claro / Escuro / Sistema)",
+        title: "Alternar tema claro/escuro",
         description: "Mudar a aparência da interface",
         keywords: [
           "tema",
@@ -628,23 +662,30 @@ export const ptBR = {
     },
     themeChangedDark: "Tema alterado para escuro.",
     themeChangedLight: "Tema alterado para claro.",
-    searchPlaceholder: "Buscar links, prompts, código ou ações...",
+    searchPlaceholder: "Buscar itens ou ações…",
     searchInputLabel: "Digitar busca",
-    dialogLabel: "Muvuca Spotlight — Busca rápida",
+    dialogLabel: "Busca rápida",
     closeSpotlight: "Fechar busca rápida",
     filterByTag: "Filtrar por tag:",
-    allTag: "Todas",
-    noResults: (query: string) =>
-      `Nenhum resultado encontrado para "${query}".`,
-    execute: "Executar",
     navigate: "navegar",
     select: "selecionar",
-    peek: "espiar",
+    peek: "prévia",
     close: "fechar",
-    spaceKey: "espaço",
-    resultCount: (n: number) => `${n} ${n === 1 ? "resultado" : "resultados"}`,
-    quickLookAria: "Espiar item (Quick Look)",
-    quickLookTitle: "Espiar item (Espaço)",
+    groups: {
+      actions: "Ações",
+      recent: "Recentes",
+      items: "Itens",
+    },
+    loadFailed: "Não foi possível carregar os itens.",
+    retry: "Tentar de novo",
+    itemCount: (n: number, hasMore: boolean) =>
+      hasMore ? `${n}+ itens` : `${n} ${n === 1 ? "item" : "itens"}`,
+    searching: "Buscando…",
+    noItems: (query: string) => `Nenhum item encontrado para "${query}".`,
+    clearSearch: "Limpar busca",
+    seeAll: "Ver todos na biblioteca",
+    seeAllDescription: "Abrir a busca completa com este filtro",
+    quickLookTitle: "Pré-visualizar (→)",
     open: "Abrir",
     copyShort: "Copiar",
     copiedShort: "Copiado",
@@ -652,13 +693,8 @@ export const ptBR = {
     promptCopiedMessage: "Prompt copiado para a área de transferência.",
     codeCopiedMessage: "Código copiado para a área de transferência.",
     copyContentFailed: "Não foi possível copiar o conteúdo.",
-    badges: {
-      link: "LINK",
-      prompt: "PROMPT",
-      code: "CÓDIGO",
-    },
     quickLook: {
-      regionLabel: "Pré-visualização do item (Quick Look)",
+      regionLabel: "Pré-visualização do item",
       close: "Fechar pré-visualização",
       openPage: "Abrir página",
       linkCopiedShort: "Link copiado",

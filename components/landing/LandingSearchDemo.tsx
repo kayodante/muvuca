@@ -219,7 +219,7 @@ export function LandingSearchDemo({
           <div
             ref={clearRef}
             className={cn(
-              "t-clear grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl border border-border bg-card p-2 shadow-xs",
+              "t-clear grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-xl border border-border bg-card p-2 shadow-xs transition-[border-color,box-shadow] duration-(--motion-fast) ease-out-muvuca has-[input:focus-visible]:border-ring has-[input:focus-visible]:ring-3 has-[input:focus-visible]:ring-ring/50 motion-reduce:transition-none",
               query && "has-value",
               isClearing && "is-clearing",
             )}
@@ -265,7 +265,7 @@ export function LandingSearchDemo({
                   }
                 }}
                 onClick={clearSearch}
-                className="t-clear-btn relative z-10 mr-1 flex size-6 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+                className="t-clear-btn relative z-10 mr-1 flex size-6 items-center justify-center rounded-full text-muted-foreground after:absolute after:-inset-2.5 after:content-[''] hover:text-foreground"
                 aria-label={t.shell.search.clear}
               >
                 <XIcon className="size-4" />
@@ -354,7 +354,7 @@ export function LandingSearchDemo({
                     </div>
 
                     <div className="flex shrink-0 items-center gap-3 pl-3">
-                      <span className="text-metadata hidden font-mono text-xs text-muted-foreground uppercase sm:inline">
+                      <span className="text-metadata hidden font-mono text-xs tracking-wider text-muted-foreground uppercase sm:inline">
                         {item.type}
                       </span>
 
@@ -363,7 +363,7 @@ export function LandingSearchDemo({
                           href={item.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-1 text-muted-foreground hover:text-foreground"
+                          className="relative p-1 text-muted-foreground after:absolute after:-inset-3 after:content-[''] hover:text-foreground"
                           aria-label={t.landing.demo.openItem(item.title)}
                         >
                           <ExternalLinkIcon className="size-3.5" />
@@ -377,11 +377,21 @@ export function LandingSearchDemo({
                           className="h-7 gap-1 px-2"
                           aria-label={t.landing.demo.copyPrompt}
                         >
-                          {copiedId === item.id ? (
-                            <CheckIcon className="size-3 text-brand-accent" />
-                          ) : (
-                            <CopyIcon className="size-3" />
-                          )}
+                          <span
+                            className="t-icon-swap size-3 shrink-0"
+                            data-state={copiedId === item.id ? "b" : "a"}
+                          >
+                            <CopyIcon
+                              aria-hidden="true"
+                              data-icon="a"
+                              className="t-icon size-3"
+                            />
+                            <CheckIcon
+                              aria-hidden="true"
+                              data-icon="b"
+                              className="t-icon size-3 text-brand-accent"
+                            />
+                          </span>
                           <span className="text-metadata">
                             {t.landing.demo.copy}
                           </span>

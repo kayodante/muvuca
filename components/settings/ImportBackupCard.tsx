@@ -21,7 +21,7 @@ export function ImportBackupCard() {
       </div>
 
       <div className="flex flex-wrap gap-2 pt-2">
-        <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+        <Button variant="outline" onClick={() => setOpen(true)}>
           <UploadIcon aria-hidden="true" data-icon="inline-start" />
           {t.backup.restoreButton}
         </Button>

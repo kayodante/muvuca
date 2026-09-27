@@ -10,7 +10,7 @@ import {
 import { useRouter } from "next/navigation";
 import { PlusIcon, SearchIcon, TagIcon } from "lucide-react";
 
-import type { FlatTag } from "@/lib/tags/tree";
+import { matchTagsByName, type FlatTag } from "@/lib/tags/tree";
 import { useDictionary } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { TagColumns, TagSearchResults } from "./TagColumns";
@@ -105,6 +105,15 @@ function isTypingTarget(target: EventTarget | null): boolean {
   );
 }
 
+/** A dialog/alertdialog/menu/listbox already owns Escape while it's open. */
+function hasOpenOverlay(): boolean {
+  return (
+    document.querySelector(
+      "[role='dialog'], [role='alertdialog'], [role='menu'], [role='listbox']",
+    ) !== null
+  );
+}
+
 /**
  * Re-selecting the target already shown (the current row again, or "Criar
  * tag" while already creating under the same parent) is a no-op, not a
@@ -148,9 +157,11 @@ function initialTarget(
  */
 export function TagsPage({
   flatTags,
+  itemCounts,
   initial,
 }: {
   flatTags: FlatTag[];
+  itemCounts: Record<string, number>;
   initial: TagsPageInitial;
 }) {
   const t = useDictionary();
@@ -173,6 +184,11 @@ export function TagsPage({
   const [checked, setChecked] = useState<ReadonlySet<string>>(() => new Set());
   const headingRef = useRef<HTMLHeadingElement>(null);
   const focusInspector = useRef(false);
+  // Row-originated selection (a click, or the filter's Enter) keeps focus on
+  // the row instead of jumping to the inspector heading -- but only once the
+  // row exists again after this render (the filter's Enter can select a
+  // result the same commit it's chosen).
+  const focusRowId = useRef<string | null>(null);
   const selectToggleRef = useRef<HTMLButtonElement>(null);
   const focusSelectToggle = useRef(false);
   // Fallback landing spot for `focusSelectToggle` when a bulk delete empties
@@ -193,56 +209,16 @@ export function TagsPage({
       : null;
   const creating = current.kind === "create";
 
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    for (const key of ["tag", "new", "parent"]) url.searchParams.delete(key);
-    if (tagParam) url.searchParams.set("tag", tagParam);
-    if (creating) url.searchParams.set("new", "1");
-    if (parentParam) url.searchParams.set("parent", parentParam);
-    if (url.href !== window.location.href) {
-      window.history.replaceState(null, "", url);
-    }
-  }, [tagParam, parentParam, creating]);
+  const focusRow = (id: string) =>
+    document.querySelector<HTMLElement>(`[data-tag-row="${id}"]`)?.focus();
 
-  // Move focus to the inspector only after a user-initiated change.
-  useEffect(() => {
-    if (!focusInspector.current) return;
-    focusInspector.current = false;
-    headingRef.current?.focus();
-  });
-
-  // Selection mode has no inspector heading to land on, so entering it and
-  // every way out of it (bulk success, the panel's own cancel, the header
-  // toggle) returns focus to the toggle button instead of letting it fall
-  // to <body>.
-  useEffect(() => {
-    if (!focusSelectToggle.current) return;
-    focusSelectToggle.current = false;
-    (selectToggleRef.current ?? createButtonRef.current)?.focus();
-  });
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.key !== "/" ||
-        event.defaultPrevented ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.altKey ||
-        isTypingTarget(event.target) ||
-        !searchRef.current
-      ) {
-        return;
-      }
-      event.preventDefault();
-      searchRef.current.focus();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
-
-  const apply = (next: InspectorTarget) => {
-    focusInspector.current = next.kind !== "none";
+  const apply = (
+    next: InspectorTarget,
+    opts?: { keepFocusOnRow?: boolean },
+  ) => {
+    const keepOnRow = Boolean(opts?.keepFocusOnRow) && isDesktop;
+    focusInspector.current = next.kind !== "none" && !keepOnRow;
+    if (keepOnRow && next.kind === "edit") focusRowId.current = next.id;
     setDirty(false);
     setTarget(next);
     const nextBrowseId = browseIdFor(next);
@@ -258,9 +234,16 @@ export function TagsPage({
     }
   };
 
-  const select = (next: InspectorTarget) => {
+  const select = (
+    next: InspectorTarget,
+    opts?: { keepFocusOnRow?: boolean },
+  ) => {
     if (isSameTarget(next, current)) return;
-    guard(() => apply(next));
+    // A guarded (dirty) change surfaces the "Descartar alterações?" dialog,
+    // whose own `finalFocus={headingRef}` (TagsPage's AlertDialogContent)
+    // owns focus restoration on confirm -- `keepFocusOnRow` only applies to
+    // the immediate, unguarded case.
+    guard(() => apply(next, dirty ? undefined : opts));
   };
 
   const stopSelecting = () => {
@@ -299,18 +282,17 @@ export function TagsPage({
     <TagBulkPanel
       selectedIds={checkedIds}
       flatTags={flatTags}
+      itemCounts={itemCounts}
       onDone={endSelecting}
       onCancel={endSelecting}
     />
   );
 
-  const focusRow = (id: string) =>
-    document.querySelector<HTMLElement>(`[data-tag-row="${id}"]`)?.focus();
-
   const inspector = (
     <TagInspector
       target={current}
       flatTags={flatTags}
+      itemCounts={itemCounts}
       headingRef={headingRef}
       onSelect={select}
       onSaved={(id) => apply({ kind: "edit", id })}
@@ -333,13 +315,100 @@ export function TagsPage({
 
   const rowProps = {
     selectedId: current.kind === "edit" ? current.id : null,
-    onSelect: (tag: FlatTag) => select({ kind: "edit", id: tag.id }),
+    // Row-originated: the inspector updates beside it, focus stays put
+    // (desktop only -- `select` itself gates `keepFocusOnRow` on `isDesktop`).
+    onSelect: (tag: FlatTag) =>
+      select({ kind: "edit", id: tag.id }, { keepFocusOnRow: true }),
     checked: selecting ? checked : undefined,
     onToggleChecked: (tag: FlatTag) => toggleChecked(tag.id),
   };
 
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    for (const key of ["tag", "new", "parent"]) url.searchParams.delete(key);
+    if (tagParam) url.searchParams.set("tag", tagParam);
+    if (creating) url.searchParams.set("new", "1");
+    if (parentParam) url.searchParams.set("parent", parentParam);
+    if (url.href !== window.location.href) {
+      window.history.replaceState(null, "", url);
+    }
+  }, [tagParam, parentParam, creating]);
+
+  // Move focus to the inspector only after a user-initiated change.
+  useEffect(() => {
+    if (!focusInspector.current) return;
+    focusInspector.current = false;
+    headingRef.current?.focus();
+  });
+
+  // A row-originated selection on desktop keeps focus on the row itself
+  // (the inspector just updates beside it) instead of jumping to the h2.
+  useEffect(() => {
+    if (!focusRowId.current) return;
+    const id = focusRowId.current;
+    focusRowId.current = null;
+    focusRow(id);
+  });
+
+  // Selection mode has no inspector heading to land on, so entering it and
+  // every way out of it (bulk success, the panel's own cancel, the header
+  // toggle) returns focus to the toggle button instead of letting it fall
+  // to <body>.
+  useEffect(() => {
+    if (!focusSelectToggle.current) return;
+    focusSelectToggle.current = false;
+    (selectToggleRef.current ?? createButtonRef.current)?.focus();
+  });
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.key !== "/" ||
+        event.defaultPrevented ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        isTypingTarget(event.target) ||
+        !searchRef.current
+      ) {
+        return;
+      }
+      event.preventDefault();
+      searchRef.current.focus();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  // Escape leaves selection mode from anywhere on the page, unless some
+  // other open overlay (a dialog, a menu, the parent picker's listbox)
+  // already claimed it -- or the filter's own Escape-clears-first already
+  // called `preventDefault`.
+  useEffect(() => {
+    if (!selecting) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      if (hasOpenOverlay()) return;
+      endSelecting();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selecting]);
+
   return (
-    <div className={cn("flex flex-col gap-6", selecting && "pb-32 xl:pb-0")}>
+    <div
+      className={cn(
+        "flex flex-col gap-6",
+        // From `sm` the page is exactly the viewport left between the
+        // Topbar, `main`'s `pt-4` and its 8rem bottom fade (AppShell.tsx):
+        // the header takes its own height, the panels the rest, and they
+        // scroll inside -- the page never does. Below `sm` the page scrolls
+        // and needs room past the fixed bulk bar.
+        "sm:h-[calc(100dvh-var(--layout-topbar-min-height)-1rem-8rem)]",
+        selecting && "pb-32 sm:pb-0",
+      )}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-headline-md">{t.tags.page.heading}</h1>
         <div className="flex gap-2">
@@ -365,7 +434,9 @@ export function TagsPage({
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] xl:items-start">
+      {/* `minmax(0,1fr)` pins the row to the grid's height, so the panels'
+          `max-h-full` resolves against it instead of their own content. */}
+      <div className="grid min-h-0 flex-1 items-start gap-6 sm:grid-rows-[minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)]">
         {flatTags.length === 0 ? (
           <EmptyState
             icon={TagIcon}
@@ -373,14 +444,7 @@ export function TagsPage({
             description={t.tags.page.emptyDescription}
           />
         ) : (
-          <div
-            className={cn(
-              "flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card",
-              // Same bound as the inspector aside below: the columns scroll
-              // inside the panel, never the page.
-              "sm:max-h-[calc(100dvh-var(--layout-topbar-min-height)-1.5rem-8rem)] xl:sticky xl:top-[calc(var(--layout-topbar-min-height)+1.5rem)]",
-            )}
-          >
+          <div className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card sm:max-h-full">
             <div className="relative shrink-0 border-b border-border p-2">
               <label htmlFor="tag-search" className="sr-only">
                 {t.tags.page.filterLabel}
@@ -403,6 +467,21 @@ export function TagsPage({
                   if (event.key === "Escape" && search) {
                     event.preventDefault();
                     setSearch("");
+                    return;
+                  }
+                  if (!search.trim()) return;
+                  const matches = matchTagsByName(flatTags, search);
+                  const first = matches[0];
+                  if (!first) return;
+                  if (event.key === "ArrowDown") {
+                    event.preventDefault();
+                    focusRow(first.id);
+                  } else if (event.key === "Enter") {
+                    event.preventDefault();
+                    select(
+                      { kind: "edit", id: first.id },
+                      { keepFocusOnRow: true },
+                    );
                   }
                 }}
                 className="border-transparent bg-secondary/60 pr-10 pl-9 shadow-none dark:bg-secondary/60"
@@ -429,6 +508,7 @@ export function TagsPage({
                     setSearch("");
                     searchRef.current?.focus();
                   }}
+                  onFocusFilter={() => searchRef.current?.focus()}
                   {...rowProps}
                 />
               ) : (
@@ -445,21 +525,7 @@ export function TagsPage({
         )}
 
         {isDesktop && (
-          <aside
-            className={cn(
-              "hidden rounded-2xl border border-border bg-card p-5 xl:block",
-              // Offset below the sticky Topbar (--layout-topbar-min-height,
-              // Topbar.tsx) instead of a bare `top-6`, which let the panel
-              // stick 24px under the header with its lower half (Save,
-              // children, "Abrir itens") off-screen. Bounded height + its
-              // own scroll keeps the panel from growing past the viewport.
-              // The bound also subtracts the shell's 8rem bottom fade
-              // (AppShell.tsx), so the panel ends above it instead of
-              // padding every state -- empty and bulk included -- with 8rem
-              // of dead space to scroll clear of it.
-              "xl:sticky xl:top-[calc(var(--layout-topbar-min-height)+1.5rem)] xl:max-h-[calc(100dvh-var(--layout-topbar-min-height)-1.5rem-8rem)] xl:overflow-y-auto",
-            )}
-          >
+          <aside className="hidden max-h-full overflow-y-auto rounded-2xl border border-border bg-card p-5 xl:block">
             {selecting ? bulkPanel : inspector}
           </aside>
         )}
@@ -475,14 +541,23 @@ export function TagsPage({
           <SheetContent
             side="right"
             aria-labelledby={TAG_INSPECTOR_HEADING_ID}
-            className="w-full overflow-y-auto p-5 pt-12 sm:max-w-md"
+            // Base UI's own default would land on the first focusable
+            // element inside (the "Mais ações" menu trigger, which holds
+            // Excluir) instead of the heading -- explicit beats incidental.
+            initialFocus={headingRef as RefObject<HTMLElement | null>}
+            // sheet.tsx's own `data-[side=right]:w-3/4` and
+            // `data-[side=right]:sm:max-w-sm` win over a bare `w-full`/
+            // `sm:max-w-md` here (same attribute-selector specificity, and
+            // sheet.tsx is the one that sets `data-side`) -- so the override
+            // has to match that same variant instead of the plain utility.
+            className="overflow-y-auto p-5 pt-12 data-[side=right]:w-full data-[side=right]:sm:max-w-md"
           >
             {inspector}
           </SheetContent>
         </Sheet>
       )}
       {!isDesktop && selecting && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background p-4">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           {bulkPanel}
         </div>
       )}

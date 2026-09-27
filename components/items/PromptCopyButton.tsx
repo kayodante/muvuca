@@ -89,7 +89,6 @@ export function PromptCopyButton({
     // weight in the detail dialog; editing is the secondary path.
     <Button
       type="button"
-      size="sm"
       pending={pending}
       pendingIndicator="matrix"
       pendingLabel={pendingLabel}
