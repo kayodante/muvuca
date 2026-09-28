@@ -4,7 +4,9 @@ import sharp from "sharp";
 import { PreviewError } from "./errors";
 
 /**
- * Image-processing half of the link-preview pipeline. Standalone
+ * Image-processing half of the link-preview pipeline, plus the profile-photo
+ * re-encode (ADR-017, `processAvatar`), which shares this module's decoder
+ * config and format allowlist rather than duplicating them. Standalone
  * over `sharp` -- it does not import anything from `ssrf.ts`/`fetch.ts`,
  * only the shared `PreviewError`/`PreviewErrorCode` contract from
  * `errors.ts` so every rejection this module raises already carries a
@@ -129,5 +131,19 @@ export async function processFavicon(bytes: Buffer): Promise<ProcessedImage> {
       fit: "contain",
       background: { r: 0, g: 0, b: 0, alpha: 0 },
     }),
+  );
+}
+
+/**
+ * 256×256 cover crop of a user's profile photo (ADR-017), re-encoded as
+ * WebP quality 72. `autoOrient()` must run before `resize()`: the re-encode
+ * drops EXIF without rotating pixels, so a phone photo with `Orientation=6`
+ * would come out sideways. This does no egress -- it imports nothing from
+ * `ssrf.ts`/`fetch.ts` -- and lives here only to share the one decoder
+ * configuration and format allowlist with the rest of the module.
+ */
+export async function processAvatar(bytes: Buffer): Promise<ProcessedImage> {
+  return process(bytes, (image) =>
+    image.autoOrient().resize(256, 256, { fit: "cover" }),
   );
 }
