@@ -176,50 +176,60 @@ export function LibraryToolbar({
   return (
     <section
       aria-label={t.items.toolbar.sectionLabel}
-      className="flex flex-wrap items-center gap-3"
+      className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-3"
     >
-      {canRefreshPreviews && (
-        <Button
-          variant="ghost"
-          onClick={onRefreshPreviews}
-          disabled={refreshState === "refreshing"}
-          aria-busy={refreshState === "refreshing" || undefined}
-          className={cn(
-            "min-w-[13rem]",
-            refreshState === "refreshing" &&
-              "bg-card! text-brand-accent disabled:opacity-100!",
-          )}
-        >
-          <RefreshStateIcon state={refreshState} />
-          <TextSwap
-            text={
-              refreshState === "refreshing"
-                ? t.items.toolbar.refreshing
-                : t.items.toolbar.refreshPreviews
+      <div className="sm:hidden">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                variant="outline"
+                aria-label={t.items.toolbar.typeFilterLabel}
+                className="border-0 bg-surface shadow-light"
+              />
             }
-          />
-        </Button>
-      )}
-
-      <div
-        role="group"
-        aria-label={t.items.toolbar.typeFilterLabel}
-        ref={tabsRef}
-        className="t-tabs"
-      >
-        <span ref={pillRef} className="t-tabs-pill" aria-hidden="true" />
-        {typeTabs(t).map((tab) => (
-          <button
-            key={tab.label}
-            type="button"
-            aria-pressed={type === tab.value}
-            onClick={() => onFilterChange({ type: tab.value })}
-            onClickCapture={(event) => movePill(event.currentTarget, true)}
-            className="t-tab text-body-sm"
           >
-            {tab.label}
-          </button>
-        ))}
+            {typeTabs(t).find((tab) => tab.value === type)?.label}
+            <ChevronDownIcon aria-hidden="true" data-icon="inline-end" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            {typeTabs(t).map((tab) => (
+              <DropdownMenuItem
+                key={tab.label}
+                aria-current={type === tab.value || undefined}
+                onClick={() => onFilterChange({ type: tab.value })}
+              >
+                <span className="flex-1">{tab.label}</span>
+                {type === tab.value && (
+                  <CheckIcon aria-hidden="true" className="text-brand-accent" />
+                )}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <div className="hidden sm:block">
+        <div
+          role="group"
+          aria-label={t.items.toolbar.typeFilterLabel}
+          ref={tabsRef}
+          className="t-tabs"
+        >
+          <span ref={pillRef} className="t-tabs-pill" aria-hidden="true" />
+          {typeTabs(t).map((tab) => (
+            <button
+              key={tab.label}
+              type="button"
+              aria-pressed={type === tab.value}
+              onClick={() => onFilterChange({ type: tab.value })}
+              onClickCapture={(event) => movePill(event.currentTarget, true)}
+              className="t-tab text-body-sm"
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <DropdownMenu>
@@ -252,6 +262,36 @@ export function LibraryToolbar({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {canRefreshPreviews && (
+        <Button
+          variant="ghost"
+          onClick={onRefreshPreviews}
+          disabled={refreshState === "refreshing"}
+          aria-busy={refreshState === "refreshing" || undefined}
+          aria-label={
+            refreshState === "refreshing"
+              ? t.items.toolbar.refreshing
+              : t.items.toolbar.refreshPreviews
+          }
+          className={cn(
+            "sm:min-w-[13rem]",
+            refreshState === "refreshing" &&
+              "bg-card! text-brand-accent disabled:opacity-100!",
+          )}
+        >
+          <RefreshStateIcon state={refreshState} />
+          <span className="hidden sm:inline">
+            <TextSwap
+              text={
+                refreshState === "refreshing"
+                  ? t.items.toolbar.refreshing
+                  : t.items.toolbar.refreshPreviews
+              }
+            />
+          </span>
+        </Button>
+      )}
 
       <span role="status" className="sr-only">
         {isPending

@@ -12,9 +12,83 @@ import protocolRelativeHtml from "@/lib/metadata/__fixtures__/protocol-relative.
 import relativeUrlsHtml from "@/lib/metadata/__fixtures__/relative-urls.html?raw";
 import titleOnlyHtml from "@/lib/metadata/__fixtures__/title-only.html?raw";
 import twitterOnlyHtml from "@/lib/metadata/__fixtures__/twitter-only.html?raw";
-import { extractHeadMetadata } from "@/lib/metadata/html";
+import { decodeHtmlDocument, extractHeadMetadata } from "@/lib/metadata/html";
 
 const baseUrl = new URL("https://example.com/articles/one");
+
+describe("metadata text decoding", () => {
+  it.each([
+    ['text/html; charset="iso-8859-1"', ""],
+    ["text/html", '<meta charset="windows-1252">'],
+    [
+      "text/html",
+      '<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">',
+    ],
+    ["text/html; charset=unknown-encoding", '<meta charset="windows-1252">'],
+  ])("reads accented text from %s / %s", (contentType, declaration) => {
+    const body = Buffer.from(
+      `<head>${declaration}<title>Calça e acessórios</title></head>`,
+      "latin1",
+    );
+    expect(
+      extractHeadMetadata(decodeHtmlDocument(body, contentType), baseUrl).title,
+    ).toBe("Calça e acessórios");
+  });
+
+  it("prefers an HTTP charset over a conflicting meta declaration", () => {
+    const body = Buffer.from(
+      '<head><meta charset="utf-8"><title>Calça</title></head>',
+      "latin1",
+    );
+    expect(
+      decodeHtmlDocument(body, "text/html; charset=windows-1252"),
+    ).toContain("Calça");
+  });
+
+  it.each(["utf-8", "utf-16le"] as const)(
+    "prefers a %s BOM over declarations",
+    (encoding) => {
+      const body = Buffer.from(
+        '\uFEFF<head><meta charset="windows-1252"><title>Ação</title></head>',
+        encoding,
+      );
+      expect(
+        decodeHtmlDocument(body, "text/html; charset=iso-8859-1"),
+      ).toContain("Ação");
+    },
+  );
+
+  it("defaults to UTF-8 for unknown labels and ignores commented or late declarations", () => {
+    const body = Buffer.from(
+      '<head><!-- <meta charset="windows-1252"> -->' +
+        " ".repeat(1024) +
+        '<meta charset="windows-1252"><title>Ação</title></head>',
+    );
+    expect(
+      decodeHtmlDocument(body, "text/html; charset=unknown-encoding"),
+    ).toContain("Ação");
+  });
+
+  it("decodes HTML entities once, preserving case and keeping markup as plain text", () => {
+    const result = extractHeadMetadata(
+      '<head><title>&Aacute;rvore &ndash; a&ccedil;&atilde;o</title><meta name="description" content="world&rsquo;s Vestu&aacute;rio &amp;lt;b&amp;gt; &lt;script&gt;alert(1)&lt;/script&gt;"></head>',
+      baseUrl,
+    );
+    expect(result.title).toBe("Árvore – ação");
+    expect(result.description).toBe(
+      "world’s Vestuário &lt;b&gt; <script>alert(1)</script>",
+    );
+  });
+
+  it("still rejects encoded non-HTTP image schemes and preserves ambiguous URL ampersands", () => {
+    const result = extractHeadMetadata(
+      '<head><meta property="og:image" content="javascript&colon;alert(1)"><link rel="icon" href="/icon.png?x=1&copy=2&amp;y=3"></head>',
+      baseUrl,
+    );
+    expect(result.imageUrl).toBeNull();
+    expect(result.iconUrl).toBe("https://example.com/icon.png?x=1&copy=2&y=3");
+  });
+});
 
 describe("extractHeadMetadata", () => {
   it("extracts og:title, og:description, og:image and og:site_name", () => {

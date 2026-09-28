@@ -51,34 +51,33 @@ export default async function SettingsPage() {
             {t.settings.appearance.description}
           </p>
         </div>
-        <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4 sm:p-5">
-          <div className="space-y-1">
-            <p className="text-label-md">{t.settings.appearance.themeLabel}</p>
-            <p className="text-body-sm text-muted-foreground">
-              {t.settings.appearance.themeHint}
-            </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4 sm:p-5">
+            <div className="min-w-0 space-y-1">
+              <p className="text-label-md">
+                {t.settings.appearance.themeLabel}
+              </p>
+              <p className="text-body-sm font-medium text-foreground">
+                {t.settings.appearance.themeOptions[theme]}
+              </p>
+              <p className="text-metadata text-muted-foreground">
+                {t.settings.appearance.themeHint}
+              </p>
+            </div>
+            <ThemeToggle theme={theme} />
           </div>
-          <ThemeToggle theme={theme} />
-        </div>
-      </section>
-
-      <section aria-labelledby="language-heading" className="space-y-4">
-        <div>
-          <h2 id="language-heading" className="text-headline-sm">
-            {t.settings.language.heading}
-          </h2>
-          <p className="text-body-sm text-muted-foreground">
-            {t.settings.language.description}
-          </p>
-        </div>
-        <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4 sm:p-5">
-          <div className="space-y-1">
-            <p className="text-label-md">{t.settings.language.label}</p>
-            <p className="text-body-sm text-muted-foreground">
-              {t.settings.language.hint}
-            </p>
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4 sm:p-5">
+            <div className="min-w-0 space-y-1">
+              <p className="text-label-md">{t.settings.language.label}</p>
+              <p className="text-body-sm font-medium text-foreground">
+                {t.common.localeNames[locale]}
+              </p>
+              <p className="text-metadata text-muted-foreground">
+                {t.settings.language.hint}
+              </p>
+            </div>
+            <LanguageSelect locale={locale} />
           </div>
-          <LanguageSelect locale={locale} />
         </div>
       </section>
 

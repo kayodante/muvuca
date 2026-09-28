@@ -83,4 +83,11 @@ describe("Sidebar", () => {
     expect(view.textContent).toContain("Todos os itens");
     expect(view.querySelector("[data-slot='nav-count']")).toBeNull();
   });
+
+  it("offers a visible import action", async () => {
+    const view = await renderSidebar();
+    expect(
+      view.querySelector('a[href="/library?import=1"]')?.textContent,
+    ).toContain("Importar favoritos");
+  });
 });

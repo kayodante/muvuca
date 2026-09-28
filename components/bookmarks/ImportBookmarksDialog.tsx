@@ -193,21 +193,34 @@ export function ImportBookmarksDialog({
         </DialogHeader>
 
         {!preview && !result && (
-          <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-border p-8 text-center">
-            <FileUpIcon
-              aria-hidden="true"
-              className="size-6 text-muted-foreground"
-            />
-            <span className="text-body-sm">
-              {t.bookmarks.dialog.selectFile}
-            </span>
-            <input
-              className="sr-only"
-              type="file"
-              accept=".html,.htm,text/html"
-              onChange={(event) => void selectFile(event.target.files?.[0])}
-            />
-          </label>
+          <>
+            <details className="text-body-sm rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+              <summary className="cursor-pointer rounded-sm font-medium focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none">
+                {t.bookmarks.dialog.exportHelp}
+              </summary>
+              <ul className="mt-2 space-y-1 pl-4 text-muted-foreground">
+                <li>{t.bookmarks.dialog.chromeExportHelp}</li>
+                <li>{t.bookmarks.dialog.edgeExportHelp}</li>
+                <li>{t.bookmarks.dialog.firefoxExportHelp}</li>
+              </ul>
+            </details>
+
+            <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border border-dashed border-border p-8 text-center has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2">
+              <FileUpIcon
+                aria-hidden="true"
+                className="size-6 text-muted-foreground"
+              />
+              <span className="text-body-sm">
+                {t.bookmarks.dialog.selectFile}
+              </span>
+              <input
+                className="sr-only"
+                type="file"
+                accept=".html,.htm,text/html"
+                onChange={(event) => void selectFile(event.target.files?.[0])}
+              />
+            </label>
+          </>
         )}
 
         {preview && !result && (

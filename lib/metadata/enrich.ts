@@ -1,7 +1,11 @@
 import { PreviewError, type PreviewErrorCode } from "./errors";
 import { assertSafeUrl } from "./ssrf";
 import { safeRequest } from "./fetch";
-import { extractHeadMetadata, type HeadMetadata } from "./html";
+import {
+  decodeHtmlDocument,
+  extractHeadMetadata,
+  type HeadMetadata,
+} from "./html";
 import { processFavicon, processThumbnail, type ProcessedImage } from "./image";
 import { logEvent } from "@/lib/security/logging";
 
@@ -106,7 +110,10 @@ export async function enrichOne(
       truncateOnOverflow: true,
     });
 
-    const html = htmlResponse.body.toString("utf-8");
+    const html = decodeHtmlDocument(
+      htmlResponse.body,
+      htmlResponse.contentType,
+    );
     const metadata: HeadMetadata = deps.extractHeadMetadata(
       html,
       htmlResponse.finalUrl,

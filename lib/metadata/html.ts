@@ -1,6 +1,6 @@
 /**
  * Textual `<head>` metadata extractor. No DOM, no `jsdom`, no headless
- * browser, no new dependency (CLAUDE.md §14/§20, plan §7.10) — plain
+ * browser — plain
  * regex over a bounded slice of the document. `lib/bookmarks/parser.ts`
  * uses `DOMParser` for its browser-only import flow; this module runs
  * server-side (Task 3) where there is no DOM, and the security model here
@@ -12,6 +12,8 @@
  * §14 item 11): callers only ever see the small sanitized `HeadMetadata`
  * fields below.
  */
+
+import { decodeHTML, decodeHTMLAttribute } from "entities/decode";
 
 export type HeadMetadata = {
   title: string | null;
@@ -31,6 +33,66 @@ const SITE_NAME_MAX_LENGTH = 120;
 
 const ICON_RELS = new Set(["icon", "shortcut icon", "apple-touch-icon"]);
 
+function charsetParameter(contentType: string): string | undefined {
+  const match =
+    /(?:^|;)\s*charset\s*=\s*(?:"([^"]*)"|'([^']*)'|([^;\s]*))/i.exec(
+      contentType,
+    );
+  return match?.[1] ?? match?.[2] ?? match?.[3];
+}
+
+/** Decode the already bounded response, without a DOM or additional I/O.
+ * BOM wins over HTTP, then early HTML declarations. Unlabelled pages retain
+ * our UTF-8 default. Unknown encodings cannot prevent metadata extraction.
+ */
+export function decodeHtmlDocument(
+  body: Buffer,
+  contentType: string | null,
+): string {
+  const bomEncoding =
+    body[0] === 0xef && body[1] === 0xbb && body[2] === 0xbf
+      ? "utf-8"
+      : body[0] === 0xff && body[1] === 0xfe
+        ? "utf-16le"
+        : body[0] === 0xfe && body[1] === 0xff
+          ? "utf-16be"
+          : undefined;
+  if (bomEncoding) return new TextDecoder(bomEncoding).decode(body);
+
+  // Encoding declarations belong in the first 1024 bytes. Latin-1 preserves
+  // ASCII tag/attribute syntax before we know how to decode the text itself.
+  const prefix = body
+    .subarray(0, 1024)
+    .toString("latin1")
+    .replace(/<!--[\s\S]*?(?:-->|$)/g, "");
+  const declarations = findTags(prefix, "meta").map((tag) => {
+    const attrs = parseAttributes(tag);
+    return (
+      attrs.charset ??
+      (attrs["http-equiv"]?.toLowerCase() === "content-type"
+        ? charsetParameter(attrs.content ?? "")
+        : undefined)
+    );
+  });
+  const labels = [charsetParameter(contentType ?? ""), ...declarations];
+  for (const [index, label] of labels.entries()) {
+    if (!label?.trim()) continue;
+    try {
+      let decoder = new TextDecoder(label.trim());
+      // In-document UTF-16 declarations refer to UTF-8 in HTML; actual UTF-16
+      // is identified by its BOM or HTTP header above.
+      if (index > 0 && decoder.encoding.startsWith("utf-16")) {
+        decoder = new TextDecoder("utf-8");
+      }
+      return decoder.decode(body);
+    } catch (error) {
+      if (!(error instanceof RangeError)) throw error;
+      // Unsupported declaration: try the next one, then the UTF-8 default.
+    }
+  }
+  return body.toString("utf-8");
+}
+
 export function extractHeadMetadata(html: string, baseUrl: URL): HeadMetadata {
   const truncated =
     html.length > MAX_HTML_CHARS ? html.slice(0, MAX_HTML_CHARS) : html;
@@ -43,7 +105,7 @@ export function extractHeadMetadata(html: string, baseUrl: URL): HeadMetadata {
   const titleMatch = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(source);
   const rawTitle =
     metaByKey.get("og:title") ??
-    (titleMatch ? decodeEntities(titleMatch[1] ?? "") : null);
+    (titleMatch ? decodeHTML(titleMatch[1] ?? "") : null);
   const rawDescription =
     metaByKey.get("og:description") ?? metaByKey.get("description") ?? null;
   const rawSiteName = metaByKey.get("og:site_name") ?? null;
@@ -174,46 +236,12 @@ function parseAttributes(tag: string): Record<string, string> {
     const name = match[1]?.toLowerCase();
     if (!name) continue;
     const value = match[2] ?? match[3] ?? match[4] ?? "";
-    attrs[name] = decodeEntities(value);
+    // Decode only the extracted value, once. The result remains plain text;
+    // it is never parsed again as markup. Attribute mode preserves URL
+    // fragments such as `&copy=2` that are not character references.
+    attrs[name] = decodeHTMLAttribute(value);
   }
   return attrs;
-}
-
-// ---------------------------------------------------------------------
-// Entity decoding: only the common named entities plus numeric
-// (decimal/hex) references. Decoding `&lt;script&gt;` yields the literal
-// text "<script>" as JS string DATA — it is never re-parsed as markup by
-// this module or (per CLAUDE.md §15) by any renderer downstream.
-// ---------------------------------------------------------------------
-
-const NAMED_ENTITIES: Record<string, string> = {
-  amp: "&",
-  lt: "<",
-  gt: ">",
-  quot: '"',
-  apos: "'",
-  nbsp: " ",
-};
-
-const ENTITY_PATTERN = /&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g;
-
-function decodeEntities(value: string): string {
-  return value.replace(ENTITY_PATTERN, (match, entity: string) => {
-    if (entity.startsWith("#")) {
-      const isHex = entity[1] === "x" || entity[1] === "X";
-      const codePoint = isHex
-        ? parseInt(entity.slice(2), 16)
-        : parseInt(entity.slice(1), 10);
-      if (!Number.isFinite(codePoint) || codePoint < 0 || codePoint > 0x10ffff)
-        return match;
-      try {
-        return String.fromCodePoint(codePoint);
-      } catch {
-        return match;
-      }
-    }
-    return NAMED_ENTITIES[entity.toLowerCase()] ?? match;
-  });
 }
 
 // ---------------------------------------------------------------------

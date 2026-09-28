@@ -63,6 +63,29 @@ describe("enrichOne", () => {
     logEventMock.mockClear();
   });
 
+  it("decodes the response charset and HTML entities before storing plain-text metadata", async () => {
+    const deps = baseDeps({
+      safeRequest: vi.fn().mockResolvedValue(
+        htmlResponse({
+          contentType: "text/html; charset=iso-8859-1",
+          body: Buffer.from(
+            '<head><title>Calça e acessórios</title><meta name="description" content="Vestu&aacute;rio &ndash; frete gr&aacute;tis"></head>',
+            "latin1",
+          ),
+        }),
+      ),
+      extractHeadMetadata: realExtractHeadMetadata,
+    });
+    expect(await enrichOne(JOB, deps)).toMatchObject({
+      status: "ready",
+      title: "Calça e acessórios",
+      description: "Vestuário – frete grátis",
+      thumbnail: null,
+      favicon: null,
+    });
+    expect(deps.safeRequest).toHaveBeenCalledTimes(1);
+  });
+
   it("never throws for an invalid job URL", async () => {
     const deps = baseDeps();
     const outcome = await enrichOne({ itemId: "x", url: "not a url" }, deps);

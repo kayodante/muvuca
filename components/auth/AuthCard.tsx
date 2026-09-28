@@ -12,7 +12,7 @@ export function AuthCard({ children }: { children: ReactNode }) {
       {/* Fio de luz: linha lime de 1px no topo do card. */}
       <div
         aria-hidden
-        className="absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-primary/55 to-transparent"
+        className="absolute inset-x-8 top-0 h-px bg-linear-to-r from-transparent via-primary/30 to-transparent"
       />
       <div className="flex flex-col gap-8 rounded-lg border border-border bg-card p-8 shadow-overlay">
         {children}
