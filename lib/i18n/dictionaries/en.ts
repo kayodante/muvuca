@@ -760,6 +760,9 @@ export const en: Dictionary = {
     invalidFolderHierarchy: "Invalid folder hierarchy.",
     invalidBookmarkFolder: "Invalid bookmark folder.",
     passwordMismatch: "Passwords don't match.",
+    avatarUnsupportedFormat:
+      "Unsupported format. Use JPEG, PNG, WebP, GIF, or AVIF.",
+    avatarTooLarge: "Use an image up to 2 MB.",
   },
   errors: {
     unknown: "Something went wrong. Please try again.",
@@ -808,6 +811,8 @@ export const en: Dictionary = {
     invalidTheme: "Invalid theme.",
     themeUpdateFailed: "Couldn't update the appearance.",
     displayNameSaveFailed: "Couldn't save your name.",
+    avatarSaveFailed: "Couldn't save your photo.",
+    avatarRemoveFailed: "Couldn't remove your photo.",
     backupNeedsRevalidation: "The backup file needs to be checked again.",
     backupRestoreFailed: "Couldn't complete the restore.",
     backupHierarchyInvalid: "The file's tag hierarchy is invalid.",

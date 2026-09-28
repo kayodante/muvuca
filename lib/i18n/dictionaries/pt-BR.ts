@@ -814,6 +814,9 @@ export const ptBR = {
     invalidFolderHierarchy: "Hierarquia de pastas inválida.",
     invalidBookmarkFolder: "Pasta do favorito inválida.",
     passwordMismatch: "As senhas não coincidem.",
+    avatarUnsupportedFormat:
+      "Formato não suportado. Use JPEG, PNG, WebP, GIF ou AVIF.",
+    avatarTooLarge: "Use uma imagem de até 2 MB.",
   },
   errors: {
     unknown: "Algo deu errado. Tente novamente.",
@@ -863,6 +866,8 @@ export const ptBR = {
     invalidTheme: "Tema inválido.",
     themeUpdateFailed: "Não foi possível atualizar a aparência.",
     displayNameSaveFailed: "Não foi possível salvar seu nome.",
+    avatarSaveFailed: "Não foi possível salvar sua foto.",
+    avatarRemoveFailed: "Não foi possível remover sua foto.",
     backupNeedsRevalidation:
       "O arquivo de backup precisa ser analisado novamente.",
     backupRestoreFailed: "Não foi possível concluir a restauração.",
