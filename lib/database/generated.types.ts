@@ -232,6 +232,7 @@ export type Database = {
       };
       user_preferences: {
         Row: {
+          avatar_hash: string | null;
           created_at: string;
           display_name: string | null;
           locale: string | null;
@@ -240,6 +241,7 @@ export type Database = {
           user_id: string;
         };
         Insert: {
+          avatar_hash?: string | null;
           created_at?: string;
           display_name?: string | null;
           locale?: string | null;
@@ -248,6 +250,7 @@ export type Database = {
           user_id: string;
         };
         Update: {
+          avatar_hash?: string | null;
           created_at?: string;
           display_name?: string | null;
           locale?: string | null;
