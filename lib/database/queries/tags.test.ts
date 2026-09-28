@@ -13,6 +13,7 @@ import {
   getTagByPath,
   getTagItemCounts,
   getTagList,
+  getTagRollupCounts,
   getTagsByIds,
 } from "@/lib/database/queries/tags";
 
@@ -307,6 +308,48 @@ describe("getTagItemCounts", () => {
       event: "tags.item_counts_failed",
       status: "failure",
       errorClass: "42501",
+    });
+  });
+});
+
+describe("getTagRollupCounts", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("keys each rollup count by tag id, in one RPC for the whole tree", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: [
+        { tag_id: "design", item_count: 12 },
+        { tag_id: "icones", item_count: 3 },
+      ],
+      error: null,
+    });
+    createClientMock.mockResolvedValue({ rpc });
+
+    await expect(getTagRollupCounts()).resolves.toEqual({
+      design: 12,
+      icones: 3,
+    });
+    expect(rpc).toHaveBeenCalledTimes(1);
+    expect(rpc).toHaveBeenCalledWith("count_library_items_by_tag");
+  });
+
+  it("logs a structured failure event before throwing when the RPC errors", async () => {
+    const rpc = vi.fn().mockResolvedValue({
+      data: null,
+      error: { code: "PGRST202", name: "PostgrestError", message: "missing" },
+    });
+    createClientMock.mockResolvedValue({ rpc });
+
+    await expect(getTagRollupCounts()).rejects.toMatchObject({
+      code: "PGRST202",
+    });
+
+    expect(logEventMock).toHaveBeenCalledWith({
+      event: "tags.rollup_counts_failed",
+      status: "failure",
+      errorClass: "PGRST202",
     });
   });
 });

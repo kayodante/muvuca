@@ -29,6 +29,7 @@ export function AppShell({
   signOutSlot,
   tags,
   itemsCount,
+  tagCounts,
 }: {
   children: ReactNode;
   theme: Theme;
@@ -37,6 +38,7 @@ export function AppShell({
   signOutSlot: ReactNode;
   tags?: FlatTag[];
   itemsCount?: number;
+  tagCounts?: Record<string, number>;
 }) {
   const t = useDictionary();
   const [collapsed, setCollapsed] = useState(false);
@@ -49,6 +51,7 @@ export function AppShell({
       userName={userName}
       signOutSlot={signOutSlot}
       itemsCount={itemsCount}
+      tagCounts={tagCounts}
     />
   );
 
