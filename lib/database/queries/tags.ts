@@ -209,6 +209,33 @@ export async function getTagItemCounts(): Promise<Record<string, number>> {
 }
 
 /**
+ * Rollup item count per tag, keyed by tag id: the tag plus every
+ * descendant, each item counted once -- the same number
+ * `getLibraryItemsCountForTag` shows on the tag's own page. One round trip
+ * for the whole tree (`count_library_items_by_tag`, 0034) instead of one
+ * recursive query per tag. Tags with no item are absent (0 either way).
+ */
+export async function getTagRollupCounts(): Promise<Record<string, number>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("count_library_items_by_tag");
+
+  if (error) {
+    logEvent({
+      event: "tags.rollup_counts_failed",
+      status: "failure",
+      errorClass: error.code ?? error.name,
+    });
+    throw error;
+  }
+
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    counts[row.tag_id] = row.item_count;
+  }
+  return counts;
+}
+
+/**
  * Number of direct children of a tag, without fetching the whole tree.
  * Covered by the `tags_user_id_parent_id_idx` index (migration 0006). RLS
  * scopes this to the caller automatically (0007_rls.sql); no explicit

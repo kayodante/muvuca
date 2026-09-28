@@ -27,6 +27,7 @@ export function Sidebar({
   userName,
   signOutSlot,
   itemsCount,
+  tagCounts,
 }: {
   tags?: FlatTag[];
   theme: Theme;
@@ -34,6 +35,7 @@ export function Sidebar({
   userName?: string | null;
   signOutSlot: ReactNode;
   itemsCount?: number;
+  tagCounts?: Record<string, number>;
 }) {
   const t = useDictionary();
   return (
@@ -66,7 +68,7 @@ export function Sidebar({
             }}
           />
         </div>
-        <TagNavigation tags={tags ?? []} />
+        <TagNavigation tags={tags ?? []} counts={tagCounts} />
       </div>
 
       <div className="shrink-0 border-t border-r border-border bg-secondary p-2">

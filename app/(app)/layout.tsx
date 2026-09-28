@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth/require-user";
 import { AppShell } from "@/components/shell/AppShell";
 import { SignOutButton } from "@/components/auth/SignOutButton";
-import { getTagList } from "@/lib/database/queries/tags";
+import { getTagList, getTagRollupCounts } from "@/lib/database/queries/tags";
 import { getUserPreferences } from "@/lib/database/queries/preferences";
 import { getLibraryItemsCount } from "@/lib/database/queries/items";
 
@@ -16,10 +16,15 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const user = await requireUser();
-  const [tags, preferences, itemsCount] = await Promise.all([
+  const [tags, preferences, itemsCount, tagCounts] = await Promise.all([
     getTagList(),
     getUserPreferences(),
     getLibraryItemsCount(),
+    // A tree without counters beats a layout that fails on every route: the
+    // RPC ships in a migration (0034) that reaches production only after
+    // the Production environment is approved, and the app deploy does not
+    // wait for it. getTagRollupCounts has already logged the failure.
+    getTagRollupCounts().catch(() => undefined),
   ]);
 
   return (
@@ -30,6 +35,7 @@ export default async function AppLayout({
       signOutSlot={<SignOutButton />}
       tags={tags}
       itemsCount={itemsCount}
+      tagCounts={tagCounts}
     >
       {children}
     </AppShell>

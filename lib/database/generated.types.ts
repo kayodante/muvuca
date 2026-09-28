@@ -293,6 +293,13 @@ export type Database = {
         Args: { p_item_ids?: string[] };
         Returns: number;
       };
+      count_library_items_by_tag: {
+        Args: never;
+        Returns: {
+          item_count: number;
+          tag_id: string;
+        }[];
+      };
       count_library_items_for_tag: {
         Args: { p_tag_id: string };
         Returns: number;
