@@ -14,32 +14,8 @@ import { createRootTag, signIn } from "./helpers";
  */
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 
-/**
- * Dívida de acessibilidade aceita de forma explícita, não um falso positivo.
- *
- * Os passos ainda não revelados do scroll narrativo de `LandingProblem.tsx`
- * ficam em `opacity-40`, o que leva o texto a 1.76:1 contra AA de 4.5:1.
- * Nenhum valor de opacity resolve: a 40% nem preto puro sobre `--canvas`
- * passa de ~2.75:1, e `text-headline-sm` (18px/560) não se qualifica como
- * "large text" para o limite de 3:1. Ou seja, a única correção seria remover
- * o fade -- decisão de design, tomada conscientemente em favor do efeito e
- * registrada em `ROADMAP.md`.
- *
- * A exclusão é a mais estreita que dá: só os passos INATIVOS. O passo ativo
- * continua sendo varrido, e o resto da landing também. O custo aceito é que
- * outras violações dentro desses três nós também deixam de ser vistas.
- */
-const NARRATIVE_CONTRAST_DEBT = ['[data-step-state="inactive"]'];
-
-async function expectNoViolations(
-  page: Page,
-  context?: string,
-  exclude: readonly string[] = [],
-) {
-  let builder = new AxeBuilder({ page }).withTags(WCAG_TAGS);
-  for (const selector of exclude) {
-    builder = builder.exclude(selector);
-  }
+async function expectNoViolations(page: Page, context?: string) {
+  const builder = new AxeBuilder({ page }).withTags(WCAG_TAGS);
 
   const results = await builder.analyze();
 
@@ -58,7 +34,7 @@ async function expectNoViolations(
 
 test("a landing pública não tem violações de a11y", async ({ page }) => {
   await page.goto("/");
-  await expectNoViolations(page, "/", NARRATIVE_CONTRAST_DEBT);
+  await expectNoViolations(page, "/");
 });
 
 test("o login não tem violações de a11y", async ({ page }) => {
@@ -210,11 +186,7 @@ test.describe("movimento reduzido", () => {
   }) => {
     await expectReducedMotion(page);
     await page.goto("/");
-    await expectNoViolations(
-      page,
-      "/ com prefers-reduced-motion: reduce",
-      NARRATIVE_CONTRAST_DEBT,
-    );
+    await expectNoViolations(page, "/ com prefers-reduced-motion: reduce");
   });
 });
 

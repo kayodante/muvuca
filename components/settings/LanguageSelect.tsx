@@ -22,7 +22,13 @@ import { toastError, toastSuccess } from "@/components/states/Toast";
  * language, not the currently active one, so a user can find their
  * language even if the UI is currently in the wrong one.
  */
-export function LanguageSelect({ locale }: { locale: Locale }) {
+export function LanguageSelect({
+  locale,
+  popupClassName,
+}: {
+  locale: Locale;
+  popupClassName?: string;
+}) {
   const t = useDictionary();
   const [value, setValue] = useState(locale);
   const [isPending, startTransition] = useTransition();
@@ -44,7 +50,7 @@ export function LanguageSelect({ locale }: { locale: Locale }) {
       >
         <GlobeIcon aria-hidden="true" className="size-4" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className={popupClassName}>
         {LOCALES.map((option) => {
           const selected = option === value;
           return (
