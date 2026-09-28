@@ -25,6 +25,7 @@ export function Sidebar({
   theme,
   userEmail,
   userName,
+  avatarHash,
   signOutSlot,
   itemsCount,
   tagCounts,
@@ -33,6 +34,7 @@ export function Sidebar({
   theme: Theme;
   userEmail?: string | null;
   userName?: string | null;
+  avatarHash?: string | null;
   signOutSlot: ReactNode;
   itemsCount?: number;
   tagCounts?: Record<string, number>;
@@ -75,6 +77,7 @@ export function Sidebar({
         <SidebarUserMenu
           userEmail={userEmail}
           userName={userName}
+          avatarHash={avatarHash}
           signOutSlot={signOutSlot}
         />
       </div>

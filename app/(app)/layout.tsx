@@ -32,6 +32,7 @@ export default async function AppLayout({
       theme={preferences.theme}
       userEmail={user.email}
       userName={preferences.displayName ?? user.name}
+      avatarHash={preferences.avatarHash}
       signOutSlot={<SignOutButton />}
       tags={tags}
       itemsCount={itemsCount}
