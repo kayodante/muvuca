@@ -35,6 +35,16 @@ export const en: Dictionary = {
       saving: "Saving...",
       saved: "Name saved.",
       removed: "Name removed.",
+      photo: {
+        upload: "Upload photo",
+        change: "Change photo",
+        remove: "Remove photo",
+        uploading: "Uploading...",
+        removing: "Removing...",
+        hint: "JPEG, PNG, WebP, GIF, or AVIF. The photo is cropped to a square from the center.",
+        updated: "Photo updated.",
+        removed: "Photo removed.",
+      },
     },
     appearance: {
       heading: "Appearance",

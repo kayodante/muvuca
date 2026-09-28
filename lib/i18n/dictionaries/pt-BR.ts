@@ -50,6 +50,16 @@ export const ptBR = {
       saving: "Salvando...",
       saved: "Nome salvo.",
       removed: "Nome removido.",
+      photo: {
+        upload: "Enviar foto",
+        change: "Alterar foto",
+        remove: "Remover foto",
+        uploading: "Enviando...",
+        removing: "Removendo...",
+        hint: "JPEG, PNG, WebP, GIF ou AVIF. A foto é recortada em quadrado, pelo centro.",
+        updated: "Foto atualizada.",
+        removed: "Foto removida.",
+      },
     },
     appearance: {
       heading: "Aparência",

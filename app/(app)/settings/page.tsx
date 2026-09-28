@@ -11,12 +11,13 @@ import { getDictionary, getLocale } from "@/lib/i18n/server";
 
 /** Settings page: profile, theme/language preference, library export and account session. */
 export default async function SettingsPage() {
-  const [user, { theme, displayName }, locale, t] = await Promise.all([
-    requireUser(),
-    getUserPreferences(),
-    getLocale(),
-    getDictionary(),
-  ]);
+  const [user, { theme, displayName, avatarHash }, locale, t] =
+    await Promise.all([
+      requireUser(),
+      getUserPreferences(),
+      getLocale(),
+      getDictionary(),
+    ]);
   const fallbackName =
     user.name || user.email?.split("@")[0] || t.settings.profile.fallbackName;
 
@@ -39,7 +40,11 @@ export default async function SettingsPage() {
             {t.settings.profile.description}
           </p>
         </div>
-        <ProfileCard displayName={displayName} fallbackName={fallbackName} />
+        <ProfileCard
+          displayName={displayName}
+          fallbackName={fallbackName}
+          avatarHash={avatarHash}
+        />
       </section>
 
       <section aria-labelledby="appearance-heading" className="space-y-4">

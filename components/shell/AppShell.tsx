@@ -26,6 +26,7 @@ export function AppShell({
   theme,
   userEmail,
   userName,
+  avatarHash,
   signOutSlot,
   tags,
   itemsCount,
@@ -35,6 +36,7 @@ export function AppShell({
   theme: Theme;
   userEmail?: string | null;
   userName?: string | null;
+  avatarHash?: string | null;
   signOutSlot: ReactNode;
   tags?: FlatTag[];
   itemsCount?: number;
@@ -49,6 +51,7 @@ export function AppShell({
       theme={theme}
       userEmail={userEmail}
       userName={userName}
+      avatarHash={avatarHash}
       signOutSlot={signOutSlot}
       itemsCount={itemsCount}
       tagCounts={tagCounts}
