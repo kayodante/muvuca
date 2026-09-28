@@ -258,7 +258,7 @@ export function TagInspector({
               Discoverable shortcuts, not the only way to know them: hidden
               below `sm` rather than gated on pointer capability -- there's
               no reusable `(hover: hover) and (pointer: fine)` utility in
-              the project yet (ItemCard.tsx repeats the raw arbitrary
+              the project yet (ItemCardChrome.tsx repeats the raw arbitrary
               variant inline), so this stays a plain breakpoint instead of
               introducing one for a single, low-stakes hint.
             */}
