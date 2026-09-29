@@ -7,7 +7,9 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("./TagNavigation", () => ({
-  TagNavigation: () => <nav data-testid="tag-navigation" />,
+  TagNavigation: ({ counts }: { counts?: Record<string, number> }) => (
+    <nav data-testid="tag-navigation" data-counts={JSON.stringify(counts)} />
+  ),
 }));
 
 vi.mock("./SidebarUserMenu", () => ({
@@ -36,7 +38,10 @@ afterEach(async () => {
   container = null;
 });
 
-async function renderSidebar(itemsCount?: number) {
+async function renderSidebar(
+  itemsCount?: number,
+  tagCounts?: Record<string, number>,
+) {
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
@@ -47,6 +52,7 @@ async function renderSidebar(itemsCount?: number) {
         userEmail="a@b.com"
         signOutSlot={null}
         itemsCount={itemsCount}
+        tagCounts={tagCounts}
       />,
     );
   });
@@ -75,6 +81,16 @@ describe("Sidebar", () => {
     expect(tags).not.toBeNull();
     // compareDocumentPosition: 4 === FOLLOWING (tags vem depois da row)
     expect(row!.compareDocumentPosition(tags!) & 4).toBe(4);
+  });
+
+  it("repassa a contagem de cada tag para a árvore", async () => {
+    const view = await renderSidebar(3, { design: 3 });
+
+    expect(
+      view
+        .querySelector("[data-testid='tag-navigation']")
+        ?.getAttribute("data-counts"),
+    ).toBe('{"design":3}');
   });
 
   it("renderiza a row mesmo sem contador", async () => {

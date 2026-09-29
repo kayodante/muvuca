@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth/require-user";
 import { getDictionary } from "@/lib/i18n/server";
 import { logEvent } from "@/lib/security/logging";
+import { removeAvatarObjects } from "@/lib/storage/avatars";
 import { removeAllUserPreviewObjects } from "@/lib/storage/previews";
 import { createClient } from "@/lib/supabase/server";
 import { fail, ok, type ActionResult } from "@/lib/utils/result";
@@ -20,16 +21,25 @@ export async function resetAccount(): Promise<ActionResult<null>> {
   const supabase = await createClient();
 
   // Best-effort: resetting the account must also clean the user's own
-  // Storage folder. Objects live two levels
-  // deep (`${userId}/${itemId}/file.webp`); removeAllUserPreviewObjects()
-  // paginates through every item-folder under the user's own prefix and
-  // wipes each one via the same helper deleteItem uses. Runs before the
-  // RPC, and a failure here never blocks the reset itself.
+  // Storage folders -- link previews and the profile photo (ADR-017), each
+  // in its own try/catch so a failure in one doesn't skip the other. Both
+  // run before the RPC, and neither failure blocks the reset itself.
   try {
     await removeAllUserPreviewObjects(supabase, user.id);
   } catch (error) {
     logEvent({
       event: "preview.cleanup_failed",
+      status: "failure",
+      errorClass: error instanceof Error ? error.name : "UnknownError",
+      userId: user.id,
+    });
+  }
+
+  try {
+    await removeAvatarObjects(supabase, user.id);
+  } catch (error) {
+    logEvent({
+      event: "profile.avatar_cleanup_failed",
       status: "failure",
       errorClass: error instanceof Error ? error.name : "UnknownError",
       userId: user.id,

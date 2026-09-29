@@ -24,12 +24,15 @@ afterEach(async () => {
   container = null;
 });
 
-async function renderTagNavigation(tags: FlatTag[]) {
+async function renderTagNavigation(
+  tags: FlatTag[],
+  counts?: Record<string, number>,
+) {
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
   await act(async () => {
-    root?.render(<TagNavigation tags={tags} />);
+    root?.render(<TagNavigation tags={tags} counts={counts} />);
   });
   return container;
 }
@@ -185,6 +188,28 @@ describe("TagNavigation", () => {
     expect(
       depth2Link?.parentElement?.querySelectorAll(".bg-border").length,
     ).toBe(2);
+  });
+
+  it("shows each tag's rollup count inside its link, 0 when absent from the map", async () => {
+    const dom = await renderTagNavigation(tagsWithGrandchild, {
+      dev: 12,
+      frontend: 7,
+      react: 7,
+    });
+
+    const countOf = (href: string) =>
+      dom.querySelector(`a[href="${href}"] [data-slot="tag-count"]`)
+        ?.textContent;
+    expect(countOf("/t/design")).toBe("0");
+    expect(countOf("/t/dev")).toBe("12");
+    expect(countOf("/t/dev/frontend")).toBe("7");
+    expect(countOf("/t/dev/frontend/react")).toBe("7");
+  });
+
+  it("renders no counter when the counts are unavailable", async () => {
+    const dom = await renderTagNavigation(tags);
+
+    expect(dom.querySelector('[data-slot="tag-count"]')).toBeNull();
   });
 
   it("links each tag to its friendly path and marks the current one", async () => {

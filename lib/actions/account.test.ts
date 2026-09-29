@@ -9,6 +9,7 @@ const {
   revalidatePathMock,
   logEventMock,
   removeAllUserPreviewObjectsMock,
+  removeAvatarObjectsMock,
   getDictionaryMock,
 } = vi.hoisted(() => ({
   requireUserMock: vi.fn(),
@@ -17,6 +18,7 @@ const {
   revalidatePathMock: vi.fn(),
   logEventMock: vi.fn(),
   removeAllUserPreviewObjectsMock: vi.fn(),
+  removeAvatarObjectsMock: vi.fn(),
   getDictionaryMock: vi.fn(),
 }));
 
@@ -27,6 +29,9 @@ vi.mock("next/cache", () => ({ revalidatePath: revalidatePathMock }));
 vi.mock("@/lib/storage/previews", () => ({
   removeAllUserPreviewObjects: removeAllUserPreviewObjectsMock,
 }));
+vi.mock("@/lib/storage/avatars", () => ({
+  removeAvatarObjects: removeAvatarObjectsMock,
+}));
 vi.mock("@/lib/i18n/server", () => ({ getDictionary: getDictionaryMock }));
 
 import { resetAccount } from "./account";
@@ -36,6 +41,7 @@ describe("resetAccount", () => {
     vi.clearAllMocks();
     requireUserMock.mockResolvedValue({ id: "user-123" });
     removeAllUserPreviewObjectsMock.mockResolvedValue(undefined);
+    removeAvatarObjectsMock.mockResolvedValue(undefined);
     createClientMock.mockResolvedValue({ rpc: rpcMock });
     getDictionaryMock.mockResolvedValue(ptBR);
   });
@@ -103,5 +109,49 @@ describe("resetAccount", () => {
       errorClass: expect.any(String),
       userId: "user-123",
     });
+  });
+
+  // ADR-017: reset also wipes the user's avatar prefix, independently of
+  // the preview cleanup above.
+  it("limpa os objetos de avatar do usuário antes de resetar a conta", async () => {
+    rpcMock.mockResolvedValue({ error: null });
+
+    const result = await resetAccount();
+
+    expect(result.ok).toBe(true);
+    expect(removeAvatarObjectsMock).toHaveBeenCalledWith(
+      expect.anything(),
+      "user-123",
+    );
+    expect(rpcMock).toHaveBeenCalledWith("reset_account");
+  });
+
+  it("falha da limpeza de avatar não bloqueia a RPC e é logada sem pular a limpeza de previews", async () => {
+    removeAvatarObjectsMock.mockRejectedValue(new Error("nope"));
+    rpcMock.mockResolvedValue({ error: null });
+
+    const result = await resetAccount();
+
+    expect(result.ok).toBe(true);
+    expect(removeAllUserPreviewObjectsMock).toHaveBeenCalled();
+    expect(rpcMock).toHaveBeenCalledWith("reset_account");
+    expect(logEventMock).toHaveBeenCalledWith({
+      event: "profile.avatar_cleanup_failed",
+      status: "failure",
+      errorClass: expect.any(String),
+      userId: "user-123",
+    });
+  });
+
+  it("falha da limpeza de previews não pula a limpeza de avatar", async () => {
+    removeAllUserPreviewObjectsMock.mockRejectedValue(new Error("nope"));
+    rpcMock.mockResolvedValue({ error: null });
+
+    await resetAccount();
+
+    expect(removeAvatarObjectsMock).toHaveBeenCalledWith(
+      expect.anything(),
+      "user-123",
+    );
   });
 });

@@ -26,17 +26,21 @@ export function AppShell({
   theme,
   userEmail,
   userName,
+  avatarHash,
   signOutSlot,
   tags,
   itemsCount,
+  tagCounts,
 }: {
   children: ReactNode;
   theme: Theme;
   userEmail?: string | null;
   userName?: string | null;
+  avatarHash?: string | null;
   signOutSlot: ReactNode;
   tags?: FlatTag[];
   itemsCount?: number;
+  tagCounts?: Record<string, number>;
 }) {
   const t = useDictionary();
   const [collapsed, setCollapsed] = useState(false);
@@ -47,8 +51,10 @@ export function AppShell({
       theme={theme}
       userEmail={userEmail}
       userName={userName}
+      avatarHash={avatarHash}
       signOutSlot={signOutSlot}
       itemsCount={itemsCount}
+      tagCounts={tagCounts}
     />
   );
 
