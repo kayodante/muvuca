@@ -90,6 +90,12 @@ export const ptBR = {
       description: "Você entra com email e senha.",
       emailLabel: "Email",
       emailUnavailable: "Email não disponível",
+      passwordLabel: "Senha",
+      passwordHint:
+        "Enviamos um link para o seu email para definir a nova senha.",
+      changePassword: "Alterar senha",
+      changePasswordPending: "Enviando…",
+      changePasswordSent: "Link enviado. Confira seu email.",
     },
     danger: {
       heading: "Zona de perigo",

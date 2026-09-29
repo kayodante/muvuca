@@ -75,6 +75,11 @@ export const en: Dictionary = {
       description: "Sign in with your email and password.",
       emailLabel: "Email",
       emailUnavailable: "Email unavailable",
+      passwordLabel: "Password",
+      passwordHint: "We email you a link to set the new password.",
+      changePassword: "Change password",
+      changePasswordPending: "Sending…",
+      changePasswordSent: "Link sent. Check your email.",
     },
     danger: {
       heading: "Danger zone",
