@@ -48,7 +48,7 @@ export function TagDetailView({
     // `rounded-lg` (12px) = 16px do container − 4px de padding, concêntricos.
     // No tema deste projeto `rounded-xl` é 16px, não os 12px do Tailwind.
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-4 rounded-2xl bg-card p-1 pl-6 shadow-light sm:flex-row sm:items-stretch sm:justify-between sm:gap-16">
+      <div className="flex flex-col gap-2 rounded-2xl bg-card p-1 pl-4 shadow-light sm:flex-row sm:items-stretch sm:justify-between sm:gap-16 sm:pl-6">
         <div className="flex min-w-0 flex-col justify-center gap-3 py-3">
           {/* A root tag's trail would be just its own name, repeating the h1. */}
           {ancestors.length > 0 && (
@@ -88,16 +88,16 @@ export function TagDetailView({
         </div>
 
         <div className="flex gap-1">
-          <div className="flex w-[108px] shrink-0 flex-col items-start justify-center gap-1 rounded-lg bg-secondary p-4 shadow-light">
-            <span className="font-pixel text-[32px] leading-none text-foreground">
+          <div className="flex min-w-0 flex-1 items-baseline justify-center gap-2 rounded-lg bg-secondary p-2 shadow-light sm:w-[108px] sm:shrink-0 sm:flex-col sm:items-start sm:gap-1 sm:p-4">
+            <span className="font-pixel text-2xl leading-none text-foreground sm:text-[32px]">
               {itemsCount}
             </span>
             <span className="text-sm leading-none text-muted-foreground">
               {t.tags.detail.itemsLabel}
             </span>
           </div>
-          <div className="flex w-[108px] shrink-0 flex-col items-start justify-center gap-1 rounded-lg bg-secondary p-4 shadow-light">
-            <span className="font-pixel text-[32px] leading-none text-foreground">
+          <div className="flex min-w-0 flex-1 items-baseline justify-center gap-2 rounded-lg bg-secondary p-2 shadow-light sm:w-[108px] sm:shrink-0 sm:flex-col sm:items-start sm:gap-1 sm:p-4">
+            <span className="font-pixel text-2xl leading-none text-foreground sm:text-[32px]">
               {childCount}
             </span>
             <span className="text-sm leading-none text-muted-foreground">

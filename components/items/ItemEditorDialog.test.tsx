@@ -5,15 +5,16 @@ import { ItemEditorDialog, type EditorTarget } from "./ItemEditorDialog";
 import type { LibraryItem } from "@/lib/database/queries/items";
 import type { Tag } from "@/lib/database/queries/tags";
 
-const { toast, listTagsForSelectMock } = vi.hoisted(() => ({
+const { toast, listTagsForSelectMock, createItemMock } = vi.hoisted(() => ({
   toast: { success: vi.fn(), error: vi.fn() },
   listTagsForSelectMock: vi.fn(),
+  createItemMock: vi.fn(),
 }));
 
 vi.mock("sonner", () => ({ toast }));
 
 vi.mock("@/lib/actions/items", () => ({
-  createItem: vi.fn(),
+  createItem: createItemMock,
   updateItem: vi.fn(),
 }));
 
@@ -122,7 +123,140 @@ function tagTrigger() {
   ) as HTMLButtonElement;
 }
 
+async function fillInput(name: string, value: string) {
+  const input = document.body.querySelector(
+    `input[name="${name}"]`,
+  ) as HTMLInputElement;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )?.set?.call(input, value);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+}
+
+async function clickButton(text: string) {
+  const button = Array.from(document.body.querySelectorAll("button")).find(
+    (candidate) => candidate.textContent?.trim() === text,
+  );
+  expect(button).toBeDefined();
+  await act(async () => (button as HTMLButtonElement).click());
+}
+
 describe("ItemEditorDialog", () => {
+  it("closes a clean draft without confirmation", async () => {
+    const onOpenChange = vi.fn();
+    await renderEditor({ mode: "create" }, onOpenChange);
+
+    await act(async () => {
+      (
+        document.body.querySelector('[data-slot="dialog-close"]') as HTMLElement
+      ).click();
+    });
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(document.body.textContent).not.toContain("Descartar alterações?");
+  });
+
+  it("keeps a changed prompt draft on Escape, then discards only after confirmation", async () => {
+    const onOpenChange = vi.fn();
+    await renderEditor({ mode: "create" }, onOpenChange);
+    await act(async () => {
+      (
+        document.body.querySelector(
+          'input[type="radio"][value="prompt"]',
+        ) as HTMLInputElement
+      ).click();
+    });
+    await fillInput("title", "Draft prompt");
+
+    await act(async () => {
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+    });
+    expect(
+      document.body.querySelector('[data-slot="alert-dialog-content"]'),
+    ).not.toBeNull();
+    expect(document.body.textContent).toContain("Descartar alterações?");
+    expect(onOpenChange).not.toHaveBeenCalled();
+
+    await clickButton("Continuar editando");
+    expect(
+      (document.body.querySelector('input[name="title"]') as HTMLInputElement)
+        .value,
+    ).toBe("Draft prompt");
+    expect(
+      (
+        document.body.querySelector(
+          '[data-slot="dialog-content"]',
+        ) as HTMLElement
+      ).contains(document.activeElement),
+    ).toBe(true);
+    expect(onOpenChange).not.toHaveBeenCalled();
+
+    await act(async () => {
+      (
+        document.body.querySelector('[data-slot="dialog-close"]') as HTMLElement
+      ).click();
+    });
+    await clickButton("Descartar");
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("guards tag changes in edit mode", async () => {
+    const onOpenChange = vi.fn();
+    await renderEditor({ mode: "edit", item: mockEditLinkItem }, onOpenChange);
+
+    const removeTag = document.body.querySelector(
+      'button[aria-label*="Tech"]',
+    ) as HTMLButtonElement;
+    await act(async () => removeTag.click());
+    await act(async () => {
+      (
+        document.body.querySelector('[data-slot="dialog-close"]') as HTMLElement
+      ).click();
+    });
+
+    expect(
+      document.body.querySelector('[data-slot="alert-dialog-content"]'),
+    ).not.toBeNull();
+    expect(document.body.textContent).toContain("Descartar alterações?");
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it("does not close during a save and closes after it succeeds", async () => {
+    let resolveSave!: (result: { ok: true; data: null }) => void;
+    createItemMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const onOpenChange = vi.fn();
+    await renderEditor({ mode: "create" }, onOpenChange);
+    await fillInput("title", "Saved link");
+    await fillInput("url", "https://example.com");
+
+    act(() => {
+      (document.body.querySelector("form") as HTMLFormElement).requestSubmit();
+    });
+    expect(createItemMock).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      (
+        document.body.querySelector('[data-slot="dialog-close"]') as HTMLElement
+      ).click();
+    });
+    expect(onOpenChange).not.toHaveBeenCalled();
+    expect(
+      document.body.querySelector('[data-slot="alert-dialog-content"]'),
+    ).toBeNull();
+
+    await act(async () => resolveSave({ ok: true, data: null }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
   it("renderiza em modo de criação com opções de tipo link, prompt e code_component", async () => {
     await renderEditor({ mode: "create" });
     expect(document.body.textContent).toContain("Novo item");

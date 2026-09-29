@@ -34,7 +34,7 @@ export function Topbar({
         <div className="hidden md:block">{sidebarToggle}</div>
       </div>
 
-      <div className="flex flex-1 justify-center">
+      <div className="flex min-w-0 flex-1 justify-center">
         <LibrarySearch />
       </div>
 

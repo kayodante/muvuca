@@ -326,6 +326,9 @@ body {
   /* The Topbar's rendered height (40px controls + 2x12px padding + 1px
      border); /tags subtracts it to fit the viewport exactly. */
   --layout-topbar-min-height: 65px;
+  /* `main`'s bottom padding: clears the AppShell's 128px bottom fade plus
+     the device safe area. /tags subtracts it too, so both read one value. */
+  --layout-main-bottom-padding: calc(10rem + env(safe-area-inset-bottom));
 }
 
 @media (prefers-color-scheme: dark) {

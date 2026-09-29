@@ -96,7 +96,7 @@ export function AppShell({
               </Button>
             }
           />
-          <main className="mx-auto w-full max-w-[var(--layout-content-max)] flex-1 px-4 pt-4 pb-32 sm:px-6 lg:px-8">
+          <main className="mx-auto w-full max-w-[var(--layout-content-max)] flex-1 px-4 pt-4 pb-[var(--layout-main-bottom-padding)] sm:px-6 lg:px-8">
             {children}
           </main>
           {/* Decorative bottom fade, dissolves the gallery into the canvas.

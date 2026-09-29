@@ -58,6 +58,13 @@ describe("ImportBookmarksDialog", () => {
     expect(document.body.textContent).toContain(
       "Selecione um arquivo .html de até 10 MB",
     );
+    expect(document.body.textContent).toContain(
+      "Como exportar favoritos do navegador",
+    );
+    expect(document.body.textContent).toContain(
+      "Chrome: Gerenciador de favoritos",
+    );
+    expect(document.body.textContent).toContain("Firefox: Gerenciar favoritos");
   });
 
   // Informational line on the completion screen, telling the user

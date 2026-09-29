@@ -278,9 +278,9 @@ export function ItemsPage({
           heading flush left and the toolbar flush right. No item count and no
           "Importar favoritos" here -- the count belongs to the tag head above
           (or to the empty state, which already says there is nothing), and
-          import lives in the account menu and in the empty state. */}
-        <div className="flex flex-wrap items-center justify-end gap-3 px-4">
-          <Heading className="text-headline-sm mr-auto min-w-0 [overflow-wrap:anywhere]">
+          import lives in the sidebar and in the empty state. */}
+        <div className="flex flex-col items-start gap-2 px-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
+          <Heading className="text-headline-sm min-w-0 [overflow-wrap:anywhere] sm:mr-auto">
             {resolvedTitle}
           </Heading>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDownIcon, SearchIcon } from "lucide-react";
@@ -30,10 +30,10 @@ export function TagNavigation({
   counts?: Record<string, number>;
 }) {
   const t = useDictionary();
+  const pathname = usePathname();
   const nodes = buildTagTree(tags);
   const [query, setQuery] = useState("");
-
-  if (nodes.length === 0) return null;
+  const [expandedById, setExpandedById] = useState<Record<string, boolean>>({});
 
   const visibleNodes = filterTagTree(nodes, query);
 
@@ -43,32 +43,40 @@ export function TagNavigation({
       className="flex min-h-0 flex-1 flex-col"
     >
       <div className="shrink-0">
-        <h2
-          id="sidebar-tags-heading"
-          // Sans, not mono: this is a navigation section label, and Geist
-          // Mono is reserved for URLs, counters and timestamps.
-          className="text-label-md mb-2 px-2 tracking-wide text-muted-foreground uppercase"
-        >
-          {t.shell.tagNav.heading}
-        </h2>
-        <div className="relative mb-2">
-          <SearchIcon
-            aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-          />
-          <Input
-            type="search"
-            dir="auto"
-            maxLength={80}
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={t.shell.tagNav.searchPlaceholder}
-            aria-label={t.shell.tagNav.searchAriaLabel}
-            // Borderless, so Input's focus border never shows; the 50% halo
-            // alone reads 1.77:1. A solid ring keeps focus at 3:1.
-            className="border-0 bg-background pl-9 shadow-light focus-visible:ring-2 focus-visible:ring-ring dark:bg-background [&::-webkit-search-cancel-button]:hidden"
-          />
+        <div className="mb-2 flex items-center justify-between gap-2 px-2">
+          <h2
+            id="sidebar-tags-heading"
+            className="text-label-md tracking-wide text-muted-foreground uppercase"
+          >
+            {t.shell.tagNav.heading}
+          </h2>
+          <Link
+            href="/tags"
+            className="text-label-md rounded-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          >
+            {t.shell.tagNav.manageTags}
+          </Link>
         </div>
+        {nodes.length > 0 && (
+          <div className="relative mb-2">
+            <SearchIcon
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
+            />
+            <Input
+              type="search"
+              dir="auto"
+              maxLength={80}
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t.shell.tagNav.searchPlaceholder}
+              aria-label={t.shell.tagNav.searchAriaLabel}
+              // Borderless, so Input's focus border never shows; the 50% halo
+              // alone reads 1.77:1. A solid ring keeps focus at 3:1.
+              className="border-0 bg-background pl-9 shadow-light focus-visible:ring-2 focus-visible:ring-ring dark:bg-background [&::-webkit-search-cancel-button]:hidden"
+            />
+          </div>
+        )}
       </div>
       {visibleNodes.length > 0 ? (
         // `-m-px p-px` here and on each subtree: both clip, and the active
@@ -80,18 +88,21 @@ export function TagNavigation({
               node={node}
               depth={0}
               filtering={query.trim().length > 0}
+              pathname={pathname}
+              expandedById={expandedById}
+              setExpandedById={setExpandedById}
               counts={counts}
             />
           ))}
         </ul>
-      ) : (
+      ) : nodes.length > 0 ? (
         <p
           dir="auto"
           className="text-body-sm py-2 [overflow-wrap:anywhere] text-muted-foreground"
         >
           {t.shell.tagNav.noneFound(query)}
         </p>
-      )}
+      ) : null}
     </section>
   );
 }
@@ -100,16 +111,20 @@ function TagNavigationRow({
   node,
   depth,
   filtering,
+  pathname,
+  expandedById,
+  setExpandedById,
   counts,
 }: {
   node: TagNode;
   depth: number;
   filtering: boolean;
+  pathname: string;
+  expandedById: Record<string, boolean>;
+  setExpandedById: Dispatch<SetStateAction<Record<string, boolean>>>;
   counts?: Record<string, number>;
 }) {
   const t = useDictionary();
-  const pathname = usePathname();
-  const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
   const href = getTagHref(node);
   const active = pathname === href;
@@ -117,6 +132,7 @@ function TagNavigationRow({
   // A non-empty query forces every subtree open so a deep match stays
   // reachable, without discarding the user's own collapse state -- clearing
   // the query restores whatever `expanded` already held.
+  const expanded = expandedById[node.id] ?? pathname.startsWith(`${href}/`);
   const open = filtering || expanded;
 
   return (
@@ -157,7 +173,9 @@ function TagNavigationRow({
                 ? t.tags.tree.collapse(node.name)
                 : t.tags.tree.expand(node.name)
             }
-            onClick={() => setExpanded((value) => !value)}
+            onClick={() =>
+              setExpandedById((current) => ({ ...current, [node.id]: !open }))
+            }
             className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-[scale,color] duration-(--motion-fast) ease-out-muvuca hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.97] motion-reduce:active:scale-100"
           >
             <span className="t-acc-chevron">
@@ -169,6 +187,7 @@ function TagNavigationRow({
         )}
         <Link
           href={href}
+          title={node.name}
           aria-current={active ? "page" : undefined}
           className={cn(
             // No ring offset inside the tree: the subtree clips its own
@@ -216,6 +235,9 @@ function TagNavigationRow({
                 node={child}
                 depth={depth + 1}
                 filtering={filtering}
+                pathname={pathname}
+                expandedById={expandedById}
+                setExpandedById={setExpandedById}
                 counts={counts}
               />
             ))}

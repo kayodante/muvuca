@@ -35,13 +35,16 @@ function getShortcutLabel() {
   return isMac ? "⌘K" : "Ctrl+K";
 }
 
-/** Keeps the structural shell search in the URL without a full navigation. */
+/** Searches the library, retaining tag scope when a tag is open. */
 export function LibrarySearch() {
   const t = useDictionary();
   const pathname = usePathname();
   const router = useRouter();
   const params = useSearchParams();
-  const urlQuery = params.get("q") ?? "";
+  const scopedToTag = pathname.startsWith("/t/");
+  const searchOnCurrentPage = pathname === "/library" || scopedToTag;
+  const searchPath = searchOnCurrentPage ? pathname : "/library";
+  const urlQuery = searchOnCurrentPage ? (params.get("q") ?? "") : "";
   const [query, setQuery] = useState(urlQuery);
   const [previousUrlQuery, setPreviousUrlQuery] = useState(urlQuery);
   const [isPending, startTransition] = useTransition();
@@ -79,19 +82,21 @@ export function LibrarySearch() {
         skipDebouncedClearRef.current = false;
         return;
       }
-      const next = new URLSearchParams(params.toString());
+      const next = new URLSearchParams(
+        searchOnCurrentPage ? params.toString() : "",
+      );
       const normalized = query.trim();
       if (normalized === urlQuery) return;
       if (normalized) next.set("q", normalized);
       else next.delete("q");
       next.delete("cursor");
       const search = next.toString();
-      const href = search ? `${pathname}?${search}` : pathname;
+      const href = search ? `${searchPath}?${search}` : searchPath;
       startTransition(() => router.replace(href, { scroll: false }));
     }, 250);
 
     return () => window.clearTimeout(timeout);
-  }, [params, pathname, query, router, urlQuery]);
+  }, [params, query, router, searchOnCurrentPage, searchPath, urlQuery]);
 
   function finishClear() {
     clearAnimationRef.current = null;
@@ -123,11 +128,13 @@ export function LibrarySearch() {
     const keepFocus = document.activeElement === input;
     skipDebouncedClearRef.current = true;
     setQuery("");
-    const next = new URLSearchParams(params.toString());
+    const next = new URLSearchParams(
+      searchOnCurrentPage ? params.toString() : "",
+    );
     next.delete("q");
     next.delete("cursor");
     const search = next.toString();
-    const href = search ? `${pathname}?${search}` : pathname;
+    const href = search ? `${searchPath}?${search}` : searchPath;
     startTransition(() => router.replace(href, { scroll: false }));
     inputRef.current?.focus();
 
@@ -224,8 +231,14 @@ export function LibrarySearch() {
           if (value) skipDebouncedClearRef.current = false;
           setQuery(value);
         }}
-        placeholder={t.shell.search.placeholder}
-        aria-label={t.shell.search.placeholder}
+        placeholder={
+          scopedToTag
+            ? t.shell.search.tagScope
+            : t.shell.search.shortPlaceholder
+        }
+        aria-label={
+          scopedToTag ? t.shell.search.tagScope : t.shell.search.placeholder
+        }
         className="border-0 bg-background pr-14 pl-9 shadow-light focus-visible:ring-0 dark:bg-background [&::-webkit-search-cancel-button]:hidden"
       />
       <div
@@ -238,7 +251,9 @@ export function LibrarySearch() {
         className="t-clear-placeholder pr-14 pl-9"
         aria-hidden="true"
       >
-        {t.shell.search.placeholder}
+        {scopedToTag
+          ? t.shell.search.tagScope
+          : t.shell.search.shortPlaceholder}
       </div>
       <div ref={glowRef} className="t-clear-glow" aria-hidden="true" />
       {query ? (
@@ -267,10 +282,14 @@ export function LibrarySearch() {
         >
           <kbd
             aria-hidden="true"
-            className="text-metadata block rounded-xl bg-secondary/70 px-2 py-0.5 font-mono text-muted-foreground shadow-light transition-colors select-none hover:bg-secondary hover:text-foreground"
+            className="text-metadata hidden rounded-xl bg-secondary/70 px-2 py-0.5 font-mono text-muted-foreground shadow-light transition-colors select-none hover:bg-secondary hover:text-foreground sm:block [@media(hover:none)]:hidden"
           >
             {shortcutLabel}
           </kbd>
+          <SearchIcon
+            aria-hidden="true"
+            className="size-4 text-muted-foreground sm:hidden [@media(hover:none)]:block"
+          />
         </button>
       )}
       {/* A hairline under the field, not a spinner: search runs on every

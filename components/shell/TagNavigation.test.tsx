@@ -22,6 +22,7 @@ afterEach(async () => {
   container?.remove();
   root = null;
   container = null;
+  usePathnameMock.mockReturnValue("/library");
 });
 
 async function renderTagNavigation(
@@ -128,13 +129,8 @@ describe("TagNavigation", () => {
   it("filtrar com um ramo recolhido ainda mostra o descendente que combina", async () => {
     const dom = await renderTagNavigation(tags);
 
-    const toggle = dom.querySelector(
-      'button[aria-label="Recolher Dev"]',
-    ) as HTMLButtonElement;
-    expect(toggle).not.toBeNull();
-    await act(async () => {
-      toggle.click();
-    });
+    const toggle = dom.querySelector('button[aria-label="Expandir Dev"]');
+    expect(toggle?.getAttribute("aria-expanded")).toBe("false");
 
     const input = dom.querySelector('input[type="search"]') as HTMLInputElement;
     await act(async () => {
@@ -151,12 +147,12 @@ describe("TagNavigation", () => {
   it("expõe o acordeão da árvore com o estado aberto sincronizado ao botão", async () => {
     const dom = await renderTagNavigation(tags);
     const toggle = dom.querySelector(
-      'button[aria-label="Recolher Dev"]',
+      'button[aria-label="Expandir Dev"]',
     ) as HTMLButtonElement;
     const accordion = toggle.closest("li");
 
     expect(accordion?.classList.contains("t-acc")).toBe(true);
-    expect(accordion?.getAttribute("data-open")).toBe("true");
+    expect(accordion?.getAttribute("data-open")).toBe("false");
     expect(accordion?.querySelector(".t-acc-panel")).not.toBeNull();
     expect(accordion?.querySelector(".t-acc-panel-inner")).not.toBeNull();
 
@@ -164,8 +160,37 @@ describe("TagNavigation", () => {
       toggle.click();
     });
 
-    expect(accordion?.getAttribute("data-open")).toBe("false");
-    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(accordion?.getAttribute("data-open")).toBe("true");
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("opens the active path and retains a manually collapsed branch across navigation", async () => {
+    usePathnameMock.mockReturnValue("/t/dev/frontend");
+    const dom = await renderTagNavigation(tagsWithGrandchild);
+    const dev = dom.querySelector('a[href="/t/dev"]')?.closest("li");
+    expect(dev?.getAttribute("data-open")).toBe("true");
+
+    await act(async () => {
+      (dev?.querySelector("button") as HTMLButtonElement).click();
+    });
+    expect(dev?.getAttribute("data-open")).toBe("false");
+
+    usePathnameMock.mockReturnValue("/t/dev/frontend/react");
+    await act(async () =>
+      root?.render(<TagNavigation tags={tagsWithGrandchild} />),
+    );
+    expect(dev?.getAttribute("data-open")).toBe("false");
+    expect(
+      dom.querySelector('a[href="/t/dev/frontend"]')?.getAttribute("title"),
+    ).toBe("Frontend");
+    usePathnameMock.mockReturnValue("/library");
+  });
+
+  it("shows tag management even when the library has no tags", async () => {
+    const dom = await renderTagNavigation([]);
+    expect(dom.querySelector('a[href="/tags"]')?.textContent).toBe(
+      "Gerenciar tags",
+    );
   });
 
   it("renderiza uma guia por nível de ancestral, e nenhuma na raiz", async () => {

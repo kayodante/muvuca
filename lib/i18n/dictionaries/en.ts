@@ -47,8 +47,8 @@ export const en: Dictionary = {
       },
     },
     appearance: {
-      heading: "Appearance",
-      description: "Choose how Muvuca follows your color preference.",
+      heading: "Appearance & language",
+      description: "Choose the theme and language used across Muvuca.",
       themeLabel: "Theme",
       themeHint: "System is the default for new accounts.",
       themeAriaLabel: (label: string) => `Theme: ${label}`,
@@ -72,7 +72,7 @@ export const en: Dictionary = {
     },
     account: {
       heading: "Account",
-      description: "Your session uses magic link sign-in.",
+      description: "Sign in with your email and password.",
       emailLabel: "Email",
       emailUnavailable: "Email unavailable",
     },
@@ -292,6 +292,11 @@ export const en: Dictionary = {
     },
     dialog: {
       title: "Import bookmarks",
+      exportHelp: "How to export bookmarks from your browser",
+      chromeExportHelp: "Chrome: Bookmark Manager → ⋮ → Export bookmarks.",
+      edgeExportHelp: "Edge: Favorites → More options → Export favorites.",
+      firefoxExportHelp:
+        "Firefox: Manage Bookmarks → Import and Backup → Export Bookmarks to HTML.",
       description:
         "The file is read only in this browser. No URL will be accessed.",
       selectFile: "Select an .html file up to 10 MB",
@@ -408,12 +413,15 @@ export const en: Dictionary = {
     },
     search: {
       placeholder: "Search your library",
+      shortPlaceholder: "Search",
+      tagScope: "Search within this tag",
       openSpotlight: "Open quick search (Spotlight)",
       clear: "Clear search",
       searching: "Searching…",
     },
     tagNav: {
       heading: "Tags",
+      manageTags: "Manage tags",
       searchPlaceholder: "Search tags",
       searchAriaLabel: "Search tags by name",
       noneFound: (query: string) => `No tags found for “${query}”.`,
@@ -521,6 +529,10 @@ export const en: Dictionary = {
       tagsSelectHint: "Select one or more tags to organize the item.",
       itemUpdated: "Item updated.",
       itemCreated: "Item created.",
+      discardTitle: "Discard changes?",
+      discardDescription: "Your unsaved changes will be lost.",
+      keepEditing: "Keep editing",
+      discardConfirm: "Discard",
       saveChanges: "Save changes",
       createItem: "Create item",
       saving: "Saving...",

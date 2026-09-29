@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { UploadIcon } from "lucide-react";
 
 import type { FlatTag } from "@/lib/tags/tree";
 import type { Theme } from "@/lib/theme/preference";
@@ -15,9 +16,8 @@ import { SidebarUserMenu } from "./SidebarUserMenu";
 /**
  * Structural sidebar content: a rounded card of its
  * own, not flush with the rail -- a raised header (brand + theme) and
- * footer (account) bracket a tag tree that fills the whole space between
- * them. Everything else (Tags entry aside, import, settings, version)
- * lives in the account menu. Rendered both in the fixed 272px desktop
+ * footer (import + account) bracket a tag tree that fills the whole space
+ * between them. Rendered both in the fixed 272px desktop
  * rail and inside the mobile Sheet.
  */
 export function Sidebar({
@@ -74,6 +74,13 @@ export function Sidebar({
       </div>
 
       <div className="shrink-0 border-t border-r border-border bg-secondary p-2">
+        <Link
+          href="/library?import=1"
+          className="text-body-sm mb-1 flex min-h-10 items-center gap-2 rounded-md px-3 text-muted-foreground hover:bg-light-2 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        >
+          <UploadIcon aria-hidden="true" className="size-4" />
+          {t.shell.userMenu.importBookmarks}
+        </Link>
         <SidebarUserMenu
           userEmail={userEmail}
           userName={userName}

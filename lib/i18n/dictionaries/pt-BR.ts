@@ -62,8 +62,8 @@ export const ptBR = {
       },
     },
     appearance: {
-      heading: "Aparência",
-      description: "Escolha como o Muvuca acompanha sua preferência de cor.",
+      heading: "Aparência e idioma",
+      description: "Defina o tema e o idioma usados no Muvuca.",
       themeLabel: "Tema",
       themeHint: "Sistema é o padrão para novas contas.",
       themeAriaLabel: (label: string) => `Tema: ${label}`,
@@ -87,7 +87,7 @@ export const ptBR = {
     },
     account: {
       heading: "Conta",
-      description: "Sua sessão usa acesso por link mágico.",
+      description: "Você entra com email e senha.",
       emailLabel: "Email",
       emailUnavailable: "Email não disponível",
     },
@@ -316,6 +316,12 @@ export const ptBR = {
     },
     dialog: {
       title: "Importar favoritos",
+      exportHelp: "Como exportar favoritos do navegador",
+      chromeExportHelp:
+        "Chrome: Gerenciador de favoritos → ⋮ → Exportar favoritos.",
+      edgeExportHelp: "Edge: Favoritos → Mais opções → Exportar favoritos.",
+      firefoxExportHelp:
+        "Firefox: Gerenciar favoritos → Importar e backup → Exportar favoritos para HTML.",
       description:
         "O arquivo é lido somente neste navegador. Nenhuma URL será acessada.",
       selectFile: "Selecione um arquivo .html de até 10 MB",
@@ -435,12 +441,15 @@ export const ptBR = {
     },
     search: {
       placeholder: "Buscar na biblioteca",
+      shortPlaceholder: "Buscar",
+      tagScope: "Busca nesta tag",
       openSpotlight: "Abrir busca rápida (Spotlight)",
       clear: "Limpar busca",
       searching: "Pesquisando…",
     },
     tagNav: {
       heading: "Tags",
+      manageTags: "Gerenciar tags",
       searchPlaceholder: "Buscar tags",
       searchAriaLabel: "Buscar tags por nome",
       noneFound: (query: string) => `Nenhuma tag encontrada para “${query}”.`,
@@ -550,6 +559,10 @@ export const ptBR = {
       tagsSelectHint: "Selecione uma ou mais tags para organizar o item.",
       itemUpdated: "Item atualizado.",
       itemCreated: "Item criado.",
+      discardTitle: "Descartar alterações?",
+      discardDescription: "As alterações não salvas serão perdidas.",
+      keepEditing: "Continuar editando",
+      discardConfirm: "Descartar",
       saveChanges: "Salvar alterações",
       createItem: "Criar item",
       saving: "Salvando...",

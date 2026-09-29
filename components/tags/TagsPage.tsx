@@ -401,11 +401,11 @@ export function TagsPage({
       className={cn(
         "flex flex-col gap-6",
         // From `sm` the page is exactly the viewport left between the
-        // Topbar, `main`'s `pt-4` and its 8rem bottom fade (AppShell.tsx):
+        // Topbar, `main`'s `pt-4` and its bottom padding (AppShell.tsx):
         // the header takes its own height, the panels the rest, and they
         // scroll inside -- the page never does. Below `sm` the page scrolls
         // and needs room past the fixed bulk bar.
-        "sm:h-[calc(100dvh-var(--layout-topbar-min-height)-1rem-8rem)]",
+        "sm:h-[calc(100dvh-var(--layout-topbar-min-height)-1rem-var(--layout-main-bottom-padding))]",
         selecting && "pb-32 sm:pb-0",
       )}
     >

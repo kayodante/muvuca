@@ -2,16 +2,16 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { replaceMock, searchParamsState, openSpotlightMock } = vi.hoisted(
-  () => ({
+const { replaceMock, searchParamsState, pathnameState, openSpotlightMock } =
+  vi.hoisted(() => ({
     replaceMock: vi.fn(),
     searchParamsState: { current: new URLSearchParams() },
+    pathnameState: { current: "/library" },
     openSpotlightMock: vi.fn(),
-  }),
-);
+  }));
 
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/items",
+  usePathname: () => pathnameState.current,
   useRouter: () => ({ replace: replaceMock, push: vi.fn() }),
   useSearchParams: () => searchParamsState.current,
 }));
@@ -47,6 +47,7 @@ afterEach(async () => {
   vi.clearAllMocks();
   vi.useRealTimers();
   searchParamsState.current = new URLSearchParams();
+  pathnameState.current = "/library";
   document.documentElement.classList.remove("dark");
   vi.restoreAllMocks();
 });
@@ -145,7 +146,7 @@ describe("LibrarySearch", () => {
     ).toContain("255, 255, 255");
     expect(animate).toHaveBeenCalledTimes(3);
     expect(focusSpy).toHaveBeenCalled();
-    expect(replaceMock).toHaveBeenCalledWith("/items", { scroll: false });
+    expect(replaceMock).toHaveBeenCalledWith("/library", { scroll: false });
     expect(replaceMock).toHaveBeenCalledTimes(1);
   });
 
@@ -227,7 +228,7 @@ describe("LibrarySearch", () => {
       setInputValue(input, "abc");
       vi.advanceTimersByTime(250);
     });
-    expect(replaceMock).toHaveBeenLastCalledWith("/items?q=abc", {
+    expect(replaceMock).toHaveBeenLastCalledWith("/library?q=abc", {
       scroll: false,
     });
 
@@ -235,6 +236,42 @@ describe("LibrarySearch", () => {
       setInputValue(input, "");
       vi.advanceTimersByTime(250);
     });
-    expect(replaceMock).toHaveBeenLastCalledWith("/items", { scroll: false });
+    expect(replaceMock).toHaveBeenLastCalledWith("/library", { scroll: false });
+  });
+
+  it("routes search from settings to the library without unrelated params", async () => {
+    vi.useFakeTimers();
+    pathnameState.current = "/settings";
+    searchParamsState.current = new URLSearchParams("section=profile");
+    const dom = await renderLibrarySearch();
+    const input = dom.querySelector('input[type="search"]') as HTMLInputElement;
+
+    await act(async () => {
+      setInputValue(input, "react");
+      vi.advanceTimersByTime(250);
+    });
+
+    expect(replaceMock).toHaveBeenLastCalledWith("/library?q=react", {
+      scroll: false,
+    });
+  });
+
+  it("keeps search scoped to a tag and labels that scope", async () => {
+    vi.useFakeTimers();
+    pathnameState.current = "/t/dev/frontend";
+    searchParamsState.current = new URLSearchParams("sort=title_asc");
+    const dom = await renderLibrarySearch();
+    const input = dom.querySelector('input[type="search"]') as HTMLInputElement;
+    expect(input.getAttribute("aria-label")).toBe("Busca nesta tag");
+
+    await act(async () => {
+      setInputValue(input, "react");
+      vi.advanceTimersByTime(250);
+    });
+
+    expect(replaceMock).toHaveBeenLastCalledWith(
+      "/t/dev/frontend?sort=title_asc&q=react",
+      { scroll: false },
+    );
   });
 });

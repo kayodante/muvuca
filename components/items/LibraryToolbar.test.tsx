@@ -85,15 +85,31 @@ describe("LibraryToolbar", () => {
   it("marca a aba ativa conforme o tipo selecionado", async () => {
     const dom = await renderToolbar({ type: "code_component" });
 
-    const codeTab = Array.from(dom.querySelectorAll("button")).find(
+    const codeTab = Array.from(dom.querySelectorAll(".t-tabs button")).find(
       (btn) => btn.textContent === "Code",
     );
     expect(codeTab?.getAttribute("aria-pressed")).toBe("true");
 
-    const allTab = Array.from(dom.querySelectorAll("button")).find(
+    const allTab = Array.from(dom.querySelectorAll(".t-tabs button")).find(
       (btn) => btn.textContent === "Tudo",
     );
     expect(allTab?.getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("keeps type, sort and preview refresh available in the compact mobile row", async () => {
+    const dom = await renderToolbar({ canRefreshPreviews: true });
+    expect(
+      dom.querySelector('button[aria-label="Filtrar por tipo"]'),
+    ).not.toBeNull();
+    expect(
+      dom.querySelector('button[aria-label="Ordenar itens"]'),
+    ).not.toBeNull();
+    expect(
+      dom.querySelector('button[aria-label="Atualizar pré-visualizações"]'),
+    ).not.toBeNull();
+    expect(
+      dom.querySelector(".t-tabs")?.parentElement?.classList.contains("hidden"),
+    ).toBe(true);
   });
 
   it("mostra o botão de ordenar com o rótulo do sort atual", async () => {
