@@ -22,16 +22,14 @@ vi.mock("@/lib/auth/require-user", () => ({
   getOptionalUser: getOptionalUserMock,
 }));
 
-vi.mock("@/components/landing/LandingClientWrapper", () => ({
-  LandingClientWrapper: () => <div data-testid="landing" />,
+vi.mock("@/components/landing/LandingPage", () => ({
+  LandingPage: () => <div data-testid="landing" />,
 }));
 
-vi.mock("@/components/landing/LandingCTA", () => ({
-  LandingCTA: () => <div data-testid="landing-cta" />,
-}));
-
-vi.mock("@/components/landing/LandingFooter", () => ({
-  LandingFooter: () => <div data-testid="landing-footer" />,
+vi.mock("@/lib/i18n/server", async () => ({
+  getLocale: async () => "pt-BR",
+  getDictionary: async () =>
+    (await import("@/lib/i18n/dictionaries/pt-BR")).ptBR,
 }));
 
 import HomePage from "./page";

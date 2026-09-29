@@ -1,9 +1,8 @@
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { getOptionalUser } from "@/lib/auth/require-user";
-import { LandingClientWrapper } from "@/components/landing/LandingClientWrapper";
-import { LandingCTA } from "@/components/landing/LandingCTA";
-import { LandingFooter } from "@/components/landing/LandingFooter";
+import { LandingPage } from "@/components/landing/LandingPage";
+import { getDictionary, getLocale } from "@/lib/i18n/server";
 
 export default async function HomePage() {
   // Every route in this app is dynamic by design: the nonce-based CSP from
@@ -18,11 +17,16 @@ export default async function HomePage() {
     redirect("/library");
   }
 
+  const [dictionary, locale] = await Promise.all([
+    getDictionary(),
+    getLocale(),
+  ]);
+
   return (
     // Landing page is dark-only (no light variant); `dark` here forces the
     // dark tokens regardless of OS preference or any user theme setting.
     <div className="dark flex min-h-screen flex-col bg-background text-foreground selection:bg-primary/30 selection:text-foreground">
-      <LandingClientWrapper cta={<LandingCTA />} footer={<LandingFooter />} />
+      <LandingPage copy={dictionary.landing} locale={locale} />
     </div>
   );
 }

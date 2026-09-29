@@ -838,332 +838,182 @@ export const en: Dictionary = {
   landing: {
     skipToContent: "Skip to main content",
     common: {
-      getStarted: "Get started",
-      seeHow: "See how it works",
+      getStarted: "Open Muvuca",
+      seeHow: "Take a closer look",
       login: "Log in",
-      library: "Library",
     },
     nav: {
-      home: "Home",
-      overview: "Overview",
-      tags: "Tags",
-      search: "Search",
-      import: "Import",
+      about: "About",
+      features: "Features",
+      how: "How it works",
+      faq: "FAQ",
     },
     header: {
       navAriaLabel: "Main navigation",
       mobileNavAriaLabel: "Mobile navigation",
-      openSpotlight: "Open Spotlight",
-      openSearchMobile: "Open quick search",
       openMenu: "Open navigation menu",
-      menuTitle: "Navigation menu",
-      menuDescription: "Links and actions for the landing page",
+      menuTitle: "Explore Muvuca",
+      menuDescription: "Sections and access to Muvuca.",
     },
-    demo: {
-      promptCopied: "Prompt copied.",
-      copyPrompt: "Copy prompt",
-      copy: "Copy",
-      copied: "Copied",
-      promptBadge: "PROMPT",
-      openItem: (title: string) => `Open ${title}`,
-      openItemNewTab: (title: string) => `Open ${title} in a new tab`,
-      tags: {
-        skills: "Skills",
-        design: "Design",
-        branding: "Branding",
-        productDesign: "Product Design",
-        desenvolvimento: "Development",
-        frontend: "Front-end",
-        ia: "AI & Prompts",
-        produtividade: "Productivity",
-        referencias: "References",
-        artigos: "Articles",
-      },
-      items: {
-        item1: {
-          title: "Linear — Issue tracking for high-velocity teams",
-          description:
-            "A dense interface reference with keyboard navigation and millisecond response times.",
-        },
-        item2: {
-          title: "System Prompt: Senior Code Reviewer",
-          description:
-            "Audit focused on database integrity, RLS, and no any types.",
-          contentPreview:
-            "Act as a Senior Code Reviewer. Review the diff prioritizing: 1. Security and RLS; 2. Strict typing, no any; 3. WCAG AA accessibility; 4. Parameterized queries.",
-        },
-        item3: {
-          title: "Minimal Gallery — Curated web design inspiration",
-          description:
-            "A curated directory focused on editorial grids, precise typography, and elegant micro-interactions.",
-        },
-        item4: {
-          title: "Refactoring Accessible Components",
-          description:
-            "Best-practice guide for keyboard navigation and WCAG 2.2 AA compliance.",
-          contentPreview:
-            "Replace clickable divs with <button>, add aria-label to icon buttons, and link error messages with aria-describedby.",
-        },
-        item5: {
-          title: "Tailwind CSS v4 Documentation",
-          description:
-            "Complete guide to the new CSS engine built on native variables and cascade layers.",
-        },
-        item6: {
-          title: "Token Terminal — Financial metrics for crypto",
-          description:
-            "A grid reference with 1px hairlines, Geist Mono typography, and a dense, calm composition.",
-        },
-        item7: {
-          title: "Pure Bookmark DTO Extractor",
-          description:
-            "Safe algorithm for parsing a Netscape Bookmarks file client-side with an inert DOMParser.",
-          contentPreview:
-            "function parseBookmarksHtml(rawHtml: string): BookmarkFolderTree {\n  const parser = new DOMParser();\n  const doc = parser.parseFromString(rawHtml, 'text/html');\n  // strictly extracts textContent and href attributes\n}",
-        },
-      },
+    media: {
+      pending: "Image to be supplied",
+      landscapeFormat: "SCREENSHOT · 16:9",
+      detailFormat: "CROP OR VIDEO · 4:3",
     },
     hero: {
-      title: "Organize the muvuca you save on the internet.",
+      eyebrow: "A little library for your best discoveries",
+      title: "Save what inspires. Find it when you need it.",
       subtitle:
-        "Links and prompts organized in a visual library built to help you find again what you decided to keep.",
-      openSearchAria: "Open the demo's quick search",
-      searchPlaceholder: "Search your library...",
-      gridView: "Grid view",
-      listView: "List view",
-      clearFilter: "Clear",
-      allItems: "All items",
-      itemsShown: (count: number, filtered: boolean) =>
-        `(${count} ${count === 1 ? "item shown" : "items shown"}${filtered ? " by the filter" : ""})`,
-      activeFilter: (tagName: string) => `Active filter: ${tagName}`,
+        "Links, prompts, and code snippets. Your own place to collect good discoveries and come back to them when the time is right.",
+      assetTitle: "Your library, in one picture.",
+      assetDescription:
+        "A screenshot of the dark library with a curated selection of links, prompts, and tags.",
     },
-    problem: {
+    intro: {
+      label: "A place of your own",
       title:
-        "The real work starts when you forget where you saved something and have to find it again.",
+        "The internet is a beautiful mess. Your saved discoveries don't have to be.",
+      body: "A reference for your next project. An article to read later. That prompt that worked just right. Muvuca brings it all into a visual library, organized your way and easy to find again.",
+      signature: "FEWER OPEN TABS. MORE IDEAS WITHIN REACH.",
+    },
+    features: {
+      label: "Inside Muvuca",
+      title: "Keep it close. Give it a place.",
       subtitle:
-        "Most bookmarking tools treat your links as one endless, unsorted list.",
-      steps: {
-        scattered: {
-          title: "Bookmarks scattered everywhere",
-          description:
-            "Links end up trapped across dozens of tabs, notes, and different tools, with no central place to retrieve them later.",
-        },
-        rigid: {
-          title: "Folders that don't match how you think",
-          description:
-            "A technical or visual reference almost always makes sense in more than one context. Traditional folders force you to pick just one drawer.",
-        },
-        lost: {
-          title: "Searching takes more effort than the content is worth",
-          description:
-            "As the library grows, remembering which folder or device you saved something in takes more work than just finding what you need.",
-        },
-        solution: {
-          title: "Instant retrieval from any angle",
-          description:
-            "Hierarchical tags and automatic rollup power an instant search that scans titles, descriptions, and prompts in milliseconds.",
-        },
-      },
-      visuals: {
-        scattered: {
-          tabsOpen: "28 tabs open",
-          mobileNotes: "Phone notes",
-          codeReviewTitle: "System Prompt: Code Review",
-          desktopTabs: "Browser tabs (desktop)",
-          uiPatternsTitle: "Linear UI Patterns & Architecture",
-          bookmarksOther: "Bookmarks / Other",
-          tailwindDocsTitle: "Tailwind CSS v4 Documentation",
-          fragmented: "Fragmented across 3 different devices",
-        },
-        rigid: {
-          treeLabel: "Traditional Rigid Tree",
-          oneFolderPerItem: "1 folder per item",
-          bookmarksRoot: "📁 Bookmarks",
-          work: "├── 📁 Work",
-          design: "│ └── 📁 Design",
-          designSystemTitle: "📄 Design System & Tokens",
-          stuckInDesign: "Stuck in Design",
-          personal: "└── 📁 Personal",
-          frontendEngineering: " └── 📁 Front-end Engineering",
+        "From your first reference to an entire collection: a library to save, organize, and rediscover.",
+      tabsLabel: "Muvuca features",
+      items: [
+        {
+          id: "library",
+          number: "01",
+          label: "Library",
+          assetTitle: "Your library, in one picture.",
+          assetDescription:
+            "An overview of the dark library, with real cards and thumbnails.",
           caption:
-            "This link is both design and code, but the folder only accepts one of the two.",
+            "Links, prompts, and code live together in one visual library.",
         },
-        lost: {
-          searchAttempt: "Search attempt",
-          noMatch: "No match",
-          queryExample: '"typescript refactor prompt"',
-          untitledGist: "Untitled (1), https://gist.github.com/...",
-          linkSavedOn: "Link saved on 12/04/2024",
-          newTabAiTool: "New tab - AI Tool",
-          caption: "The prompt is saved somewhere, but search can't reach it.",
+        {
+          id: "tags",
+          number: "02",
+          label: "Tags",
+          assetTitle: "Connections that make sense.",
+          assetDescription:
+            "A screenshot or video of tags, subtags, and their related items.",
+          caption:
+            "An item can belong to more than one tag. Your organization follows your thinking.",
         },
-        muvuca: {
-          tagRollupActive: "Tag Rollup Active",
-          instantRetrieval: "Instant retrieval",
-          searchQuery: "refactor",
-          itemsFound: (n: number) => `${n} items found`,
-          readyToCopy: "Ready to copy",
-          iaTagShort: "AI",
-          caption: "Found through any child tag or the parent tag.",
+        {
+          id: "search",
+          number: "03",
+          label: "Search",
+          assetTitle: "From a thought to a result.",
+          assetDescription:
+            "A screenshot or video of a search, showing the query and its results.",
+          caption:
+            "Find things by title, domain, description, or prompt content.",
         },
-      },
+        {
+          id: "prompts",
+          number: "04",
+          label: "Prompts",
+          assetTitle: "Ready to use again.",
+          assetDescription:
+            "A screenshot or video of an open prompt and the copy action.",
+          caption:
+            "Save what worked. Copy the full prompt whenever you need it.",
+        },
+        {
+          id: "import",
+          number: "05",
+          label: "Import",
+          assetTitle: "Bring your discoveries along.",
+          assetDescription:
+            "A screenshot of the import preview, including folders and the bookmark summary.",
+          caption:
+            "Import browser bookmarks. Folders and subfolders become tags.",
+        },
+      ],
     },
-    galleryOverview: {
-      title: "A library that stays readable as it grows.",
+    details: {
+      label: "Made for your way of thinking",
+      title: "Saving is just the beginning.",
       subtitle:
-        "Muvuca gathers your items in a visual gallery, keeps search close at hand, and uses tags for context without turning your collection into a tree you can't navigate.",
-      heading: "Featured Collection",
-      itemsCount: (count: number) => `(${count} items)`,
-      filterAriaLabel: "Filter collection by type",
-      filters: {
-        all: "All",
-        links: "Links",
-        prompts: "Prompts",
-      },
+        "The value is in coming back to an idea. With context, without retracing every step.",
+      items: [
+        {
+          number: "02",
+          label: "Connected organization",
+          title: "One idea can belong in more than one place.",
+          body: "Group your references with tags and subtags. Open a tag to find its items and everything in its descendants, without duplicates.",
+          note: "Different paths to the same discovery.",
+          assetTitle: "Tags in context.",
+          assetDescription:
+            "A close-up of the tag tree and related items. Reuse asset 02.",
+        },
+        {
+          number: "03",
+          label: "Find it again",
+          title: "Remember a word. Let search do the rest.",
+          body: "Search for what you remember and narrow it down by tag or item type. The right reference stays within reach, even as your library grows.",
+          note: "Less searching. More creating.",
+          assetTitle: "One search, useful results.",
+          assetDescription:
+            "A short search recording or a close-up of the results. Reuse asset 03.",
+        },
+        {
+          number: "05",
+          label: "Bring what's already yours",
+          title: "A new home for your bookmarks.",
+          body: "Import your browser's bookmarks file and review the preview before confirming. Your folder structure becomes a tree of tags.",
+          note: "Start with the collection you've already built.",
+          assetTitle: "From bookmarks to library.",
+          assetDescription:
+            "A close-up of the import preview, with folders and counts. Reuse asset 05.",
+        },
+      ],
     },
-    tagRollup: {
-      title: "Organize once, find it any way after.",
-      subtitle:
-        "Tags can have children, and an item can belong to more than one. Open a parent tag and Muvuca automatically gathers the items from the whole hierarchy, without duplicating content.",
-      treeLabel: "Tag Tree (Click to try it)",
-      activeTagLabel: "Active tag:",
-      itemsAggregated: (count: number, subtagCount: number) =>
-        `${count} items aggregated ${subtagCount > 0 ? `(from ${subtagCount} subtags)` : ""}`,
-      filterByTag: (name: string) => `Filter by ${name}`,
-    },
-    searchDemo: {
-      title: "You don't need to remember where you saved it.",
-      subtitle:
-        "Search by title, domain, description, or content, and combine search with your tags to quickly narrow your library down to what matters.",
-      inputAriaLabel: "Interactive search demo",
-      placeholder: "Search by title, domain, description, or prompt...",
-      tryQueries: "Try these searches:",
-      openSpotlightShortcut: "Open Spotlight (⌘K)",
-      resultsCount: (count: number) =>
-        `${count} ${count === 1 ? "result found" : "results found"}`,
-      noResults: (query: string) => `No item matches the search "${query}".`,
-    },
-    itemTypes: {
-      title: "Links and prompts live in the same collection.",
-      subtitle:
-        "Each item type has its own visual identity and contextual actions, without breaking the library's grid.",
-      linkCardLabel: "Reference Link",
-      linkCardDescription:
-        "A dense interface reference with keyboard navigation and millisecond response times.",
-      linkCaption:
-        "The domain stands alone, in Geist Mono. The tag inherits the item's hierarchy. Opening the link always uses",
-      promptCardLabel: "AI Prompt & Instruction",
-      copyPromptDemoAria: "Copy demo prompt",
-      promptCardDescription:
-        "System instruction for OWASP security audits and type consistency.",
-      promptContent:
-        "Act as a Senior Code Reviewer. Review the diff prioritizing:\n1. Data security and RLS integrity;\n2. Strict TypeScript typing with no any;\n3. WCAG 2.2 AA accessibility (keyboard and contrast);\n4. No concatenated SQL queries.\n\nReturn objective findings categorized by severity.",
-      collapse: "Collapse preview",
-      expand: "View full prompt",
-      promptCardCaption:
-        "The preview keeps the original formatting, and copying goes to the clipboard in one click. Expanding shows the full prompt.",
-    },
-    import: {
-      title: "Bring in your bookmarks without losing your folder structure.",
-      subtitle:
-        "Import your browser bookmarks and turn folders and subfolders into a tag hierarchy before confirming what enters your library.",
-      stagesLabel: "Migration steps:",
-      stage1: "1. Bookmarks File",
-      stage2: "2. Safe Analysis in the Browser",
-      stage3: "3. Muvuca Tag Tree",
-      sourceHeading: "Browser Bookmarks (.html)",
-      sourceCount: "114 links",
-      folderDesign: "📁 Design",
-      folderInspiration: "↳ 📁 Inspiration (54 links)",
-      folderTools: "↳ 📁 Tools (18 links)",
-      folderDev: "📁 Development",
-      folderReact: "↳ 📁 React & Next.js (24 links)",
-      folderAi: "↳ 📁 AI & LLMs (18 links)",
-      conversion: "1:1 conversion",
-      targetHeading: "Muvuca Tag Structure",
-      tagsCreated: "6 tags created",
-      tagDesign: "# Design",
-      tagInspiration: "# Inspiration [child tag]",
-      tagTools: "# Tools [child tag]",
-      tagDev: "# Development",
-      tagReact: "# React & Next.js [child tag]",
-      tagAi: "# AI & LLMs [child tag]",
-      parserNote: "Inert client-side parser (no SSRF, no raw HTML sent)",
-      parserCode:
-        "const parser = new DOMParser();\nconst doc = parser.parseFromString(rawHtml, 'text/html');\n// Pure extraction of textContent and validated href attributes (http/https only)\n// The server only receives the structured DTO of tags and links.",
-      caption:
-        "The file is processed locally. Before saving, you see how many items are valid and how many are duplicates.",
-    },
-    collections: {
-      title: "Organize every collection your own way.",
-      subtitle:
-        "Build the taxonomy that makes sense to you and group any kind of interest. Muvuca shapes itself around your personal collection.",
-      items: {
-        skills: {
-          title: "Skills & Engineering",
-          countHint: "128 items",
-          tags: ["Front-end", "Next.js", "Security"],
-          description:
-            "Technical articles, docs, and snippets essential to your daily coding flow.",
+    faq: {
+      label: "Frequently asked questions",
+      title: "Before you save your first idea.",
+      subtitle: "A few answers to help you get to know Muvuca.",
+      items: [
+        {
+          question: "What can I save in Muvuca?",
+          answer:
+            "Links to web pages, prompts, and code snippets. Add descriptions and tags to keep the context behind each discovery.",
         },
-        design: {
-          title: "Design & Art Direction",
-          countHint: "94 items",
-          tags: ["Typography", "Branding", "Design System"],
-          description:
-            "Visual references, editorial catalogs, and high-fidelity components.",
+        {
+          question: "How are tags different from folders?",
+          answer:
+            "An item can have several tags. Tags can also have subtags: opening a parent tag shows its own items and those of its descendants, without duplicate results.",
         },
-        prompts: {
-          title: "AI Prompts",
-          countHint: "42 items",
-          tags: ["Code Review", "Writing", "Refactoring"],
-          description:
-            "System instructions, agent templates, and reusable commands ready to copy.",
+        {
+          question: "Can I bring my browser bookmarks?",
+          answer:
+            "Yes. Export your bookmarks as an HTML file from your browser and import it into Muvuca. Review a preview before confirming, and your folders and subfolders become tags.",
         },
-        wishlist: {
-          title: "Wishlist",
-          countHint: "31 items",
-          tags: ["Books", "Hardware", "Gifts"],
-          description:
-            "Things to buy and recommendations, without the mess of lists scattered across notes.",
+        {
+          question: "Is my library public?",
+          answer:
+            "No. Your library is private and linked to your account. Muvuca does not offer public sharing of your items.",
         },
-        videos: {
-          title: "Videos & Talks",
-          countHint: "56 items",
-          tags: ["Talks", "Tutorials", "Podcasts"],
-          description: "Recordings you want to watch calmly over the weekend.",
+        {
+          question: "Does it work on mobile and in other languages?",
+          answer:
+            "Yes. Muvuca works in desktop and mobile browsers, with a Brazilian Portuguese and English interface. The content you save stays in its original language.",
         },
-        articles: {
-          title: "Articles & Essays",
-          countHint: "67 items",
-          tags: ["Philosophy", "Product", "Web History"],
-          description:
-            "Long reads and essays saved for future reference and research.",
-        },
-      },
+      ],
     },
     cta: {
-      title: "Turn your muvuca into a library.",
-      subtitle: "Keep what matters without relying on memory to find it later.",
-    },
-    commandPalette: {
-      dialogAriaLabel: "Quick search in the demo library",
-      placeholder: "Search links, prompts, domains, or tags...",
-      inputAriaLabel: "Type a search",
-      closeAria: "Close quick search",
-      filterByTagLabel: "Filter by tag:",
-      allTags: (count: number) => `All (${count})`,
-      noResults: (query: string) => `No item found for "${query}".`,
-      open: "Open",
-      navigateHint: "navigate",
-      selectHint: "select",
-      closeHint: "close",
-      itemCount: (count: number) =>
-        `${count} ${count === 1 ? "item" : "items"}`,
+      title: "Your next idea might be in what you've already saved.",
+      subtitle:
+        "Give your discoveries a place. And yourself an easy way back to them.",
     },
     footer: {
       tagline: "What you save stays easy to find.",
       navAriaLabel: "Footer",
+      language: "Language",
       copyright: (year: number) => `© ${year} Muvuca. All rights reserved.`,
     },
   },
