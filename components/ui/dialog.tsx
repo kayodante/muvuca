@@ -1,5 +1,6 @@
 "use client";
 
+import { scrimClassName } from "@/components/ui/scrim";
 import * as React from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 
@@ -32,7 +33,8 @@ function DialogOverlay({
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-black/40 duration-(--motion-base) ease-out-muvuca dark:bg-black/60 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:duration-(--motion-fast) data-closed:fade-out-0",
+        scrimClassName,
+        "fixed inset-0 isolate z-50 duration-(--motion-base) ease-out-muvuca data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:duration-(--motion-fast) data-closed:fade-out-0",
         className,
       )}
       {...props}
