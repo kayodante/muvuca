@@ -363,6 +363,9 @@ export const en: Dictionary = {
     signOut: {
       pending: "Signing out",
       label: "Sign out",
+      confirmTitle: "Sign out?",
+      confirmDescription:
+        "You will need to sign in again to access your library.",
     },
     forgotPassword: {
       badge: "RECOVER ACCESS",

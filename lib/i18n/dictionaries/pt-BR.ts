@@ -391,6 +391,9 @@ export const ptBR = {
     signOut: {
       pending: "Saindo da conta",
       label: "Sair",
+      confirmTitle: "Sair da conta?",
+      confirmDescription:
+        "Você precisará fazer login novamente para acessar sua biblioteca.",
     },
     forgotPassword: {
       badge: "RECUPERAR ACESSO",

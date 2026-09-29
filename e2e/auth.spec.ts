@@ -66,6 +66,7 @@ test("full password login and logout", async ({ page }) => {
   // Sair vive no menu de conta do rodapé da sidebar, não mais no topbar.
   await page.getByRole("button", { name: SEEDED_EMAIL }).click();
   await page.getByRole("button", { name: "Sair" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Sair" }).click();
   await expect(page).toHaveURL(/\/login/);
 
   // Session is gone: the protected route redirects again.
