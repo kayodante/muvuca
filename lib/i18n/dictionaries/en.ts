@@ -35,6 +35,16 @@ export const en: Dictionary = {
       saving: "Saving...",
       saved: "Name saved.",
       removed: "Name removed.",
+      photo: {
+        upload: "Upload photo",
+        change: "Change photo",
+        remove: "Remove photo",
+        uploading: "Uploading...",
+        removing: "Removing...",
+        hint: "JPEG, PNG, WebP, GIF, or AVIF. The photo is cropped to a square from the center.",
+        updated: "Photo updated.",
+        removed: "Photo removed.",
+      },
     },
     appearance: {
       heading: "Appearance & language",
@@ -772,6 +782,9 @@ export const en: Dictionary = {
     invalidFolderHierarchy: "Invalid folder hierarchy.",
     invalidBookmarkFolder: "Invalid bookmark folder.",
     passwordMismatch: "Passwords don't match.",
+    avatarUnsupportedFormat:
+      "Unsupported format. Use JPEG, PNG, WebP, GIF, or AVIF.",
+    avatarTooLarge: "Use an image up to 2 MB.",
   },
   errors: {
     unknown: "Something went wrong. Please try again.",
@@ -820,6 +833,8 @@ export const en: Dictionary = {
     invalidTheme: "Invalid theme.",
     themeUpdateFailed: "Couldn't update the appearance.",
     displayNameSaveFailed: "Couldn't save your name.",
+    avatarSaveFailed: "Couldn't save your photo.",
+    avatarRemoveFailed: "Couldn't remove your photo.",
     backupNeedsRevalidation: "The backup file needs to be checked again.",
     backupRestoreFailed: "Couldn't complete the restore.",
     backupHierarchyInvalid: "The file's tag hierarchy is invalid.",

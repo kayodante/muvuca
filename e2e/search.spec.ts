@@ -58,7 +58,11 @@ async function createItem(
   await expect(dialog).toBeHidden();
 }
 
-/** Abre `/t/<caminho>` pelo link da tag na barra lateral. */
+/**
+ * Abre `/t/<caminho>` pelo link da tag na barra lateral. `name` é o nome
+ * acessível inteiro, que termina na contagem rollup da tag ("Trabalho 3"):
+ * casar exato também prova o contador que a sidebar mostra.
+ */
 async function openTagFromSidebar(page: Page, name: string) {
   await page
     .getByRole("navigation", { name: "Navegação principal" })
@@ -291,7 +295,8 @@ test("abrir a tag pai traz os itens das tags filhas (rollup)", async ({
   // O escopo por tag é a barra lateral, não um filtro da barra de filtros:
   // clicar na tag abre `/t/<caminho>`, que roda o mesmo rollup indexado.
   await page.goto("/library");
-  await openTagFromSidebar(page, "Trabalho");
+  // Girafa e Acordeao na própria tag, Zebra só na filha: 3 no rollup.
+  await openTagFromSidebar(page, "Trabalho 3");
 
   // "Zebra listrada" só tem a tag filha: aparecer aqui é exatamente o rollup.
   await expect(
@@ -323,7 +328,8 @@ test("item com tag pai e filha aparece uma única vez no rollup", async ({
   });
 
   await page.goto("/library");
-  await openTagFromSidebar(page, "Trabalho");
+  // Marcado com pai e filha, conta uma vez também na sidebar.
+  await openTagFromSidebar(page, "Trabalho 1");
 
   await expect(page.getByRole("heading", { name: "Onca pintada" })).toHaveCount(
     1,

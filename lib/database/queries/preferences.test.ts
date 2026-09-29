@@ -45,14 +45,20 @@ describe("getUserPreferences", () => {
       theme: "system",
       displayName: null,
       locale: null,
+      avatarHash: null,
     });
 
     expect(logEventMock).not.toHaveBeenCalled();
   });
 
-  it("returns the saved display name and locale alongside the theme", async () => {
+  it("returns the saved display name, locale and avatar hash alongside the theme", async () => {
     const maybeSingle = vi.fn().mockResolvedValue({
-      data: { theme: "dark", display_name: "Kayo", locale: "en" },
+      data: {
+        theme: "dark",
+        display_name: "Kayo",
+        locale: "en",
+        avatar_hash: "a".repeat(64),
+      },
       error: null,
     });
     const select = vi.fn().mockReturnValue({ maybeSingle });
@@ -63,8 +69,11 @@ describe("getUserPreferences", () => {
       theme: "dark",
       displayName: "Kayo",
       locale: "en",
+      avatarHash: "a".repeat(64),
     });
-    expect(select).toHaveBeenCalledWith("theme, display_name, locale");
+    // select("*") temporarily until migration 0035 reaches production --
+    // see the comment on getUserPreferences for why.
+    expect(select).toHaveBeenCalledWith("*");
   });
 
   it("falls back to null for an invalid saved locale", async () => {
@@ -80,6 +89,21 @@ describe("getUserPreferences", () => {
       theme: "dark",
       displayName: null,
       locale: null,
+      avatarHash: null,
+    });
+  });
+
+  it("falls back to null avatarHash when the column is missing (pre-migration deploy window)", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({
+      data: { theme: "dark", display_name: null, locale: "en" },
+      error: null,
+    });
+    const select = vi.fn().mockReturnValue({ maybeSingle });
+    const from = vi.fn().mockReturnValue({ select });
+    createClientMock.mockResolvedValue({ from });
+
+    await expect(getUserPreferences()).resolves.toMatchObject({
+      avatarHash: null,
     });
   });
 });

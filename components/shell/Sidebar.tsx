@@ -25,15 +25,19 @@ export function Sidebar({
   theme,
   userEmail,
   userName,
+  avatarHash,
   signOutSlot,
   itemsCount,
+  tagCounts,
 }: {
   tags?: FlatTag[];
   theme: Theme;
   userEmail?: string | null;
   userName?: string | null;
+  avatarHash?: string | null;
   signOutSlot: ReactNode;
   itemsCount?: number;
+  tagCounts?: Record<string, number>;
 }) {
   const t = useDictionary();
   return (
@@ -66,7 +70,7 @@ export function Sidebar({
             }}
           />
         </div>
-        <TagNavigation tags={tags ?? []} />
+        <TagNavigation tags={tags ?? []} counts={tagCounts} />
       </div>
 
       <div className="shrink-0 border-t border-r border-border bg-secondary p-2">
@@ -80,6 +84,7 @@ export function Sidebar({
         <SidebarUserMenu
           userEmail={userEmail}
           userName={userName}
+          avatarHash={avatarHash}
           signOutSlot={signOutSlot}
         />
       </div>

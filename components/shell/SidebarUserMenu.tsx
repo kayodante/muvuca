@@ -30,10 +30,12 @@ import {
 export function SidebarUserMenu({
   userEmail,
   userName,
+  avatarHash,
   signOutSlot,
 }: {
   userEmail?: string | null;
   userName?: string | null;
+  avatarHash?: string | null;
   signOutSlot: ReactNode;
 }) {
   const t = useDictionary();
@@ -52,7 +54,7 @@ export function SidebarUserMenu({
           />
         }
       >
-        <UserAvatar name={displayName} />
+        <UserAvatar name={displayName} avatarHash={avatarHash} />
         <div className="flex min-w-0 flex-1 flex-col">
           <span
             dir="auto"

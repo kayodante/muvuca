@@ -18,7 +18,17 @@ import { Input } from "@/components/ui/input";
 import { useDictionary } from "@/lib/i18n/client";
 
 /** Compact, navigation-only tag tree for the persistent app shell. */
-export function TagNavigation({ tags }: { tags: FlatTag[] }) {
+export function TagNavigation({
+  tags,
+  counts,
+}: {
+  tags: FlatTag[];
+  /**
+   * Rollup item count per tag id (the tag plus its descendants). Absent
+   * means no counter at all; a tag missing from it has 0 items.
+   */
+  counts?: Record<string, number>;
+}) {
   const t = useDictionary();
   const pathname = usePathname();
   const nodes = buildTagTree(tags);
@@ -81,6 +91,7 @@ export function TagNavigation({ tags }: { tags: FlatTag[] }) {
               pathname={pathname}
               expandedById={expandedById}
               setExpandedById={setExpandedById}
+              counts={counts}
             />
           ))}
         </ul>
@@ -103,6 +114,7 @@ function TagNavigationRow({
   pathname,
   expandedById,
   setExpandedById,
+  counts,
 }: {
   node: TagNode;
   depth: number;
@@ -110,11 +122,13 @@ function TagNavigationRow({
   pathname: string;
   expandedById: Record<string, boolean>;
   setExpandedById: Dispatch<SetStateAction<Record<string, boolean>>>;
+  counts?: Record<string, number>;
 }) {
   const t = useDictionary();
   const hasChildren = node.children.length > 0;
   const href = getTagHref(node);
   const active = pathname === href;
+  const count = counts ? (counts[node.id] ?? 0) : undefined;
   // A non-empty query forces every subtree open so a deep match stays
   // reachable, without discarding the user's own collapse state -- clearing
   // the query restores whatever `expanded` already held.
@@ -127,7 +141,7 @@ function TagNavigationRow({
         className={cn(
           // Same states as NavLink (Figma `all-button`): selection is the
           // raised fill, never hue alone.
-          "flex h-8 min-w-0 items-center rounded-sm pr-1 transition-[background-color,box-shadow,color] duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none",
+          "flex h-8 min-w-0 items-center rounded-sm pr-1.5 transition-[background-color,box-shadow,color] duration-(--motion-fast) ease-out-muvuca motion-reduce:transition-none",
           active
             ? "bg-secondary text-foreground shadow-light inset-shadow-[0_0_0_999px] inset-shadow-light-1"
             : "text-muted-foreground focus-within:bg-light-2 focus-within:shadow-[inset_0_0_0_0.5px_var(--color-light-4),inset_0_1px_0_0_var(--color-light-2)] hover:bg-light-2 hover:shadow-[inset_0_0_0_0.5px_var(--color-light-4),inset_0_1px_0_0_var(--color-light-2)]",
@@ -179,20 +193,33 @@ function TagNavigationRow({
             // No ring offset inside the tree: the subtree clips its own
             // overflow while expanding, and an offset ring on the first or
             // last row would be shaved by that clip.
-            "group/taglink text-body-lg flex min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1 transition-[scale,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.97] motion-reduce:active:scale-100",
+            "group/taglink text-body-lg flex min-w-0 flex-1 items-center gap-1 rounded-md px-1.5 py-1 transition-[scale,color] duration-(--motion-fast) ease-out-muvuca focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:scale-[0.97] motion-reduce:active:scale-100",
             active ? "text-foreground" : "text-muted-foreground",
           )}
         >
-          <span
-            aria-hidden="true"
-            className={cn(
-              "size-2 shrink-0 rounded-full transition-transform duration-(--motion-fast) ease-out-muvuca group-hover/taglink:scale-125 motion-reduce:transition-none motion-reduce:group-hover/taglink:scale-100",
-              swatchClassFor(node.colorToken),
-            )}
-          />
-          <span dir="auto" className="truncate">
-            {node.name}
+          <span className="flex min-w-0 flex-1 items-center gap-2">
+            <span
+              aria-hidden="true"
+              className={cn(
+                "size-2 shrink-0 rounded-full transition-transform duration-(--motion-fast) ease-out-muvuca group-hover/taglink:scale-125 motion-reduce:transition-none motion-reduce:group-hover/taglink:scale-100",
+                swatchClassFor(node.colorToken),
+              )}
+            />
+            <span dir="auto" className="truncate">
+              {node.name}
+            </span>
           </span>
+          {/* Figma nav-button (222:1918): plain mono figure, no pill -- this
+              row already carries a swatch, chevron and guides. Takes the
+              link's color, so it turns `ink` with the active row. */}
+          {count !== undefined && (
+            <span
+              data-slot="tag-count"
+              className="text-label-md shrink-0 font-mono tracking-[-0.1px]"
+            >
+              {count}
+            </span>
+          )}
         </Link>
       </div>
       {hasChildren && (
@@ -211,6 +238,7 @@ function TagNavigationRow({
                 pathname={pathname}
                 expandedById={expandedById}
                 setExpandedById={setExpandedById}
+                counts={counts}
               />
             ))}
           </ul>
