@@ -110,6 +110,8 @@ export function TagNavigation({
 function TagNavigationRow({
   node,
   depth,
+  guides = [],
+  isLast = false,
   filtering,
   pathname,
   expandedById,
@@ -118,6 +120,9 @@ function TagNavigationRow({
 }: {
   node: TagNode;
   depth: number;
+  /** Per ancestor column: whether that ancestor has siblings below it. */
+  guides?: boolean[];
+  isLast?: boolean;
   filtering: boolean;
   pathname: string;
   expandedById: Record<string, boolean>;
@@ -152,15 +157,34 @@ function TagNavigationRow({
             chevron slot never gets a guide. Decorative and out of the tab
             order; the row's hover/active highlight still covers these
             columns because they live inside the same flex container. */}
-        {Array.from({ length: depth }, (_, index) => (
+        {guides.map((continues, index) => (
           <span
             key={index}
             aria-hidden="true"
             className="flex w-7 shrink-0 justify-center self-stretch"
           >
-            <span className="w-px self-stretch bg-border" />
+            {continues && (
+              <span className="w-px self-stretch bg-muted-foreground/40" />
+            )}
           </span>
         ))}
+        {depth > 0 && (
+          // Branch elbow into this row: the trunk runs on past it unless this
+          // is the last sibling, where it curves off and ends.
+          <span aria-hidden="true" className="relative w-7 shrink-0 self-stretch">
+            {!isLast && (
+              <span className="absolute inset-y-0 left-1/2 w-px bg-muted-foreground/40" />
+            )}
+            {/* Reaches the chevron on a branch; on a leaf it crosses the empty
+                chevron slot to stop just short of the swatch. */}
+            <span
+              className={cn(
+                "absolute top-0 left-1/2 h-1/2 rounded-bl-md border-b border-l border-muted-foreground/40",
+                hasChildren ? "w-4" : "w-10",
+              )}
+            />
+          </span>
+        )}
         {hasChildren ? (
           <button
             type="button"
@@ -229,11 +253,13 @@ function TagNavigationRow({
         // the tab order and the accessibility tree.
         <div className="t-acc-panel">
           <ul className="t-acc-panel-inner -m-px p-px" inert={!open}>
-            {node.children.map((child) => (
+            {node.children.map((child, index) => (
               <TagNavigationRow
                 key={child.id}
                 node={child}
                 depth={depth + 1}
+                guides={depth === 0 ? [] : [...guides, !isLast]}
+                isLast={index === node.children.length - 1}
                 filtering={filtering}
                 pathname={pathname}
                 expandedById={expandedById}
