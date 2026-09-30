@@ -43,6 +43,7 @@ import { useDictionary } from "@/lib/i18n/client";
 import { useSpotlight } from "./SpotlightContext";
 import { QuickLookPreview } from "./QuickLookPreview";
 import { cn } from "@/lib/utils";
+import { scrimClassName } from "@/components/ui/scrim";
 import { toastError, toastSuccess } from "@/components/states/Toast";
 import { typeMetaFor } from "@/components/items/typeMeta";
 import { CopyStateIcon } from "@/components/items/CopyStateIcon";
@@ -982,9 +983,8 @@ export function MuvucaSpotlight({
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
     <div
       className={cn(
-        // No blur: DESIGN reserves the glass treatment for media overlays,
-        // not the app-wide scrim. dark:/40 -> dark:/60 mirrors DialogOverlay.
-        "fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-[8vh] duration-(--motion-base) ease-out-muvuca motion-reduce:transition-none sm:pt-[10vh] dark:bg-black/60",
+        scrimClassName,
+        "fixed inset-0 z-50 flex items-start justify-center p-4 pt-[8vh] duration-(--motion-base) ease-out-muvuca motion-reduce:transition-none sm:pt-[10vh]",
         closing
           ? "animate-out duration-(--motion-fast) fade-out"
           : "animate-in fade-in",

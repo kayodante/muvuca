@@ -185,6 +185,24 @@ describe("extractHeadMetadata", () => {
     expect(result.description).toBe("Linha um Linha dois com controle");
   });
 
+  it("strips exactly C0 controls except tab/LF/CR, plus DEL", () => {
+    const whitespace = new Set([0x09, 0x0a, 0x0d]);
+    for (const codePoint of [...Array(0x21).keys(), 0x7f, 0x80]) {
+      const char = String.fromCodePoint(codePoint);
+      const html = `<head><meta property="og:title" content="a${char}b" /></head>`;
+      const expected = whitespace.has(codePoint)
+        ? "a b"
+        : codePoint <= 0x1f || codePoint === 0x7f
+          ? "ab"
+          : `a${char}b`;
+
+      expect(
+        extractHeadMetadata(html, baseUrl).title,
+        `U+${codePoint.toString(16)}`,
+      ).toBe(expected);
+    }
+  });
+
   it("truncates title/description/siteName at their length limits without splitting a surrogate pair", () => {
     const longTitle = "T".repeat(239) + "\u{1F600}" + "resto";
     const html = `<head><meta property="og:title" content="${longTitle}" /></head>`;

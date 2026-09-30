@@ -588,9 +588,10 @@ body {
   }
 }
 /* While the transition owns the movement, the popup's own entrance would
-   play a second, competing animation on top of it. */
-:root[data-view-transition] [data-slot="dialog-content"],
-:root[data-view-transition] [data-slot="dialog-overlay"] {
+   play a second, competing animation on top of it. The overlay is left
+   alone: it is not part of the morph, and suppressing it made its fade-in
+   restart from 0 once the attribute came off -- a visible flash (AAA-241). */
+:root[data-view-transition] [data-slot="dialog-content"] {
   animation: none;
   transition: none;
 }
@@ -1151,7 +1152,7 @@ body {
   grid-template-rows: 0fr;
   transition: grid-template-rows var(--acc-collapse) var(--acc-ease);
 }
-.t-acc[data-open="true"] .t-acc-panel {
+.t-acc[data-open="true"] > .t-acc-panel {
   grid-template-rows: 1fr;
   transition: grid-template-rows var(--acc-expand) var(--acc-ease);
 }
@@ -1163,7 +1164,7 @@ body {
     opacity var(--acc-collapse) var(--acc-ease),
     filter var(--acc-collapse) var(--acc-ease);
 }
-.t-acc[data-open="true"] .t-acc-panel-inner {
+.t-acc[data-open="true"] > .t-acc-panel > .t-acc-panel-inner {
   opacity: 1;
   filter: blur(0);
   transition:
@@ -1179,7 +1180,7 @@ body {
 .t-acc-chevron path {
   vector-effect: non-scaling-stroke;
 }
-.t-acc[data-open="true"] .t-acc-chevron {
+.t-acc[data-open="true"] > div > button > .t-acc-chevron {
   transform: scaleY(-1);
 }
 

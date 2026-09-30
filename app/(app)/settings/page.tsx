@@ -1,3 +1,4 @@
+import { ChangePasswordButton } from "@/components/settings/ChangePasswordButton";
 import { ExportLibraryCard } from "@/components/settings/ExportLibraryCard";
 import { ImportBackupCard } from "@/components/settings/ImportBackupCard";
 import { LanguageSelect } from "@/components/settings/LanguageSelect";
@@ -116,6 +117,15 @@ export default async function SettingsPage() {
             </p>
           </div>
           <SignOutButton />
+        </div>
+        <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <div className="min-w-0 space-y-1">
+            <p className="text-label-md">{t.settings.account.passwordLabel}</p>
+            <p className="text-metadata text-muted-foreground">
+              {t.settings.account.passwordHint}
+            </p>
+          </div>
+          <ChangePasswordButton />
         </div>
       </section>
 

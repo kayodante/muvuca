@@ -252,7 +252,7 @@ function parseAttributes(tag: string): Record<string, string> {
 // or exceed the matching Zod `.max()` limit applied downstream in PR 3).
 // ---------------------------------------------------------------------
 
-const CONTROL_CHARS_PATTERN = /[ --]/g;
+const CONTROL_CHARS_PATTERN = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 
 function stripControlChars(value: string): string {
   return value.replace(CONTROL_CHARS_PATTERN, "");
