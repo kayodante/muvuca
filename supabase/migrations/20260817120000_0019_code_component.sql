@@ -6,8 +6,18 @@
 
 -- 1. Adiciona valor ao enum item_type
 alter type public.item_type add value if not exists 'code_component';
+-- O commit é obrigatório: o Postgres não deixa usar um valor de enum na mesma
+-- transação que o criou (a constraint abaixo usa 'code_component').
+--
+-- Sem `begin;` depois dele. O Supabase CLI até 2.116 embrulhava o arquivo numa
+-- transação própria e fechava o `begin;` que ficava sobrando; a partir de 2.118
+-- ele roda arquivos com controle de transação comando a comando, sem embrulho,
+-- então um `begin;` aqui deixava uma transação aberta que engolia todas as
+-- migrations seguintes e quebrava o `db reset` no seed ("failed to create seed
+-- table ... current transaction is aborted"). Sem ele, o resto do arquivo roda
+-- em autocommit nas duas versões. Já aplicada em produção; o CLI não compara
+-- conteúdo de migration aplicada, então editar aqui não afeta o remoto.
 commit;
-begin;
 
 -- 2. Atualiza a constraint de integridade do payload dos itens
 alter table public.library_items drop constraint if exists library_items_type_payload;

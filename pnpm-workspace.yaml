@@ -44,6 +44,15 @@ overrides:
   # patched release is API-compatible, so there is no reason to keep shipping
   # the vulnerable one.
   hono: "^4.13.5"
+  # eslint (via minimatch) pulls brace-expansion 1.1.18 and storybook /
+  # eslint-config-next (via glob/minimatch) pull 5.0.9, both vulnerable to
+  # stack-exhaustion DoS on crafted brace patterns (GHSA-6j4f-fj2g-mc7p,
+  # GHSA-qhr7-859c-m2p7, GHSA-q2hr-2g5m-vwhr), which fails `pnpm audit
+  # --audit-level=high` in CI. Only dev tooling reaches it, never with
+  # untrusted input, but both lines have same-major patched releases (1.1.21,
+  # 5.0.12), so pin each major to its patched line instead of shipping it.
+  "brace-expansion@<2": "^1.1.21"
+  "brace-expansion@>=4 <6": "^5.0.12"
 
 allowBuilds:
   # Transitive dep of eslint-plugin-import's TypeScript resolver. Its
