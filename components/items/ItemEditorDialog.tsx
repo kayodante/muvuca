@@ -17,8 +17,9 @@ import {
 import type { LibraryItem } from "@/lib/database/queries/items";
 import type { Tag } from "@/lib/database/queries/tags";
 import type { ItemType } from "@/lib/validation/item";
+import { TAG_COLOR_TOKENS } from "@/lib/validation/tag";
 import { createItem, updateItem } from "@/lib/actions/items";
-import { listTagsForSelect } from "@/lib/actions/tags";
+import { createTag, listTagsForSelect } from "@/lib/actions/tags";
 import { notifyPreviewQueueChanged } from "@/lib/events/preview-queue";
 import { useDictionary } from "@/lib/i18n/client";
 import type { Dictionary } from "@/lib/i18n/dictionaries/pt-BR";
@@ -156,13 +157,34 @@ export function ItemEditorDialog({
     setTagsAttempt((attempt) => attempt + 1);
   }, []);
 
+  // Tag criada pelo seletor nasce na raiz com cor sorteada da paleta, como a
+  // importação de bookmarks faz; pai, cor e descrição se ajustam em /tags.
+  // A lista é relida em vez de montada à mão: `path` só existe no servidor.
+  const createTagFromPicker = useCallback(async (name: string) => {
+    const formData = new FormData();
+    formData.set("name", name);
+    formData.set(
+      "colorToken",
+      TAG_COLOR_TOKENS[Math.floor(Math.random() * TAG_COLOR_TOKENS.length)] ??
+        "lime",
+    );
+    const created = await createTag(null, formData);
+    if (!created.ok) return created;
+    const reloaded = await listTagsForSelect();
+    if (!reloaded.ok) {
+      setTagsState({ status: "error", message: reloaded.message });
+      return reloaded;
+    }
+    setTagsState({ status: "success", tags: reloaded.data });
+    return created;
+  }, []);
+
   const tags = tagsState.status === "success" ? tagsState.tags : [];
   const tagsLoading = tagsState.status === "loading";
   const tagsErrorMessage =
     tagsState.status === "error" ? tagsState.message : null;
   const tagsEmpty = tagsState.status === "success" && tags.length === 0;
-  const tagsFieldDisabled =
-    tagsLoading || tagsErrorMessage !== null || tagsEmpty;
+  const tagsFieldDisabled = tagsLoading || tagsErrorMessage !== null;
   const [type, setType] = useState<ItemType>(editing?.type ?? "link");
   const [selectedTagIds, setSelectedTagIds] = useState(editing?.tagIds ?? []);
   const [dirty, setDirty] = useState(false);
@@ -539,6 +561,7 @@ export function ItemEditorDialog({
                         : undefined
                   }
                   emptyLoading={tagsLoading}
+                  onCreateTag={createTagFromPicker}
                   ariaDescribedBy={[
                     tagsErrorMessage !== null
                       ? "item-tags-load-error"

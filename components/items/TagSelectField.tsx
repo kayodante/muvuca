@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { CheckIcon, ChevronDownIcon, SearchIcon, XIcon } from "lucide-react";
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  PlusIcon,
+  SearchIcon,
+  XIcon,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { cssDurationToMs } from "@/lib/motion/duration";
@@ -14,6 +20,8 @@ import {
   type FlatTag,
 } from "@/lib/tags/tree";
 import type { Tag } from "@/lib/database/queries/tags";
+import type { ActionResult } from "@/lib/utils/result";
+import { TAG_NAME_MAX_LENGTH } from "@/lib/validation/tag";
 import { useDictionary } from "@/lib/i18n/client";
 import { ShimmerText } from "@/components/ui/shimmer-text";
 
@@ -43,6 +51,13 @@ interface TagSelectFieldProps {
    * shimmer for any other locale's loading copy.
    */
   emptyLoading?: boolean;
+  /**
+   * Creates a root tag named after the search query and resolves with its
+   * id once `tags` already includes it. When provided, the popup offers
+   * "create" for a query no existing tag matches, and the field stays
+   * usable with zero tags.
+   */
+  onCreateTag?: (name: string) => Promise<ActionResult<{ id: string }>>;
 }
 
 export function TagSelectField({
@@ -59,6 +74,7 @@ export function TagSelectField({
   className,
   emptyLabel,
   emptyLoading = false,
+  onCreateTag,
 }: TagSelectFieldProps) {
   const t = useDictionary();
   const resolvedPlaceholder = placeholder ?? t.items.tagSelect.placeholder;
@@ -77,6 +93,8 @@ export function TagSelectField({
   const [isOpen, setIsOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -110,6 +128,17 @@ export function TagSelectField({
     return flattenTreeWithDepth(filteredTree);
   }, [tags, searchQuery]);
 
+  // Mesma normalização de `tags.name_normalized` (lower(btrim(name))): com um
+  // nome idêntico já na lista, criar só produziria DUPLICATE ou um homônimo
+  // em outro nível -- quem quiser isso cria em /tags.
+  const createName = searchQuery.trim();
+  const canCreate =
+    onCreateTag !== undefined &&
+    createName !== "" &&
+    !tags.some(
+      (tag) => tag.name.trim().toLowerCase() === createName.toLowerCase(),
+    );
+
   const updateSelection = (newIds: string[]) => {
     if (!isControlled) {
       setInternalSelectedIds(newIds);
@@ -127,6 +156,34 @@ export function TagSelectField({
 
   const removeTag = (tagId: string) => {
     updateSelection(selectedIds.filter((item) => item !== tagId));
+  };
+
+  const createTag = async () => {
+    if (!onCreateTag || !canCreate || creating) return;
+    setCreating(true);
+    setCreateError(null);
+    let result: ActionResult<{ id: string }>;
+    try {
+      result = await onCreateTag(createName);
+    } catch {
+      // Server Action rejeita em falha de rede; sem isso o pending nunca sai.
+      result = {
+        ok: false,
+        code: "UNKNOWN",
+        message: t.errors.operationFailed,
+      };
+    } finally {
+      setCreating(false);
+    }
+    if (!result.ok) {
+      setCreateError(result.message);
+      return;
+    }
+    updateSelection([...selectedIds, result.data.id]);
+    setSearchQuery("");
+    // A opção de criar some junto com a busca; o foco volta para o filtro em
+    // vez de cair no body.
+    searchInputRef.current?.focus();
   };
 
   // As opções ficam fora da ordem de Tab (tabIndex -1): o popup inteiro é uma
@@ -157,6 +214,7 @@ export function TagSelectField({
     setIsOpen(false);
     setIsClosing(true);
     setSearchQuery("");
+    setCreateError(null);
     const duration = cssDurationToMs(
       getComputedStyle(document.documentElement).getPropertyValue(
         "--dropdown-close-dur",
@@ -214,7 +272,7 @@ export function TagSelectField({
     };
   }, [isOpen]);
 
-  const isDisabled = disabled || tags.length === 0;
+  const isDisabled = disabled || (tags.length === 0 && !onCreateTag);
 
   return (
     <div
@@ -343,6 +401,12 @@ export function TagSelectField({
                   e.preventDefault();
                   optionElements()[0]?.focus();
                 }
+                // Enter no filtro nunca envia o formulário do item; sem
+                // nenhuma tag casando, cria a digitada.
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (flattenedOptions.length === 0) void createTag();
+                }
               }}
               // Não é autofocus de carregamento de página (o caso que a regra
               // protege): este input só existe depois que o usuário abriu o
@@ -352,8 +416,15 @@ export function TagSelectField({
               // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
               placeholder={t.items.tagSelect.searchPlaceholder}
+              maxLength={TAG_NAME_MAX_LENGTH}
+              // Congela o nome enquanto a criação está em voo: o rótulo
+              // "Criando tag" mostra o que foi enviado, não o que foi digitado.
+              readOnly={creating}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCreateError(null);
+              }}
               className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </div>
@@ -367,7 +438,7 @@ export function TagSelectField({
             aria-label={t.items.tagSelect.availableTagsLabel}
             className="max-h-48 overflow-y-auto p-1"
           >
-            {flattenedOptions.length === 0 ? (
+            {flattenedOptions.length === 0 && !canCreate ? (
               <div className="px-2 py-3 text-center text-xs text-muted-foreground">
                 {t.items.tagSelect.noTagsFound}
               </div>
@@ -411,7 +482,47 @@ export function TagSelectField({
                 );
               })
             )}
+            {canCreate && (
+              <div
+                role="option"
+                aria-selected={false}
+                aria-disabled={creating || undefined}
+                tabIndex={-1}
+                onClick={() => void createTag()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    void createTag();
+                    return;
+                  }
+                  moveOptionFocus(e);
+                }}
+                className="relative flex cursor-pointer items-center gap-2 rounded-md py-1.5 pr-2 pl-2 text-sm transition-colors duration-(--motion-fast) ease-out-muvuca outline-none select-none hover:bg-accent/70 focus:bg-accent focus:text-accent-foreground aria-disabled:cursor-wait motion-reduce:transition-none"
+              >
+                <PlusIcon
+                  aria-hidden="true"
+                  className="size-3.5 shrink-0 text-muted-foreground"
+                />
+                <span className="truncate">
+                  {creating ? (
+                    <ShimmerText
+                      text={t.items.tagSelect.creatingTag(createName)}
+                    />
+                  ) : (
+                    t.items.tagSelect.createTag(createName)
+                  )}
+                </span>
+              </div>
+            )}
           </div>
+          {createError !== null && (
+            <p
+              role="alert"
+              className="border-t border-border px-2.5 py-2 text-xs text-destructive"
+            >
+              {createError}
+            </p>
+          )}
         </div>
       )}
     </div>

@@ -564,8 +564,10 @@ export const ptBR = {
       plainText: "Texto puro",
       tagsLoading: "Carregando tags...",
       tagsLoadFailedLabel: "Não foi possível carregar as tags",
-      tagsEmptyHint: "Crie tags na seção Tags para organizar seus itens.",
-      tagsSelectHint: "Selecione uma ou mais tags para organizar o item.",
+      tagsEmptyHint:
+        "Abra o campo e digite um nome para criar sua primeira tag.",
+      tagsSelectHint:
+        "Selecione uma ou mais tags, ou digite um nome para criar uma nova.",
       itemUpdated: "Item atualizado.",
       itemCreated: "Item criado.",
       discardTitle: "Descartar alterações?",
@@ -637,6 +639,8 @@ export const ptBR = {
       searchPlaceholder: "Buscar tags...",
       searchLabel: "Buscar tags",
       noTagsFound: "Nenhuma tag encontrada.",
+      createTag: (name: string) => `Criar tag “${name}”`,
+      creatingTag: (name: string) => `Criando tag “${name}”...`,
       selectedCount: (count: number) =>
         `${count} tag${count > 1 ? "s" : ""} selecionada${count > 1 ? "s" : ""}`,
     },
