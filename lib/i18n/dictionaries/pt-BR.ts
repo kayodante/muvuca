@@ -229,6 +229,7 @@ export const ptBR = {
       emptyItemsDescription:
         "Itens associados a esta tag e às tags filhas aparecem aqui.",
       editTag: "Editar tag",
+      importItems: "Importar itens para esta tag",
     },
     exportJson: "Exportar JSON da tag",
     exportSuccess: "JSON da tag exportado com sucesso.",
@@ -791,6 +792,15 @@ export const ptBR = {
     restoringShort: "Restaurando...",
     done: "Concluir",
     restored: "Backup restaurado.",
+    target: {
+      dialogTitle: (name: string) => `Importar para ${name}`,
+      dialogDescription: (name: string) =>
+        `O arquivo é lido somente neste navegador. As tags do arquivo entram como subtags de ${name}, reaproveitando as que já existem. Itens sem tag ficam em ${name}. Nada é apagado nem sobrescrito.`,
+      confirm: "Confirmar importação",
+      importing: "Importando...",
+      imported: "Itens importados.",
+      itemsImported: "Itens importados",
+    },
   },
   states: {
     error: {

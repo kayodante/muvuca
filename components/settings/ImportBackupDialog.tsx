@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type RefObject } from "react";
 import { FileJsonIcon, Loader2Icon } from "lucide-react";
 
 import {
@@ -27,11 +27,34 @@ type Preview = { file: BackupFile; skipped: number };
 export function ImportBackupDialog({
   open,
   onOpenChange,
+  targetTag,
+  finalFocus,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  targetTag?: { id: string; name: string };
+  finalFocus?: RefObject<HTMLElement | null>;
 }) {
   const t = useDictionary();
+  const copy = targetTag
+    ? {
+        title: t.backup.target.dialogTitle(targetTag.name),
+        description: t.backup.target.dialogDescription(targetTag.name),
+        confirm: t.backup.target.confirm,
+        confirming: t.backup.target.importing,
+        status: t.backup.target.importing,
+        done: t.backup.target.imported,
+        itemsCount: t.backup.target.itemsImported,
+      }
+    : {
+        title: t.backup.dialogTitle,
+        description: t.backup.dialogDescription,
+        confirm: t.backup.confirmRestore,
+        confirming: t.backup.restoringShort,
+        status: t.backup.restoring,
+        done: t.backup.restored,
+        itemsCount: t.backup.resultCounts.itemsRestored,
+      };
   const [preview, setPreview] = useState<Preview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<BackupImportSummary | null>(null);
@@ -92,7 +115,11 @@ export function ImportBackupDialog({
 
     let response: Awaited<ReturnType<typeof importLibraryBackup>>;
     try {
-      response = await importLibraryBackup({ tags, items });
+      response = await importLibraryBackup({
+        tags,
+        items,
+        ...(targetTag && { targetTagId: targetTag.id }),
+      });
     } catch {
       setIsImporting(false);
       setError(t.errors.backupRestoreFailed);
@@ -107,15 +134,18 @@ export function ImportBackupDialog({
     }
 
     setResult(response.data);
-    toastSuccess(t.backup.restored);
+    toastSuccess(copy.done);
   }
 
   return (
     <Dialog open={open} onOpenChange={close}>
-      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-xl">
+      <DialogContent
+        finalFocus={finalFocus}
+        className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-xl"
+      >
         <DialogHeader>
-          <DialogTitle>{t.backup.dialogTitle}</DialogTitle>
-          <DialogDescription>{t.backup.dialogDescription}</DialogDescription>
+          <DialogTitle>{copy.title}</DialogTitle>
+          <DialogDescription>{copy.description}</DialogDescription>
         </DialogHeader>
 
         {!preview && !result && (
@@ -164,7 +194,7 @@ export function ImportBackupDialog({
                   aria-hidden="true"
                   className="size-4 animate-spin text-primary [animation-duration:600ms] motion-reduce:[animation-duration:1200ms]"
                 />
-                {t.backup.restoring}
+                {copy.status}
               </div>
             )}
           </div>
@@ -172,10 +202,7 @@ export function ImportBackupDialog({
 
         {result && (
           <div className="grid grid-cols-3 gap-2 text-sm">
-            <Count
-              label={t.backup.resultCounts.itemsRestored}
-              value={result.itemsImported}
-            />
+            <Count label={copy.itemsCount} value={result.itemsImported} />
             <Count
               label={t.backup.resultCounts.tagsCreated}
               value={result.tagsCreated}
@@ -205,11 +232,9 @@ export function ImportBackupDialog({
               <Button
                 onClick={confirm}
                 pending={isImporting}
-                pendingLabel={t.backup.restoringShort}
+                pendingLabel={copy.confirming}
               >
-                {isImporting
-                  ? t.backup.restoringShort
-                  : t.backup.confirmRestore}
+                {isImporting ? copy.confirming : copy.confirm}
               </Button>
             </>
           )}

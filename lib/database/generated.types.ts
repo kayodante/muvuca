@@ -341,7 +341,7 @@ export type Database = {
         }[];
       };
       import_browser_bookmarks: {
-        Args: { p_items: Json; p_tags: Json };
+        Args: { p_items: Json; p_tags: Json; p_target_tag_id?: string };
         Returns: {
           associations_created: number;
           items_imported: number;
@@ -349,7 +349,7 @@ export type Database = {
         }[];
       };
       import_library_backup: {
-        Args: { p_items: Json; p_tags: Json };
+        Args: { p_items: Json; p_tags: Json; p_target_tag_id?: string };
         Returns: {
           duplicates_ignored: number;
           items_imported: number;
