@@ -42,6 +42,7 @@ export function ImportBackupDialog({
         description: t.backup.target.dialogDescription(targetTag.name),
         confirm: t.backup.target.confirm,
         confirming: t.backup.target.importing,
+        status: t.backup.target.importing,
         done: t.backup.target.imported,
         itemsCount: t.backup.target.itemsImported,
       }
@@ -50,6 +51,7 @@ export function ImportBackupDialog({
         description: t.backup.dialogDescription,
         confirm: t.backup.confirmRestore,
         confirming: t.backup.restoringShort,
+        status: t.backup.restoring,
         done: t.backup.restored,
         itemsCount: t.backup.resultCounts.itemsRestored,
       };
@@ -192,7 +194,7 @@ export function ImportBackupDialog({
                   aria-hidden="true"
                   className="size-4 animate-spin text-primary [animation-duration:600ms] motion-reduce:[animation-duration:1200ms]"
                 />
-                {t.backup.restoring}
+                {copy.status}
               </div>
             )}
           </div>
