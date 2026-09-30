@@ -312,6 +312,98 @@ describe("TagSelectField", () => {
     expect(document.body.textContent).toContain("Nenhuma tag cadastrada ainda");
   });
 
+  describe("criação de tag", () => {
+    async function openAndSearch(query: string) {
+      await act(async () => {
+        (
+          document.querySelector(
+            'button[aria-haspopup="listbox"]',
+          ) as HTMLButtonElement
+        ).click();
+      });
+      const searchInput = document.querySelector(
+        'input[aria-label="Buscar tags"]',
+      ) as HTMLInputElement;
+      await act(async () => {
+        setInputValue(searchInput, query);
+      });
+      return searchInput;
+    }
+
+    const createOption = () =>
+      Array.from(document.querySelectorAll('[role="option"]')).find((option) =>
+        option.textContent?.startsWith("Criar tag"),
+      );
+
+    it("Enter no filtro sem resultados cria a tag digitada e a seleciona", async () => {
+      const onCreateTag = vi
+        .fn()
+        .mockResolvedValue({ ok: true, data: { id: "tag-new" } });
+      await renderField({ onCreateTag });
+
+      const searchInput = await openAndSearch("  Rust  ");
+      expect(createOption()?.textContent).toBe("Criar tag “Rust”");
+
+      const enter = new KeyboardEvent("keydown", {
+        key: "Enter",
+        bubbles: true,
+        cancelable: true,
+      });
+      await act(async () => {
+        searchInput.dispatchEvent(enter);
+      });
+
+      // Enter no filtro nunca vira submit implícito do formulário do item.
+      expect(enter.defaultPrevented).toBe(true);
+      expect(onCreateTag).toHaveBeenCalledWith("Rust");
+      expect(
+        document.querySelector<HTMLInputElement>(
+          'input[type="hidden"][name="tagIds"]',
+        )?.value,
+      ).toBe("tag-new");
+      expect(searchInput.value).toBe("");
+      expect(document.activeElement).toBe(searchInput);
+    });
+
+    it("não oferece criar um nome que já existe, sem diferenciar caixa", async () => {
+      await renderField({ onCreateTag: vi.fn() });
+
+      await openAndSearch(" react ");
+
+      expect(createOption()).toBeUndefined();
+    });
+
+    it("mostra o erro da criação no popup e não seleciona nada", async () => {
+      const onCreateTag = vi.fn().mockResolvedValue({
+        ok: false,
+        code: "DUPLICATE",
+        message: "Já existe uma tag com esse nome nesse nível.",
+      });
+      await renderField({ onCreateTag });
+
+      await openAndSearch("Rust");
+      await act(async () => {
+        (createOption() as HTMLElement).click();
+      });
+
+      expect(document.querySelector('[role="alert"]')?.textContent).toBe(
+        "Já existe uma tag com esse nome nesse nível.",
+      );
+      expect(
+        document.querySelectorAll('input[type="hidden"][name="tagIds"]'),
+      ).toHaveLength(0);
+    });
+
+    it("fica habilitado sem nenhuma tag quando a criação está disponível", async () => {
+      await renderField({ tags: [], onCreateTag: vi.fn() });
+
+      const trigger = document.querySelector(
+        'button[aria-haspopup="listbox"]',
+      ) as HTMLButtonElement;
+      expect(trigger.disabled).toBe(false);
+    });
+  });
+
   it("associa aria-describedby e aria-invalid com erros de campo", async () => {
     await renderField({
       error: "Uma ou mais tags são inválidas.",

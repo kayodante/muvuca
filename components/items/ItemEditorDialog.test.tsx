@@ -5,11 +5,13 @@ import { ItemEditorDialog, type EditorTarget } from "./ItemEditorDialog";
 import type { LibraryItem } from "@/lib/database/queries/items";
 import type { Tag } from "@/lib/database/queries/tags";
 
-const { toast, listTagsForSelectMock, createItemMock } = vi.hoisted(() => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-  listTagsForSelectMock: vi.fn(),
-  createItemMock: vi.fn(),
-}));
+const { toast, listTagsForSelectMock, createTagMock, createItemMock } =
+  vi.hoisted(() => ({
+    toast: { success: vi.fn(), error: vi.fn() },
+    listTagsForSelectMock: vi.fn(),
+    createTagMock: vi.fn(),
+    createItemMock: vi.fn(),
+  }));
 
 vi.mock("sonner", () => ({ toast }));
 
@@ -20,6 +22,7 @@ vi.mock("@/lib/actions/items", () => ({
 
 vi.mock("@/lib/actions/tags", () => ({
   listTagsForSelect: listTagsForSelectMock,
+  createTag: createTagMock,
 }));
 
 const mockTags: Tag[] = [
@@ -565,7 +568,7 @@ describe("ItemEditorDialog", () => {
 
       expect(tagTrigger()?.disabled).toBe(false);
       expect(document.body.textContent).toContain(
-        "Selecione uma ou mais tags para organizar o item.",
+        "Selecione uma ou mais tags, ou digite um nome para criar uma nova.",
       );
     });
 
@@ -582,7 +585,7 @@ describe("ItemEditorDialog", () => {
       const listbox = document.body.querySelector('[role="listbox"]');
       expect(listbox?.textContent).toContain("Tech");
       expect(document.body.textContent).toContain(
-        "Selecione uma ou mais tags para organizar o item.",
+        "Selecione uma ou mais tags, ou digite um nome para criar uma nova.",
       );
     });
 
@@ -623,22 +626,109 @@ describe("ItemEditorDialog", () => {
       expect(document.body.querySelector("#item-tags-load-error")).toBeNull();
       expect(tagTrigger()?.disabled).toBe(false);
       expect(document.body.textContent).toContain(
-        "Selecione uma ou mais tags para organizar o item.",
+        "Selecione uma ou mais tags, ou digite um nome para criar uma nova.",
       );
     });
 
-    it("renderiza campo de tags desabilitado com o texto de vazio quando a lista volta vazia", async () => {
+    it("mantém o campo habilitado com lista vazia, para criar a primeira tag", async () => {
       listTagsForSelectMock.mockResolvedValueOnce({ ok: true, data: [] });
 
       await renderEditor({ mode: "create" });
 
-      expect(tagTrigger()?.disabled).toBe(true);
+      expect(tagTrigger()?.disabled).toBe(false);
       expect(document.body.textContent).toContain(
         "Nenhuma tag cadastrada ainda",
       );
       expect(document.body.textContent).toContain(
-        "Crie tags na seção Tags para organizar seus itens.",
+        "Abra o campo e digite um nome para criar sua primeira tag.",
       );
+    });
+  });
+
+  describe("criação de tag pelo seletor", () => {
+    const createdTag: Tag = {
+      id: "tag-new",
+      name: "Rust",
+      colorToken: "teal",
+      description: null,
+      parentId: null,
+      path: "rust",
+      createdAt: "2026-01-02",
+      updatedAt: "2026-01-02",
+    };
+
+    async function typeAndCreate(name: string) {
+      await act(async () => {
+        tagTrigger().click();
+      });
+      const search = document.body.querySelector(
+        'input[aria-label="Buscar tags"]',
+      ) as HTMLInputElement;
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(
+          window.HTMLInputElement.prototype,
+          "value",
+        )?.set?.call(search, name);
+        search.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      const createOption = Array.from(
+        document.body.querySelectorAll<HTMLElement>('[role="option"]'),
+      ).find((option) => option.textContent === `Criar tag “${name}”`);
+      expect(createOption).not.toBeUndefined();
+      await act(async () => {
+        createOption?.click();
+      });
+    }
+
+    it("cria a tag na raiz com uma cor da paleta, relê a lista e seleciona a nova", async () => {
+      createTagMock.mockResolvedValueOnce({
+        ok: true,
+        data: { id: "tag-new" },
+      });
+      listTagsForSelectMock
+        .mockResolvedValueOnce({ ok: true, data: mockTags })
+        .mockResolvedValueOnce({ ok: true, data: [...mockTags, createdTag] });
+
+      await renderEditor({ mode: "create" });
+      await typeAndCreate("Rust");
+
+      expect(createTagMock).toHaveBeenCalledTimes(1);
+      const formData = createTagMock.mock.calls[0]?.[1] as FormData;
+      expect(formData.get("name")).toBe("Rust");
+      expect(formData.get("parentId")).toBeNull();
+      expect(formData.get("colorToken")).toMatch(/^[a-z]+$/);
+      expect(listTagsForSelectMock).toHaveBeenCalledTimes(2);
+
+      const hidden = Array.from(
+        document.body.querySelectorAll<HTMLInputElement>(
+          'input[type="hidden"][name="tagIds"]',
+        ),
+      ).map((input) => input.value);
+      expect(hidden).toEqual(["tag-new"]);
+      expect(
+        document.body.querySelector('[aria-label="Tags selecionadas"]')
+          ?.textContent,
+      ).toContain("Rust");
+    });
+
+    it("mostra no popup o erro da criação, sem selecionar nada", async () => {
+      createTagMock.mockResolvedValueOnce({
+        ok: false,
+        code: "DUPLICATE",
+        message: "Já existe uma tag com esse nome nesse nível.",
+      });
+
+      await renderEditor({ mode: "create" });
+      await typeAndCreate("Rust");
+
+      expect(listTagsForSelectMock).toHaveBeenCalledTimes(1);
+      const alert = document.body.querySelector(".t-dropdown [role='alert']");
+      expect(alert?.textContent).toBe(
+        "Já existe uma tag com esse nome nesse nível.",
+      );
+      expect(
+        document.body.querySelectorAll('input[type="hidden"][name="tagIds"]'),
+      ).toHaveLength(0);
     });
   });
 });
