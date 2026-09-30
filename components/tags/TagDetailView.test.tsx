@@ -23,6 +23,7 @@ vi.mock("@/lib/actions/previews", () => ({
 vi.mock("@/lib/actions/export", () => ({
   exportTagLibrary: vi.fn(),
 }));
+vi.mock("@/lib/actions/backup", () => ({ importLibraryBackup: vi.fn() }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 import { exportTagLibrary } from "@/lib/actions/export";
@@ -187,6 +188,36 @@ describe("TagDetailView", () => {
         (item) => item.textContent === "Exportar JSON da tag",
       ),
     ).toBe(true);
+  });
+
+  it("opens the import dialog targeting the current tag", async () => {
+    await act(async () => {
+      root?.render(
+        <TagDetailView
+          tag={currentTag}
+          childCount={0}
+          tags={[currentTag]}
+          ancestors={[]}
+          items={[]}
+          itemsCount={0}
+          nextCursor={null}
+        />,
+      );
+    });
+    const trigger = [...container!.querySelectorAll("button")].find((button) =>
+      button.textContent?.includes("Mais ações para Design Systems"),
+    );
+    await act(async () => trigger?.click());
+    const importItem = [
+      ...document.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+    ].find((item) => item.textContent === "Importar itens para esta tag");
+    await act(async () => importItem?.click());
+
+    const dialog = document.querySelector('[role="dialog"]');
+    expect(dialog?.textContent).toContain("Importar para Design Systems");
+    expect(
+      container?.querySelector("h1")?.getAttribute("aria-labelledby"),
+    ).toBe("tag-detail-heading-prefix tag-detail-heading-name");
   });
 
   it("downloads the selected tag's JSON", async () => {

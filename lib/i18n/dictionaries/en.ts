@@ -205,6 +205,7 @@ export const en: Dictionary = {
       emptyItemsDescription:
         "Items linked to this tag and its child tags show up here.",
       editTag: "Edit tag",
+      importItems: "Import items into this tag",
     },
     exportJson: "Export tag JSON",
     exportSuccess: "Tag JSON exported successfully.",
@@ -738,6 +739,15 @@ export const en: Dictionary = {
     restoringShort: "Restoring...",
     done: "Done",
     restored: "Backup restored.",
+    target: {
+      dialogTitle: (name: string) => `Import into ${name}`,
+      dialogDescription: (name: string) =>
+        `The file is read only in this browser. Tags in the file become subtags of ${name}, reusing the ones that already exist. Untagged items go into ${name}. Nothing is deleted or overwritten.`,
+      confirm: "Confirm import",
+      importing: "Importing...",
+      imported: "Items imported.",
+      itemsImported: "Items imported",
+    },
   },
   states: {
     error: {

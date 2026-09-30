@@ -1,12 +1,13 @@
 "use client";
 
-import { useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { MoreHorizontalIcon } from "lucide-react";
 
 import { exportTagLibrary } from "@/lib/actions/export";
 import { toastError, toastSuccess } from "@/components/states/Toast";
 import { useDictionary } from "@/lib/i18n/client";
+import { ImportBackupDialog } from "@/components/settings/ImportBackupDialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -60,27 +61,49 @@ export function TagDetailActions({
 }) {
   const t = useDictionary();
   const { pending, exportJson } = useTagExport(tagId, tagPath);
+  const [importOpen, setImportOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={<Button variant="ghost" size="icon-sm" aria-busy={pending} />}
-      >
-        <MoreHorizontalIcon aria-hidden="true" className="size-4" />
-        <span className="sr-only">{t.tags.inspector.moreActions(tagName)}</span>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
           render={
-            <Link href={`/tags?${new URLSearchParams({ tag: tagPath })}`} />
+            <Button
+              ref={triggerRef}
+              variant="ghost"
+              size="icon-sm"
+              aria-busy={pending}
+            />
           }
         >
-          {t.tags.detail.editTag}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={exportJson} disabled={pending}>
-          {pending ? t.export.exporting : t.tags.exportJson}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <MoreHorizontalIcon aria-hidden="true" className="size-4" />
+          <span className="sr-only">
+            {t.tags.inspector.moreActions(tagName)}
+          </span>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem
+            render={
+              <Link href={`/tags?${new URLSearchParams({ tag: tagPath })}`} />
+            }
+          >
+            {t.tags.detail.editTag}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={exportJson} disabled={pending}>
+            {pending ? t.export.exporting : t.tags.exportJson}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setImportOpen(true)}>
+            {t.tags.detail.importItems}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ImportBackupDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        targetTag={{ id: tagId, name: tagName }}
+        finalFocus={triggerRef}
+      />
+    </>
   );
 }
