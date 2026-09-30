@@ -588,9 +588,10 @@ body {
   }
 }
 /* While the transition owns the movement, the popup's own entrance would
-   play a second, competing animation on top of it. */
-:root[data-view-transition] [data-slot="dialog-content"],
-:root[data-view-transition] [data-slot="dialog-overlay"] {
+   play a second, competing animation on top of it. The overlay is left
+   alone: it is not part of the morph, and suppressing it made its fade-in
+   restart from 0 once the attribute came off -- a visible flash (AAA-241). */
+:root[data-view-transition] [data-slot="dialog-content"] {
   animation: none;
   transition: none;
 }

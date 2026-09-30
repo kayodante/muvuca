@@ -1,5 +1,6 @@
 "use client";
 
+import { scrimClassName } from "@/components/ui/scrim";
 import * as React from "react";
 import { Dialog as SheetPrimitive } from "@base-ui/react/dialog";
 
@@ -29,7 +30,8 @@ function SheetOverlay({ className, ...props }: SheetPrimitive.Backdrop.Props) {
     <SheetPrimitive.Backdrop
       data-slot="sheet-overlay"
       className={cn(
-        "fixed inset-0 z-50 bg-black/40 transition-opacity duration-(--motion-base) ease-out-muvuca data-ending-style:opacity-0 data-starting-style:opacity-0 motion-reduce:transition-none dark:bg-black/60",
+        scrimClassName,
+        "fixed inset-0 z-50 transition-opacity duration-(--motion-base) ease-out-muvuca data-ending-style:opacity-0 data-starting-style:opacity-0 motion-reduce:transition-none",
         className,
       )}
       {...props}
