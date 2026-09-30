@@ -15,6 +15,7 @@ import {
 import type { Dictionary } from "@/lib/i18n/dictionaries";
 import { getDictionary } from "@/lib/i18n/server";
 import { translateFieldErrors } from "@/lib/i18n/validation";
+import { tagP0001ErrorKey } from "@/lib/tags/errors";
 import { logEvent } from "@/lib/security/logging";
 import {
   ok,
@@ -26,40 +27,16 @@ import {
 /** Shape of a Postgres error surfaced through supabase-js. */
 type PostgrestErrorLike = { code?: string; message: string };
 
-/**
- * `P0001` is Postgres's default SQLSTATE for a bare `raise exception` -- the
- * hierarchy trigger (0008_tag_hierarchy.sql) and
- * `delete_tag_reparent_children` (0009/0015_tag_rpc.sql) only ever raise one
- * of these fixed Portuguese sentences that way. Exact-matched here against a
- * translated key instead of surfacing `error.message` directly, so the raw
- * Postgres string (source-controlled today, but still an internal detail)
- * never reaches the client and the result is locale-correct. An unrecognized
- * P0001 sentence (a future migration, a typo) falls back to the generic
- * translated error rather than leaking untranslated text.
- */
-const TAG_P0001_MESSAGES: Record<string, keyof Dictionary["errors"]> = {
-  "a tag não pode ser pai de si mesma": "tagSelfParent",
-  "esta alteração criaria um ciclo na hierarquia de tags": "tagCycle",
-  "a hierarquia de tags excede a profundidade máxima de 6 níveis":
-    "tagMaxDepth",
-  "esta alteração excederia a profundidade máxima de 6 níveis para tags descendentes":
-    "tagDescendantMaxDepth",
-  "tag não encontrada": "tagNotFound",
-  "lote de tags inválido": "tagBatchInvalid",
-};
-
-function translateTagP0001(message: string, t: Dictionary): string {
-  const key = TAG_P0001_MESSAGES[message];
-  return t.errors[key ?? "unknown"];
-}
-
 /** Maps a tag-mutation failure to a stable, user-facing result. */
 function mapTagError(
   error: PostgrestErrorLike,
   t: Dictionary,
 ): ActionResult<never> {
   if (error.code === "P0001") {
-    return fail("CONSTRAINT_VIOLATION", translateTagP0001(error.message, t));
+    return fail(
+      "CONSTRAINT_VIOLATION",
+      t.errors[tagP0001ErrorKey(error.message) ?? "unknown"],
+    );
   }
 
   const code = mapPostgresErrorCode(error.code);
@@ -248,7 +225,10 @@ export async function deleteTag(
     // while the message is still translated through the shared exact-match
     // table for consistency with mapTagError.
     if (error.code === "P0001") {
-      return fail("NOT_FOUND", translateTagP0001(error.message, t));
+      return fail(
+        "NOT_FOUND",
+        t.errors[tagP0001ErrorKey(error.message) ?? "unknown"],
+      );
     }
 
     return mapTagError(error, t);

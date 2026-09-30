@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth/require-user";
 import { backupPayloadSchema } from "@/lib/backup/validation";
 import { getDictionary } from "@/lib/i18n/server";
+import { tagP0001ErrorKey } from "@/lib/tags/errors";
 import { logEvent } from "@/lib/security/logging";
 import { createClient } from "@/lib/supabase/server";
 import { fail, ok, type ActionResult } from "@/lib/utils/result";
@@ -71,6 +72,7 @@ export async function importLibraryBackup(
   const { data, error } = await supabase.rpc("import_library_backup", {
     p_tags: parsed.data.tags,
     p_items: rpcItems,
+    p_target_tag_id: parsed.data.targetTagId,
   });
 
   const summary = data?.[0];
@@ -81,6 +83,13 @@ export async function importLibraryBackup(
       errorClass: error?.code,
       userId: user.id,
     });
+    // Só frases conhecidas de tag viram mensagem específica (destino sem
+    // espaço na hierarquia, ou inexistente); o resto segue genérico.
+    const key =
+      error?.code === "P0001" ? tagP0001ErrorKey(error.message) : undefined;
+    if (key === "tagNotFound") return fail("NOT_FOUND", t.errors[key]);
+    if (key === "tagMaxDepth" || key === "tagDescendantMaxDepth")
+      return fail("CONSTRAINT_VIOLATION", t.errors[key]);
     return fail("UNKNOWN", t.errors.backupRestoreFailed);
   }
 

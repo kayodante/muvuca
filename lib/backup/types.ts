@@ -48,4 +48,5 @@ export type BackupItemPayload = {
 export type BackupPayload = {
   tags: BackupTagPayload[];
   items: BackupItemPayload[];
+  targetTagId?: string;
 };

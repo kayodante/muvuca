@@ -169,6 +169,7 @@ export const backupPayloadSchema = z
   .object({
     tags: z.array(backupTagPayloadSchema).max(MAX_BACKUP_TAGS),
     items: z.array(backupItemPayloadSchema).max(MAX_BACKUP_ITEMS),
+    targetTagId: z.uuid().optional(),
   })
   .superRefine(({ tags, items }, ctx) => {
     const keys = new Set(tags.map((tag) => tag.key));

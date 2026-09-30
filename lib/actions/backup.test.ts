@@ -186,4 +186,83 @@ describe("importLibraryBackup", () => {
       expect(result.message).toBe(ptBR.errors.backupRestoreFailed);
     }
   });
+
+  describe("tag de destino", () => {
+    const TARGET = "22222222-2222-4222-8222-222222222222";
+    const okRpc = {
+      data: [{ items_imported: 1, tags_created: 1, duplicates_ignored: 0 }],
+      error: null,
+    };
+
+    it("repassa p_target_tag_id quando targetTagId vem", async () => {
+      rpcMock.mockResolvedValue(okRpc);
+      await importLibraryBackup({ ...validBatch(), targetTagId: TARGET });
+      expect(rpcMock.mock.calls[0]?.[1]?.p_target_tag_id).toBe(TARGET);
+    });
+
+    it("sem targetTagId, p_target_tag_id não carrega valor", async () => {
+      rpcMock.mockResolvedValue(okRpc);
+      await importLibraryBackup(validBatch());
+      expect(rpcMock.mock.calls[0]?.[1]?.p_target_tag_id).toBeUndefined();
+    });
+
+    it("rejeita targetTagId não-UUID sem chamar a RPC", async () => {
+      const result = await importLibraryBackup({
+        ...validBatch(),
+        targetTagId: "nope",
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) expect(result.code).toBe("VALIDATION_FAILED");
+      expect(rpcMock).not.toHaveBeenCalled();
+    });
+
+    it("traduz P0001 de profundidade", async () => {
+      rpcMock.mockResolvedValue({
+        data: null,
+        error: {
+          code: "P0001",
+          message:
+            "a hierarquia de tags excede a profundidade máxima de 6 níveis",
+        },
+      });
+      const result = await importLibraryBackup({
+        ...validBatch(),
+        targetTagId: TARGET,
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.code).toBe("CONSTRAINT_VIOLATION");
+        expect(result.message).toBe(ptBR.errors.tagMaxDepth);
+      }
+    });
+
+    it("traduz P0001 de tag não encontrada como NOT_FOUND", async () => {
+      rpcMock.mockResolvedValue({
+        data: null,
+        error: { code: "P0001", message: "tag não encontrada" },
+      });
+      const result = await importLibraryBackup({
+        ...validBatch(),
+        targetTagId: TARGET,
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.code).toBe("NOT_FOUND");
+        expect(result.message).toBe(ptBR.errors.tagNotFound);
+      }
+    });
+
+    it("P0001 desconhecido cai no erro genérico", async () => {
+      rpcMock.mockResolvedValue({
+        data: null,
+        error: { code: "P0001", message: "algo inesperado" },
+      });
+      const result = await importLibraryBackup(validBatch());
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.code).toBe("UNKNOWN");
+        expect(result.message).toBe(ptBR.errors.backupRestoreFailed);
+      }
+    });
+  });
 });
