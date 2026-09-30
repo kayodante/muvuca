@@ -11,8 +11,10 @@ const {
   signOutMock,
   getDictionaryMock,
   hasRecoverySessionMock,
+  getOptionalUserMock,
   redirectMock,
 } = vi.hoisted(() => ({
+  getOptionalUserMock: vi.fn(),
   createClientMock: vi.fn(),
   signInWithPasswordMock: vi.fn(),
   resetPasswordForEmailMock: vi.fn(),
@@ -38,9 +40,11 @@ vi.mock("@/lib/security/logging", () => ({ logEvent: vi.fn() }));
 vi.mock("@/lib/i18n/server", () => ({ getDictionary: getDictionaryMock }));
 vi.mock("@/lib/auth/require-user", () => ({
   hasRecoverySession: hasRecoverySessionMock,
+  getOptionalUser: getOptionalUserMock,
 }));
 
 import {
+  requestPasswordChange,
   requestPasswordReset,
   signInWithPassword,
   updatePassword,
@@ -444,5 +448,56 @@ describe("updatePassword", () => {
         status: "failure",
       }),
     );
+  });
+});
+
+describe("requestPasswordChange", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetPasswordForEmailMock.mockResolvedValue({ error: null });
+    createClientMock.mockResolvedValue({
+      auth: { resetPasswordForEmail: resetPasswordForEmailMock },
+    });
+    getDictionaryMock.mockResolvedValue(ptBR);
+  });
+
+  it("emails the recovery link to the verified session's email", async () => {
+    getOptionalUserMock.mockResolvedValue({
+      id: "u1",
+      email: "me@example.com",
+    });
+
+    await expect(requestPasswordChange()).resolves.toEqual({
+      ok: true,
+      data: null,
+    });
+    expect(resetPasswordForEmailMock).toHaveBeenCalledWith("me@example.com", {
+      redirectTo:
+        "https://muvuca.example.com/auth/confirm?next=%2Freset-password",
+    });
+  });
+
+  it("refuses without a session and sends nothing", async () => {
+    getOptionalUserMock.mockResolvedValue(null);
+
+    const result = await requestPasswordChange();
+
+    expect(result.ok).toBe(false);
+    expect(resetPasswordForEmailMock).not.toHaveBeenCalled();
+  });
+
+  it("surfaces rate limiting instead of claiming success", async () => {
+    getOptionalUserMock.mockResolvedValue({
+      id: "u1",
+      email: "me@example.com",
+    });
+    resetPasswordForEmailMock.mockResolvedValue({
+      error: { name: "AuthApiError", status: 429 },
+    });
+
+    await expect(requestPasswordChange()).resolves.toMatchObject({
+      ok: false,
+      message: ptBR.errors.tooManyAttempts,
+    });
   });
 });

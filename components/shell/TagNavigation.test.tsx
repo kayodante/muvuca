@@ -193,7 +193,7 @@ describe("TagNavigation", () => {
     );
   });
 
-  it("renderiza uma guia por nível de ancestral, e nenhuma na raiz", async () => {
+  it("desenha um cotovelo por filho, sem tronco depois do último irmão", async () => {
     const dom = await renderTagNavigation(tagsWithGrandchild);
 
     const rootLink = dom.querySelector('a[href="/t/design"]');
@@ -204,15 +204,16 @@ describe("TagNavigation", () => {
     // chevron and link — the nested <ul> of children sits outside that
     // container, so counting within the link's parent never picks up a
     // descendant row's guides.
-    expect(rootLink?.parentElement?.querySelectorAll(".bg-border").length).toBe(
-      0,
-    );
-    expect(
-      depth1Link?.parentElement?.querySelectorAll(".bg-border").length,
-    ).toBe(1);
-    expect(
-      depth2Link?.parentElement?.querySelectorAll(".bg-border").length,
-    ).toBe(2);
+    const count = (link: Element | null, selector: string) =>
+      link?.parentElement?.querySelectorAll(selector).length;
+
+    expect(count(rootLink, ".rounded-bl-md")).toBe(0);
+    expect(count(depth1Link, ".rounded-bl-md")).toBe(1);
+    expect(count(depth2Link, ".rounded-bl-md")).toBe(1);
+    // Every row here is an only child, so no trunk continues past any elbow
+    // and no ancestor column carries a line.
+    expect(count(depth1Link, ".bg-muted-foreground\\/40")).toBe(0);
+    expect(count(depth2Link, ".bg-muted-foreground\\/40")).toBe(0);
   });
 
   it("shows each tag's rollup count inside its link, 0 when absent from the map", async () => {

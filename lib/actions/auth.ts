@@ -12,7 +12,7 @@ import { getEnv } from "@/lib/validation/env";
 import { getDictionary } from "@/lib/i18n/server";
 import { translateFieldErrors } from "@/lib/i18n/validation";
 import { logEvent } from "@/lib/security/logging";
-import { hasRecoverySession } from "@/lib/auth/require-user";
+import { getOptionalUser, hasRecoverySession } from "@/lib/auth/require-user";
 import { ok, fail, type ActionResult } from "@/lib/utils/result";
 
 /**
@@ -93,17 +93,42 @@ export async function requestPasswordReset(
     );
   }
 
+  await sendRecoveryEmail(parsed.data.email);
+  return ok(null);
+}
+
+/**
+ * "Alterar senha" in settings (AAA-242). A logged-in session never changes
+ * the password directly -- `updatePassword` only accepts a fresh recovery
+ * session -- so this sends the same recovery email, to the email of the
+ * *verified* session, never to one taken from the request.
+ */
+export async function requestPasswordChange(): Promise<ActionResult<null>> {
+  const t = await getDictionary();
+  const user = await getOptionalUser();
+
+  if (!user?.email) {
+    return fail("FORBIDDEN", t.errors.unknown);
+  }
+
+  const failed = await sendRecoveryEmail(user.email);
+  if (failed?.status === 429) {
+    return fail("UNKNOWN", t.errors.tooManyAttempts);
+  }
+  if (failed) {
+    return fail("UNKNOWN", t.errors.unknown);
+  }
+  return ok(null);
+}
+
+/** Sends the recovery email; logs and returns the Supabase error, if any. */
+async function sendRecoveryEmail(email: string) {
   const supabase = await createClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(
-    parsed.data.email,
-    {
-      redirectTo: (() => {
-        const url = new URL("/auth/confirm", getEnv().NEXT_PUBLIC_APP_URL);
-        url.searchParams.set("next", "/reset-password");
-        return url.toString();
-      })(),
-    },
-  );
+  const url = new URL("/auth/confirm", getEnv().NEXT_PUBLIC_APP_URL);
+  url.searchParams.set("next", "/reset-password");
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: url.toString(),
+  });
 
   if (error) {
     logEvent({
@@ -112,8 +137,7 @@ export async function requestPasswordReset(
       errorClass: error.name,
     });
   }
-
-  return ok(null);
+  return error;
 }
 
 /**

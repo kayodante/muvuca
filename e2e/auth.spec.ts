@@ -14,11 +14,17 @@ test("unauthenticated access to a protected route redirects to /login", async ({
   await expect(page).toHaveURL(/\/login/);
 });
 
-test("authenticated visit to / redirects to /library", async ({ page }) => {
-  const email = `e2e-home-redirect-${Date.now()}@muvuca.test`;
+test("authenticated visit to / stays on landing page and opens library via CTA", async ({
+  page,
+}) => {
+  const email = `e2e-home-auth-${Date.now()}@muvuca.test`;
   await signIn(page, email);
 
   await page.goto("/");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+  await page.getByRole("link", { name: "Abrir Muvuca" }).first().click();
   await expect(page).toHaveURL(/\/library/);
 });
 
@@ -60,6 +66,10 @@ test("full password login and logout", async ({ page }) => {
   // Sair vive no menu de conta do rodapé da sidebar, não mais no topbar.
   await page.getByRole("button", { name: SEEDED_EMAIL }).click();
   await page.getByRole("button", { name: "Sair" }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Sair" })
+    .click();
   await expect(page).toHaveURL(/\/login/);
 
   // Session is gone: the protected route redirects again.

@@ -1,6 +1,4 @@
 import { connection } from "next/server";
-import { redirect } from "next/navigation";
-import { getOptionalUser } from "@/lib/auth/require-user";
 import { LandingPage } from "@/components/landing/LandingPage";
 import { getDictionary, getLocale } from "@/lib/i18n/server";
 
@@ -8,14 +6,6 @@ export default async function HomePage() {
   // Every route in this app is dynamic by design: the nonce-based CSP from
   // `proxy.ts` only applies to dynamically rendered pages.
   await connection();
-
-  // Straight to the library when signed in: the landing is only relevant to
-  // visitors. Identity comes from `getClaims()`; the target is a constant,
-  // so no `safeRedirectTarget`.
-  const user = await getOptionalUser();
-  if (user) {
-    redirect("/library");
-  }
 
   const [dictionary, locale] = await Promise.all([
     getDictionary(),

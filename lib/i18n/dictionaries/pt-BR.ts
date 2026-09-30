@@ -90,6 +90,12 @@ export const ptBR = {
       description: "Você entra com email e senha.",
       emailLabel: "Email",
       emailUnavailable: "Email não disponível",
+      passwordLabel: "Senha",
+      passwordHint:
+        "Enviamos um link para o seu email para definir a nova senha.",
+      changePassword: "Alterar senha",
+      changePasswordPending: "Enviando…",
+      changePasswordSent: "Link enviado. Confira seu email.",
     },
     danger: {
       heading: "Zona de perigo",
@@ -391,6 +397,9 @@ export const ptBR = {
     signOut: {
       pending: "Saindo da conta",
       label: "Sair",
+      confirmTitle: "Sair da conta?",
+      confirmDescription:
+        "Você precisará fazer login novamente para acessar sua biblioteca.",
     },
     forgotPassword: {
       badge: "RECUPERAR ACESSO",
