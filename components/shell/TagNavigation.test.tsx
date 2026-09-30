@@ -126,6 +126,47 @@ describe("TagNavigation", () => {
     );
   });
 
+  it("anuncia o vazio numa região de status que já existia antes da busca", async () => {
+    const dom = await renderTagNavigation(tags);
+    const status = dom.querySelector('[role="status"]');
+    const input = dom.querySelector('input[type="search"]') as HTMLInputElement;
+
+    expect(status).not.toBeNull();
+    expect(status?.textContent).toBe("");
+
+    await act(async () => {
+      setInputValue(input, "inexistente");
+    });
+
+    // Same node: a region remounted with its text would not be announced.
+    expect(dom.querySelector('[role="status"]')).toBe(status);
+    expect(status?.textContent).toBe(
+      "Nenhuma tag encontrada para “inexistente”.",
+    );
+  });
+
+  it("limpar busca no vazio restaura a árvore e devolve o foco ao campo", async () => {
+    const dom = await renderTagNavigation(tags);
+    const input = dom.querySelector('input[type="search"]') as HTMLInputElement;
+
+    await act(async () => {
+      setInputValue(input, "inexistente");
+    });
+    const clear = Array.from(dom.querySelectorAll("button")).find(
+      (button) => button.textContent === "Limpar busca",
+    );
+    expect(clear).toBeDefined();
+
+    await act(async () => {
+      clear?.click();
+    });
+
+    expect(input.value).toBe("");
+    expect(tagLinks(dom)).toEqual(["Design", "Dev", "Frontend"]);
+    expect(document.activeElement).toBe(input);
+    expect(dom.querySelector('[role="status"]')?.textContent).toBe("");
+  });
+
   it("filtrar com um ramo recolhido ainda mostra o descendente que combina", async () => {
     const dom = await renderTagNavigation(tags);
 

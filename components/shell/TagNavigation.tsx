@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDownIcon, SearchIcon } from "lucide-react";
@@ -14,6 +14,7 @@ import {
   type TagNode,
 } from "@/lib/tags/tree";
 import { getTagHref } from "@/lib/tags/routes";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDictionary } from "@/lib/i18n/client";
 
@@ -33,6 +34,7 @@ export function TagNavigation({
   const pathname = usePathname();
   const nodes = buildTagTree(tags);
   const [query, setQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
   const [expandedById, setExpandedById] = useState<Record<string, boolean>>({});
 
   const visibleNodes = filterTagTree(nodes, query);
@@ -64,6 +66,7 @@ export function TagNavigation({
               className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
             />
             <Input
+              ref={searchRef}
               type="search"
               dir="auto"
               maxLength={80}
@@ -78,7 +81,7 @@ export function TagNavigation({
           </div>
         )}
       </div>
-      {visibleNodes.length > 0 ? (
+      {visibleNodes.length > 0 && (
         // `-m-px p-px` here and on each subtree: both clip, and the active
         // row's outer `shadow-light` edge needs 1px past the row to show.
         <ul className="-m-px min-h-0 flex-1 overflow-y-auto p-px">
@@ -95,14 +98,34 @@ export function TagNavigation({
             />
           ))}
         </ul>
-      ) : nodes.length > 0 ? (
-        <p
-          dir="auto"
-          className="text-body-sm py-2 [overflow-wrap:anywhere] text-muted-foreground"
+      )}
+      {nodes.length > 0 && (
+        // Mounted with the search field: a live region inserted together
+        // with its text is not announced, only a change to one that exists.
+        <div role="status">
+          {visibleNodes.length === 0 && (
+            <p
+              dir="auto"
+              className="text-body-sm py-2 [overflow-wrap:anywhere] text-muted-foreground"
+            >
+              {t.shell.tagNav.noneFound(query)}
+            </p>
+          )}
+        </div>
+      )}
+      {nodes.length > 0 && visibleNodes.length === 0 && (
+        <Button
+          variant="ghost"
+          className="self-start"
+          onClick={() => {
+            setQuery("");
+            // The button unmounts with the empty state; keep focus in place.
+            searchRef.current?.focus();
+          }}
         >
-          {t.shell.tagNav.noneFound(query)}
-        </p>
-      ) : null}
+          {t.shell.tagNav.clearSearch}
+        </Button>
+      )}
     </section>
   );
 }

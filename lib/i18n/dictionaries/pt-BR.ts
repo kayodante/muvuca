@@ -462,6 +462,7 @@ export const ptBR = {
       searchPlaceholder: "Buscar tags",
       searchAriaLabel: "Buscar tags por nome",
       noneFound: (query: string) => `Nenhuma tag encontrada para “${query}”.`,
+      clearSearch: "Limpar busca",
     },
     loading: {
       library: "Carregando biblioteca",
