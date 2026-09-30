@@ -433,6 +433,7 @@ export const en: Dictionary = {
       searchPlaceholder: "Search tags",
       searchAriaLabel: "Search tags by name",
       noneFound: (query: string) => `No tags found for “${query}”.`,
+      clearSearch: "Clear search",
     },
     loading: {
       library: "Loading library",
