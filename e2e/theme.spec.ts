@@ -43,7 +43,10 @@ test("a preferência de tema persiste em uma nova sessão do mesmo usuário", as
   await page.getByRole("button", { name: email }).click();
   // Escopo no menu: /settings tem a própria seção "Conta" com outro "Sair".
   await page.getByRole("menu").getByRole("button", { name: "Sair" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Sair" }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Sair" })
+    .click();
   await expect(page).toHaveURL(/\/login/);
 
   await signIn(page, email);

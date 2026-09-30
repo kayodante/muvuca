@@ -79,7 +79,9 @@ describe("SignOutButton", () => {
     });
 
     const cancelButton = Array.from(
-      document.body.querySelectorAll<HTMLButtonElement>('[role="alertdialog"] button'),
+      document.body.querySelectorAll<HTMLButtonElement>(
+        '[role="alertdialog"] button',
+      ),
     ).find((b) => b.textContent?.includes("Cancelar"));
     expect(cancelButton).toBeTruthy();
 
@@ -108,9 +110,10 @@ describe("SignOutButton", () => {
     const dialog = document.querySelector('[role="alertdialog"]');
     expect(dialog).toBeTruthy();
 
-    const confirmButton = Array.from(
-      dialog!.querySelectorAll("button"),
-    ).find((b) => b.getAttribute("type") === "submit" && b.textContent?.includes("Sair"));
+    const confirmButton = Array.from(dialog!.querySelectorAll("button")).find(
+      (b) =>
+        b.getAttribute("type") === "submit" && b.textContent?.includes("Sair"),
+    );
     expect(confirmButton).toBeTruthy();
 
     await act(async () => {
@@ -139,9 +142,10 @@ describe("SignOutButton", () => {
     });
 
     const dialog = document.querySelector('[role="alertdialog"]');
-    const confirmButton = Array.from(
-      dialog!.querySelectorAll("button"),
-    ).find((b) => b.getAttribute("type") === "submit" && b.textContent?.includes("Sair"));
+    const confirmButton = Array.from(dialog!.querySelectorAll("button")).find(
+      (b) =>
+        b.getAttribute("type") === "submit" && b.textContent?.includes("Sair"),
+    );
 
     await act(async () => {
       confirmButton?.click();

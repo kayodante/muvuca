@@ -12,10 +12,7 @@ import { getEnv } from "@/lib/validation/env";
 import { getDictionary } from "@/lib/i18n/server";
 import { translateFieldErrors } from "@/lib/i18n/validation";
 import { logEvent } from "@/lib/security/logging";
-import {
-  getOptionalUser,
-  hasRecoverySession,
-} from "@/lib/auth/require-user";
+import { getOptionalUser, hasRecoverySession } from "@/lib/auth/require-user";
 import { ok, fail, type ActionResult } from "@/lib/utils/result";
 
 /**

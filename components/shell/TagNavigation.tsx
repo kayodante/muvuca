@@ -171,7 +171,10 @@ function TagNavigationRow({
         {depth > 0 && (
           // Branch elbow into this row: the trunk runs on past it unless this
           // is the last sibling, where it curves off and ends.
-          <span aria-hidden="true" className="relative w-7 shrink-0 self-stretch">
+          <span
+            aria-hidden="true"
+            className="relative w-7 shrink-0 self-stretch"
+          >
             {!isLast && (
               <span className="absolute inset-y-0 left-1/2 w-px bg-muted-foreground/40" />
             )}

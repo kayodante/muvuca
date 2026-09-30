@@ -44,7 +44,10 @@ test("full password-reset flow: request, mismatch, reset, old password fails, ne
 
   await page.getByRole("button", { name: email }).click();
   await page.getByRole("button", { name: "Sair" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Sair" }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Sair" })
+    .click();
   await expect(page).toHaveURL(/\/login/);
 
   await page.getByLabel("Email").fill(email);
