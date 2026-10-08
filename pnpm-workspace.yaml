@@ -76,3 +76,14 @@ allowBuilds:
   # view sharp@0.35.3 scripts` and `pnpm install` producing no "Ignored
   # build scripts" warning). Recorded here so a future reviewer doesn't
   # add a no-op entry "just in case" the next time this file is touched.
+
+auditConfig:
+  ignoreGhsas:
+    # braces <=3.0.3 stack-exhaustion DoS on deeply nested patterns
+    # (CVE-2026-93687). Unlike brace-expansion above, there is no patched
+    # release to pin: the advisory lists none and braces@3.0.4 does not
+    # exist on npm. Only dev tooling reaches it (eslint-config-next and
+    # shadcn, via fast-glob > micromatch), never with untrusted input, and
+    # `pnpm why braces --prod` is empty. Drop this entry and pin the patched
+    # line in `overrides` once one is published.
+    - GHSA-vfj7-8cjw-p6xm

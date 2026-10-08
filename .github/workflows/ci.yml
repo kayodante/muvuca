@@ -84,8 +84,8 @@ jobs:
       - name: Format check
         run: pnpm format:check
       - name: Dependency audit
-        # Ignored advisories (GHSA-w3rx-r6r6-pgpr, GHSA-5p2g-fcmc-qvqq) are
-        # documented and pinned in pnpm-workspace.yaml (auditConfig).
+        # Ignored advisories are documented in pnpm-workspace.yaml
+        # (auditConfig).
         run: pnpm audit --audit-level=high
       - name: Audit package signatures
         run: pnpm audit signatures
