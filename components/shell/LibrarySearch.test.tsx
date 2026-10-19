@@ -88,7 +88,7 @@ describe("LibrarySearch", () => {
   it("abre o spotlight ao clicar no botão de atalho de teclado", async () => {
     const dom = await renderLibrarySearch();
     const button = dom.querySelector(
-      'button[aria-label="Abrir busca rápida (Spotlight)"]',
+      'button[aria-label^="Abrir busca rápida (Spotlight), "]',
     ) as HTMLButtonElement;
     expect(button).not.toBeNull();
 

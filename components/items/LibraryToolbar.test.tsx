@@ -99,10 +99,10 @@ describe("LibraryToolbar", () => {
   it("keeps type, sort and preview refresh available in the compact mobile row", async () => {
     const dom = await renderToolbar({ canRefreshPreviews: true });
     expect(
-      dom.querySelector('button[aria-label="Filtrar por tipo"]'),
+      dom.querySelector('button[aria-label="Filtrar por tipo: Tudo"]'),
     ).not.toBeNull();
     expect(
-      dom.querySelector('button[aria-label="Ordenar itens"]'),
+      dom.querySelector('button[aria-label="Ordenar itens: Mais recentes"]'),
     ).not.toBeNull();
     expect(
       dom.querySelector('button[aria-label="Atualizar pré-visualizações"]'),
@@ -115,7 +115,9 @@ describe("LibraryToolbar", () => {
   it("mostra o botão de ordenar com o rótulo do sort atual", async () => {
     const dom = await renderToolbar({ sort: "title_asc" });
 
-    const sortTrigger = dom.querySelector('button[aria-label="Ordenar itens"]');
+    const sortTrigger = dom.querySelector(
+      'button[aria-label="Ordenar itens: Título A–Z"]',
+    );
     expect(sortTrigger).not.toBeNull();
     expect(sortTrigger?.textContent).toContain("Título A–Z");
   });

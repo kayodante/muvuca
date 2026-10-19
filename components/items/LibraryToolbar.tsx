@@ -172,6 +172,7 @@ export function LibraryToolbar({
   }, [type]);
 
   const labels = sortLabels(t);
+  const typeLabel = typeTabs(t).find((tab) => tab.value === type)?.label;
 
   return (
     <section
@@ -184,12 +185,13 @@ export function LibraryToolbar({
             render={
               <Button
                 variant="outline"
-                aria-label={t.items.toolbar.typeFilterLabel}
+                // WCAG 2.5.3: o nome acessível contém o texto visível.
+                aria-label={`${t.items.toolbar.typeFilterLabel}: ${typeLabel}`}
                 className="border-0 bg-surface shadow-light"
               />
             }
           >
-            {typeTabs(t).find((tab) => tab.value === type)?.label}
+            {typeLabel}
             <ChevronDownIcon aria-hidden="true" data-icon="inline-end" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
@@ -237,7 +239,7 @@ export function LibraryToolbar({
           render={
             <Button
               variant="outline"
-              aria-label={t.items.toolbar.sortAriaLabel}
+              aria-label={`${t.items.toolbar.sortAriaLabel}: ${labels[sort]}`}
               className="border-0 bg-surface shadow-light"
             />
           }
