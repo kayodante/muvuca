@@ -277,7 +277,8 @@ export function LibrarySearch() {
         <button
           type="button"
           onClick={() => openSpotlight()}
-          aria-label={t.shell.search.openSpotlight}
+          // WCAG 2.5.3: o atalho é o texto visível, então entra no nome.
+          aria-label={`${t.shell.search.openSpotlight}, ${shortcutLabel}`}
           className="absolute top-1/2 right-2.5 -translate-y-1/2 cursor-pointer outline-none after:absolute after:-inset-y-3 after:left-1/2 after:w-11 after:-translate-x-1/2 after:content-[''] focus-visible:ring-2 focus-visible:ring-ring"
         >
           <kbd
