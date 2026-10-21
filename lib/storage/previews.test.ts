@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { createClient } from "@/lib/supabase/server";
 
 import {
   deletePreviewObjects,
@@ -34,8 +35,7 @@ function fakeSupabase(overrides: {
         remove: overrides.remove ?? vi.fn(),
       }),
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any;
+  } as unknown as Awaited<ReturnType<typeof createClient>>;
 }
 
 describe("putPreviewObject", () => {
