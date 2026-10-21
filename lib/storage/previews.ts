@@ -111,9 +111,39 @@ export async function removeAllUserPreviewObjects(
     }
     if (!data || data.length === 0) return;
 
-    await processInChunks(data, STORAGE_DELETE_CONCURRENCY, (folder) =>
-      deletePreviewObjects(supabase, userId, folder.name),
-    );
+    const allPaths: string[] = [];
+    await processInChunks(data, STORAGE_DELETE_CONCURRENCY, async (folder) => {
+      const prefix = `${userId}/${folder.name}`;
+      const { data: objects, error: listError } = await supabase.storage
+        .from(BUCKET)
+        .list(prefix);
+
+      if (listError) {
+        throw new PreviewError(
+          "storage_failed",
+          "Falha ao listar objetos do Storage.",
+        );
+      }
+
+      if (objects) {
+        for (const object of objects) {
+          allPaths.push(`${prefix}/${object.name}`);
+        }
+      }
+    });
+
+    if (allPaths.length > 0) {
+      const { error: removeError } = await supabase.storage
+        .from(BUCKET)
+        .remove(allPaths);
+
+      if (removeError) {
+        throw new PreviewError(
+          "storage_failed",
+          "Falha ao remover objetos do Storage.",
+        );
+      }
+    }
   }
 
   throw new PreviewError(
