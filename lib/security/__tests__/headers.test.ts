@@ -48,12 +48,6 @@ describe("buildContentSecurityPolicy", () => {
     expect(directive(production, "base-uri")).toBe("base-uri 'self'");
     expect(directive(production, "form-action")).toBe("form-action 'self'");
   });
-
-  it("only relaxes script-src for the dev build's eval-based stacks", () => {
-    expect(
-      directive(buildContentSecurityPolicy(NONCE, true), "script-src") ?? "",
-    ).toContain("'unsafe-eval'");
-  });
 });
 
 describe("baselineSecurityHeaders", () => {

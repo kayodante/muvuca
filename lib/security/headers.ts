@@ -34,8 +34,6 @@ export function baselineSecurityHeaders(isProduction: boolean) {
 
 /**
  * Builds the nonce-based CSP header value.
- * `unsafe-eval` is only added in development because React's dev build
- * uses `eval` for enhanced error stacks; never present in production.
  *
  * `style-src-attr 'unsafe-inline'` is deliberate and narrow. Base UI
  * positions every popup (Select, DropdownMenu, Tooltip, Sheet) and hides its
@@ -52,7 +50,7 @@ export function baselineSecurityHeaders(isProduction: boolean) {
 export function buildContentSecurityPolicy(nonce: string, isDev: boolean) {
   const policy = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""};
+    script-src 'self' 'nonce-${nonce}' 'strict-dynamic';
     style-src 'self' ${isDev ? "'unsafe-inline'" : `'nonce-${nonce}'`};
     style-src-attr 'unsafe-inline';
     img-src 'self' blob: data:;
