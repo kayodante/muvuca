@@ -162,7 +162,7 @@ describe("removeAllUserPreviewObjects", () => {
     expect(remove).toHaveBeenCalledTimes(1);
 
     // Check paths are collected correctly across the page
-    const pathsArg = remove.mock.calls[0][0];
+    const pathsArg = remove.mock.calls[0]?.[0];
     expect(pathsArg).toContain("user-2/item-a/t_a.webp");
     expect(pathsArg).toContain("user-2/item-b/i_b.webp");
     expect(pathsArg).toHaveLength(2);
@@ -192,8 +192,7 @@ describe("removeAllUserPreviewObjects", () => {
       // remove is called with flattened paths.
       // we extract the folder names and remove them from remainingFolders
       for (const p of paths) {
-        const parts = p.split("/");
-        const folder = parts[1];
+        const folder = p.split("/")[1] ?? "";
         const idx = remainingFolders.indexOf(folder);
         if (idx !== -1) remainingFolders.splice(idx, 1);
       }
