@@ -1,3 +1,5 @@
+import type { createClient } from "@/lib/supabase/server";
+
 import { describe, expect, it, vi } from "vitest";
 
 import {
@@ -25,8 +27,7 @@ function fakeSupabase(overrides: {
         remove: overrides.remove ?? vi.fn(),
       }),
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any;
+  } as unknown as Awaited<ReturnType<typeof createClient>>;
 }
 
 describe("putAvatarObject", () => {
