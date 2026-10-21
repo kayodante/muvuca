@@ -43,12 +43,11 @@ export async function putPreviewObject(
   }
 }
 
-/** Removes every object under `${userId}/${itemId}/` -- used by item-delete cleanup and best-effort orphan removal (drainPreviewQueue). */
-export async function deletePreviewObjects(
+async function listPreviewObjectPaths(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   itemId: string,
-): Promise<void> {
+): Promise<string[]> {
   const prefix = `${userId}/${itemId}`;
   const { data, error: listError } = await supabase.storage
     .from(BUCKET)
@@ -61,9 +60,21 @@ export async function deletePreviewObjects(
     );
   }
 
-  if (!data || data.length === 0) return;
+  if (!data || data.length === 0) return [];
 
-  const paths = data.map((object) => `${prefix}/${object.name}`);
+  return data.map((object) => `${prefix}/${object.name}`);
+}
+
+/** Removes every object under `${userId}/${itemId}/` -- used by item-delete cleanup and best-effort orphan removal (drainPreviewQueue). */
+export async function deletePreviewObjects(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  itemId: string,
+): Promise<void> {
+  const paths = await listPreviewObjectPaths(supabase, userId, itemId);
+
+  if (paths.length === 0) return;
+
   const { error: removeError } = await supabase.storage
     .from(BUCKET)
     .remove(paths);
@@ -113,23 +124,8 @@ export async function removeAllUserPreviewObjects(
 
     const allPaths: string[] = [];
     await processInChunks(data, STORAGE_DELETE_CONCURRENCY, async (folder) => {
-      const prefix = `${userId}/${folder.name}`;
-      const { data: objects, error: listError } = await supabase.storage
-        .from(BUCKET)
-        .list(prefix);
-
-      if (listError) {
-        throw new PreviewError(
-          "storage_failed",
-          "Falha ao listar objetos do Storage.",
-        );
-      }
-
-      if (objects) {
-        for (const object of objects) {
-          allPaths.push(`${prefix}/${object.name}`);
-        }
-      }
+      const paths = await listPreviewObjectPaths(supabase, userId, folder.name);
+      allPaths.push(...paths);
     });
 
     if (allPaths.length > 0) {

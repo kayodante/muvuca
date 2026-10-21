@@ -110,28 +110,67 @@ describe("deletePreviewObjects", () => {
 describe("removeAllUserPreviewObjects", () => {
   it("does nothing when the user has no preview folders", async () => {
     const list = vi.fn().mockResolvedValue({ data: [], error: null });
-    const supabase = fakeSupabase({ list });
+    const remove = vi.fn();
+    const supabase = fakeSupabase({ list, remove });
 
     await removeAllUserPreviewObjects(supabase, "user-1");
 
     expect(list).toHaveBeenCalledTimes(1);
     expect(list).toHaveBeenCalledWith("user-1", { limit: 100 });
+    expect(remove).not.toHaveBeenCalled();
   });
 
-  // Pagination must survive the listed set shrinking
-  // while it's being consumed. `remainingFolders` here plays the role of
-  // Storage's real folder listing -- each per-item deletePreviewObjects()
-  // call removes its own folder from it, exactly like Storage's own virtual
-  // folder disappearing once every object under it is gone. Simulating 150
-  // folders (more than one 100-item page) proves the old `offset`-based
-  // pagination would have skipped the second page: after page 1's 100
-  // folders are deleted, only 50 remain (what used to be folders 100-149),
-  // so `offset: 100` on a 50-long remaining set would return nothing and
-  // the loop would stop 50 folders short. Always re-listing from the front
-  // (no offset) instead always converges on what's actually still there.
-  it("survives the listed folder set shrinking mid-pagination and removes every folder", async () => {
+  it("issues one remove() call per listed page, containing the paths of every folder in that page", async () => {
+    const list = vi
+      .fn()
+      .mockImplementation((prefix: string, opts?: { limit: number }) => {
+        if (opts) {
+          // Folder listing
+          if (prefix === "user-2") {
+            // Return two folders
+            return Promise.resolve({
+              data: [{ name: "item-a" }, { name: "item-b" }],
+              error: null,
+            });
+          }
+          return Promise.resolve({ data: [], error: null });
+        }
+
+        // Inner file listing
+        if (prefix === "user-2/item-a") {
+          return Promise.resolve({ data: [{ name: "t_a.webp" }], error: null });
+        }
+        if (prefix === "user-2/item-b") {
+          return Promise.resolve({ data: [{ name: "i_b.webp" }], error: null });
+        }
+        return Promise.resolve({ data: [], error: null });
+      });
+
+    // Mock remove so that the loop doesn't spin infinitely
+    const remove = vi.fn().mockImplementation(() => {
+      // Clear the folders so next list returns empty
+      list.mockImplementation(() => {
+        return Promise.resolve({ data: [], error: null });
+      });
+      return Promise.resolve({ error: null });
+    });
+
+    const supabase = fakeSupabase({ list, remove });
+
+    await removeAllUserPreviewObjects(supabase, "user-2");
+
+    expect(remove).toHaveBeenCalledTimes(1);
+
+    // Check paths are collected correctly across the page
+    const pathsArg = remove.mock.calls[0][0];
+    expect(pathsArg).toContain("user-2/item-a/t_a.webp");
+    expect(pathsArg).toContain("user-2/item-b/i_b.webp");
+    expect(pathsArg).toHaveLength(2);
+  });
+
+  it("survives the listed folder set shrinking mid-pagination and lists next page at offset 0", async () => {
     const remainingFolders = Array.from({ length: 150 }, (_, i) => `item-${i}`);
-    const removedFolders = new Set<string>();
+    let removeCalls = 0;
 
     const list = vi
       .fn()
@@ -145,24 +184,31 @@ describe("removeAllUserPreviewObjects", () => {
             error: null,
           });
         }
-        // Per-item listing made by deletePreviewObjects() itself: one fake
-        // object so remove() runs, then the folder "disappears" -- mirrors
-        // Storage having no more objects left under that prefix.
-        const itemName = prefix.split("/")[1] ?? "";
-        const idx = remainingFolders.indexOf(itemName);
-        if (idx !== -1) remainingFolders.splice(idx, 1);
-        removedFolders.add(itemName);
         return Promise.resolve({ data: [{ name: "obj.webp" }], error: null });
       });
-    const remove = vi.fn().mockResolvedValue({ error: null });
+
+    const remove = vi.fn().mockImplementation((paths: string[]) => {
+      removeCalls++;
+      // remove is called with flattened paths.
+      // we extract the folder names and remove them from remainingFolders
+      for (const p of paths) {
+        const parts = p.split("/");
+        const folder = parts[1];
+        const idx = remainingFolders.indexOf(folder);
+        if (idx !== -1) remainingFolders.splice(idx, 1);
+      }
+      return Promise.resolve({ error: null });
+    });
+
     const supabase = fakeSupabase({ list, remove });
 
     await removeAllUserPreviewObjects(supabase, "user-1");
 
-    expect(removedFolders.size).toBe(150);
     expect(remainingFolders).toHaveLength(0);
-    // Every page-listing call is offset-free -- always re-lists from the
-    // front of whatever's still there.
+    // 150 items with 100 per page = 2 remove calls
+    expect(removeCalls).toBe(2);
+
+    // Every page-listing call is offset-free -- always re-lists from the front
     for (const call of list.mock.calls) {
       if (call[1]) expect(call[1]).toEqual({ limit: 100 });
     }
@@ -177,6 +223,32 @@ describe("removeAllUserPreviewObjects", () => {
     await expect(
       removeAllUserPreviewObjects(supabase, "user-1"),
     ).rejects.toMatchObject({ code: "storage_failed" });
+  });
+
+  it("throws a storage_failed PreviewError when a folder listing fails, and does not call remove for that page", async () => {
+    const list = vi
+      .fn()
+      .mockImplementation((prefix: string, opts?: { limit: number }) => {
+        if (opts) {
+          return Promise.resolve({
+            data: [{ name: "item-a" }, { name: "item-b" }],
+            error: null,
+          });
+        }
+        if (prefix === "user-1/item-b") {
+          return Promise.resolve({ data: null, error: { message: "nope" } });
+        }
+        return Promise.resolve({ data: [{ name: "obj.webp" }], error: null });
+      });
+
+    const remove = vi.fn().mockResolvedValue({ error: null });
+    const supabase = fakeSupabase({ list, remove });
+
+    await expect(
+      removeAllUserPreviewObjects(supabase, "user-1"),
+    ).rejects.toMatchObject({ code: "storage_failed" });
+
+    expect(remove).not.toHaveBeenCalled();
   });
 
   it("throws a storage_failed PreviewError when pages never converge (loop guard)", async () => {
@@ -206,7 +278,6 @@ describe("removeAllUserPreviewObjects", () => {
     const pageFolders = Array.from({ length: 10 }, (_, i) => `item-${i}`);
     let currentInFlight = 0;
     let peakInFlight = 0;
-    const removedFolders = new Set<string>();
 
     const list = vi
       .fn()
@@ -220,32 +291,30 @@ describe("removeAllUserPreviewObjects", () => {
           });
         }
 
-        // Inner list() inside deletePreviewObjects
-        const itemName = prefix.split("/")[1] ?? "";
-
+        // Inner list()
         currentInFlight++;
         if (currentInFlight > peakInFlight) {
           peakInFlight = currentInFlight;
         }
 
-        // Simulate async work and clear the folder so the next page listing shrinks
         return new Promise((resolve) => {
           setTimeout(() => {
             currentInFlight--;
-            const idx = pageFolders.indexOf(itemName);
-            if (idx !== -1) pageFolders.splice(idx, 1);
-            removedFolders.add(itemName);
             resolve({ data: [{ name: "obj.webp" }], error: null });
           }, 10);
         });
       });
 
-    const remove = vi.fn().mockResolvedValue({ error: null });
+    const remove = vi.fn().mockImplementation(() => {
+      // Empty the pageFolders to stop loop
+      pageFolders.length = 0;
+      return Promise.resolve({ error: null });
+    });
+
     const supabase = fakeSupabase({ list, remove });
 
     await removeAllUserPreviewObjects(supabase, "user-1");
 
-    expect(removedFolders.size).toBe(10);
     expect(pageFolders).toHaveLength(0);
     // Uses the imported STORAGE_DELETE_CONCURRENCY of 3
     expect(peakInFlight).toBe(3);
