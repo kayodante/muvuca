@@ -1,0 +1,5 @@
+🔒 [security fix] Use process.stdout.write instead of console.log for structured logging
+
+🎯 **What:** The structured logging in `lib/security/logging.ts` used `console.log` to emit JSON payload to standard output.
+⚠️ **Risk:** Logging data directly to stdout via `console.log` is a common data exposure vector, even with redaction attempts. The `console` object is frequently monkey-patched by third-party packages or diagnostic tools. If a malicious or poorly written dependency overrides `console.log`, it gains access to the fully formed, unencrypted log payload—which could potentially include sensitive data or metadata if redaction isn't perfect.
+🛡️ **Solution:** Using `process.stdout.write(JSON.stringify(payload) + "\n")` bypasses the global `console` object entirely, ensuring the log payload is written securely and directly to standard output without interception risks. I have implemented the fix in `lib/security/logging.ts` and updated the corresponding test in `lib/security/__tests__/logging.test.ts`.

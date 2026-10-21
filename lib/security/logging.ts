@@ -53,5 +53,5 @@ export function logEvent(fields: LogEvent): void {
   if (fields.errorClass) payload.errorClass = redact(fields.errorClass);
   if (fields.userId) payload.userId = fields.userId;
 
-  console.log(JSON.stringify(payload));
+  process.stdout.write(JSON.stringify(payload) + "\n");
 }
