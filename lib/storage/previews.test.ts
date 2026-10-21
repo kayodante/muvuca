@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import type { createClient } from "@/lib/supabase/server";
 
 import {
   deletePreviewObjects,
@@ -35,7 +34,8 @@ function fakeSupabase(overrides: {
         remove: overrides.remove ?? vi.fn(),
       }),
     },
-  } as unknown as Awaited<ReturnType<typeof createClient>>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any;
 }
 
 describe("putPreviewObject", () => {
@@ -162,7 +162,7 @@ describe("removeAllUserPreviewObjects", () => {
     expect(remove).toHaveBeenCalledTimes(1);
 
     // Check paths are collected correctly across the page
-    const pathsArg = remove.mock.calls[0]?.[0];
+    const pathsArg = remove.mock.calls[0]?.[0] ?? [];
     expect(pathsArg).toContain("user-2/item-a/t_a.webp");
     expect(pathsArg).toContain("user-2/item-b/i_b.webp");
     expect(pathsArg).toHaveLength(2);
@@ -192,7 +192,9 @@ describe("removeAllUserPreviewObjects", () => {
       // remove is called with flattened paths.
       // we extract the folder names and remove them from remainingFolders
       for (const p of paths) {
-        const folder = p.split("/")[1] ?? "";
+        const parts = p.split("/");
+        const folder = parts[1];
+        if (!folder) continue;
         const idx = remainingFolders.indexOf(folder);
         if (idx !== -1) remainingFolders.splice(idx, 1);
       }
