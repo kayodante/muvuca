@@ -5,8 +5,7 @@ import { requireUser } from "@/lib/auth/require-user";
 import { getDictionary } from "@/lib/i18n/server";
 import { logEvent } from "@/lib/security/logging";
 import { createClient } from "@/lib/supabase/server";
-import { chunkArray } from "@/lib/bookmarks/batch";
-import { processInChunks } from "@/lib/utils/concurrency";
+
 import {
   bookmarkImportSchema,
   bookmarkUrlsSchema,
@@ -20,9 +19,6 @@ export type BookmarkImportSummary = {
   errorsIgnored: number;
 };
 
-const DUPLICATE_CHECK_CHUNK_SIZE = 200;
-const DUPLICATE_CHECK_CONCURRENCY = 4;
-
 export async function findExistingBookmarkUrls(
   urls: string[],
 ): Promise<ActionResult<string[]>> {
@@ -33,37 +29,25 @@ export async function findExistingBookmarkUrls(
   const user = await requireUser();
   const supabase = await createClient();
 
-  const urlChunks = chunkArray(parsed.data, DUPLICATE_CHECK_CHUNK_SIZE);
-  const foundUrls: string[] = [];
+  const { data, error } = await supabase
+    .from("library_items")
+    .select("normalized_url")
+    .eq("type", "link")
+    .in("normalized_url", parsed.data);
 
-  const results = await processInChunks(
-    urlChunks,
-    DUPLICATE_CHECK_CONCURRENCY,
-    async (chunk) =>
-      supabase
-        .from("library_items")
-        .select("normalized_url")
-        .eq("type", "link")
-        .in("normalized_url", chunk),
-  );
-
-  for (const { data, error } of results) {
-    if (error) {
-      logEvent({
-        event: "bookmark.preview_failed",
-        status: "failure",
-        errorClass: error.code,
-        userId: user.id,
-      });
-      return fail("UNKNOWN", t.errors.duplicateCheckFailed);
-    }
-
-    if (data) {
-      for (const item of data) {
-        if (item.normalized_url) foundUrls.push(item.normalized_url);
-      }
-    }
+  if (error) {
+    logEvent({
+      event: "bookmark.preview_failed",
+      status: "failure",
+      errorClass: error.code,
+      userId: user.id,
+    });
+    return fail("UNKNOWN", t.errors.duplicateCheckFailed);
   }
+
+  const foundUrls = data
+    .map((item) => item.normalized_url)
+    .filter((url): url is string => url !== null);
 
   return ok(foundUrls);
 }

@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 
   if (downloadError || !blob) return empty(404);
 
-  return new NextResponse(blob, {
+  return new NextResponse(blob.stream ? blob.stream() : blob, {
     status: 200,
     headers: {
       "Content-Type": "image/webp",

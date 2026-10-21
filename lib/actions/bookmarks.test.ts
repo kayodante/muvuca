@@ -40,54 +40,9 @@ describe("bookmark actions", () => {
     mockGetDictionary.mockResolvedValue(ptBR);
   });
 
-  it("finds existing URLs using bounded concurrency", async () => {
-    // 1000 URLs -> 5 chunks of 200. Max concurrency is 4.
+  it("finds existing URLs in a single batch", async () => {
     const urls = Array.from(
       { length: 1000 },
-      (_, i) => `https://example.com/item/${i}`,
-    );
-
-    let activeRequests = 0;
-    let maxActiveRequests = 0;
-
-    mockSupabase.from.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          in: vi
-            .fn()
-            .mockImplementation(async (_field: string, chunk: string[]) => {
-              activeRequests++;
-              if (activeRequests > maxActiveRequests) {
-                maxActiveRequests = activeRequests;
-              }
-
-              await new Promise((resolve) => setTimeout(resolve, 10));
-
-              activeRequests--;
-
-              // Return the first item of each chunk to verify all chunks were processed
-              return {
-                data: [{ normalized_url: chunk[0] }],
-                error: null,
-              };
-            }),
-        }),
-      }),
-    });
-
-    const result = await findExistingBookmarkUrls(urls);
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(maxActiveRequests).toBe(4);
-      expect(result.data).toHaveLength(5);
-      expect(result.data).toContain("https://example.com/item/0");
-      expect(result.data).toContain("https://example.com/item/200");
-    }
-  });
-
-  it("finds existing URLs in chunks when many URLs are passed", async () => {
-    const urls = Array.from(
-      { length: 450 },
       (_, i) => `https://example.com/item/${i}`,
     );
 
@@ -95,7 +50,10 @@ describe("bookmark actions", () => {
       select: vi.fn().mockReturnValue({
         eq: vi.fn().mockReturnValue({
           in: vi.fn().mockResolvedValue({
-            data: [{ normalized_url: "https://example.com/item/0" }],
+            data: [
+              { normalized_url: "https://example.com/item/0" },
+              { normalized_url: "https://example.com/item/999" },
+            ],
             error: null,
           }),
         }),
@@ -105,7 +63,9 @@ describe("bookmark actions", () => {
     const result = await findExistingBookmarkUrls(urls);
     expect(result.ok).toBe(true);
     if (result.ok) {
+      expect(result.data).toHaveLength(2);
       expect(result.data).toContain("https://example.com/item/0");
+      expect(result.data).toContain("https://example.com/item/999");
     }
   });
 
