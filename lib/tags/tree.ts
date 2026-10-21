@@ -57,18 +57,24 @@ export function buildTagTree(flat: FlatTag[]): TagNode[] {
  * the database trigger is the enforcement of record, this is only the
  * client-side UX guard.
  */
-export function getDescendantIds(tagId: string, flat: FlatTag[]): Set<string> {
-  const childrenByParent = new Map<string, string[]>();
+const childrenByParentCache = new WeakMap<FlatTag[], Map<string, string[]>>();
 
-  for (const tag of flat) {
-    if (tag.parentId) {
-      const siblings = childrenByParent.get(tag.parentId);
-      if (siblings) {
-        siblings.push(tag.id);
-      } else {
-        childrenByParent.set(tag.parentId, [tag.id]);
+export function getDescendantIds(tagId: string, flat: FlatTag[]): Set<string> {
+  let childrenByParent = childrenByParentCache.get(flat);
+
+  if (!childrenByParent) {
+    childrenByParent = new Map<string, string[]>();
+    for (const tag of flat) {
+      if (tag.parentId) {
+        const siblings = childrenByParent.get(tag.parentId);
+        if (siblings) {
+          siblings.push(tag.id);
+        } else {
+          childrenByParent.set(tag.parentId, [tag.id]);
+        }
       }
     }
+    childrenByParentCache.set(flat, childrenByParent);
   }
 
   const result = new Set<string>();
