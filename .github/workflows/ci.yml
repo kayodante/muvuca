@@ -41,8 +41,6 @@ jobs:
           node-version: 24
       - name: Enable Corepack
         run: corepack enable
-      - name: Prepare pnpm
-        run: corepack prepare pnpm@11.20.0 --activate
       - name: Resolve pnpm store path
         id: pnpm-store
         run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
@@ -187,8 +185,6 @@ jobs:
           node-version: 24
       - name: Enable Corepack
         run: corepack enable
-      - name: Prepare pnpm
-        run: corepack prepare pnpm@11.20.0 --activate
       - name: Resolve pnpm store path
         id: pnpm-store
         run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
@@ -301,8 +297,6 @@ jobs:
           node-version: 24
       - name: Enable Corepack
         run: corepack enable
-      - name: Prepare pnpm
-        run: corepack prepare pnpm@11.20.0 --activate
       - name: Resolve pnpm store path
         id: pnpm-store
         run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
